@@ -49,7 +49,7 @@ private:
    * @param arg 在注册libevent回调函数时，传入的参数，即Server对象
    */
   static void accept(int fd, short ev, void *arg);
-  /**
+  /** 
    * @brief 接收到客户端消息时，调用此函数创建任务
    * @details 此函数作为libevent中客户端套接字对应的回调函数。当有新的消息到达时，调用此函数创建任务。
    * @param fd libevent回调函数传入的参数，即客户端套接字

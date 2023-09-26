@@ -206,6 +206,11 @@ public:
   RC close_file();
 
   /**
+   * 粗暴的直接返回文件名
+  */
+  std::string file_name() const {return file_name_;}
+
+  /**
    * 根据文件ID和页号获取指定页面到缓冲区，返回页面句柄指针。
    */
   RC get_this_page(PageNum page_num, Frame **frame);
@@ -308,6 +313,8 @@ public:
   ~BufferPoolManager();
 
   RC create_file(const char *file_name);
+  RC remove_file(const char *file_name);
+
   RC open_file(const char *file_name, DiskBufferPool *&bp);
   RC close_file(const char *file_name);
 

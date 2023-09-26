@@ -51,9 +51,9 @@ Table::~Table()
 }
 
 RC Table::create(int32_t table_id, 
-                 const char *path, 
-                 const char *name, 
-                 const char *base_dir, 
+                 const char *path, // 表的元数据
+                 const char *name, //
+                 const char *base_dir, // 表存在哪个位置 
                  int attribute_count, 
                  const AttrInfoSqlNode attributes[])
 {
@@ -124,6 +124,29 @@ RC Table::create(int32_t table_id,
   base_dir_ = base_dir;
   LOG_INFO("Successfully create table %s:%s", base_dir, name);
   return rc;
+}
+
+RC Table::drop(const char* path)
+{
+    RC rc = RC::SUCCESS;
+    // 删除索引
+    for(Index *index:indexes_){
+        index->drop();
+    }
+
+    // 销毁record handler
+    record_handler_->close();
+    delete record_handler_;
+    record_handler_ = nullptr;
+
+    // 销毁buffer pool 删除数据文件
+    std::string data_file = table_data_file(base_dir_.c_str(), name());
+    BufferPoolManager &bpm = BufferPoolManager::instance();
+    rc = bpm.remove_file(data_file.c_str());
+
+    // 删除元数据文件
+    int remove_ret = ::remove(path);
+    return rc;
 }
 
 RC Table::open(const char *meta_file, const char *base_dir)

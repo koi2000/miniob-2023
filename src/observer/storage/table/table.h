@@ -53,6 +53,11 @@ public:
             const char *base_dir, 
             int attribute_count, 
             const AttrInfoSqlNode attributes[]);
+  
+  /*
+
+  */
+  RC drop(const char* path);
 
   /**
    * 打开一个表
