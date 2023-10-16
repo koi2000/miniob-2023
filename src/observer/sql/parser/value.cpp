@@ -64,7 +64,7 @@ void Value::set_data(char *data, int length)
     case CHARS: {
       set_string(data, length);
     } break;
-    case INTS: {
+    case INTS:case DATES: {
       num_value_.int_value_ = *(int *)data;
       length_ = length;
     } break;
@@ -172,7 +172,7 @@ int Value::compare(const Value &other) const
 {
   if (this->attr_type_ == other.attr_type_) {
     switch (this->attr_type_) {
-      case INTS: {
+      case INTS: case DATES: {
         return common::compare_int((void *)&this->num_value_.int_value_, (void *)&other.num_value_.int_value_);
       } break;
       case FLOATS: {

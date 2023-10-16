@@ -119,6 +119,15 @@ RC FilterStmt::create_filter_unit(Db *db, Table *default_table, std::unordered_m
     filter_obj.init_attr(Field(table, field));
     filter_unit->set_right(filter_obj);
   } else {
+    if (condition.right_value.attr_type() == CHARS) {
+        int32_t date = -1;
+        RC rc = string_to_date(condition.right_value.get_string().c_str(),date);
+        if(rc != RC::SUCCESS){
+            return rc;
+        }
+        value_init_date(const_cast<Value*>(&condition.right_value),date);
+    }
+    
     FilterObj filter_obj;
     filter_obj.init_value(condition.right_value);
     filter_unit->set_right(filter_obj);
