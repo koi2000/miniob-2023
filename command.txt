@@ -1,0 +1,13 @@
+常用命令
+./bin/observer -f ../etc/observer.ini -P cli
+./bin/obclient -p 6789
+
+
+
+INSERT INTO t1 VALUES (1,'2020-01-21');
+INSERT INTO t1 VALUES (2,'2020-10-21');
+INSERT INTO t1 VALUES (3,'2020-1-01');
+
+SELECT * FROM t1 WHERE u_date='2017-2-29';
+
+insert into t1 values(4,'2017-2-28');
