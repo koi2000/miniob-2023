@@ -18,6 +18,7 @@ See the Mulan PSL v2 for more details. */
 #include "common/rc.h"
 #include "storage/db/db.h"
 #include "storage/table/table.h"
+#include "util/date.h"
 
 FilterStmt::~FilterStmt() {
     for (FilterUnit* unit : filter_units_) {

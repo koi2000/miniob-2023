@@ -8,7 +8,7 @@
 #include <string>
 
 inline bool is_leap_year(int year) {
-    return (year % 4 == 0 && year % 100 == 0) || (year % 400 == 0);
+    return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
 }
 
 inline RC string_to_date(const char* str, int32_t& date) {
@@ -28,8 +28,10 @@ inline RC string_to_date(const char* str, int32_t& date) {
         return RC::INVALID_ARGUMENT;
     }
 
-    if (month == 2 && !is_leap_year(year) && day > 28) {
-        return RC::INVALID_ARGUMENT;
+    if (month == 2 && day > 28) {
+        if (!((year % 4 == 0 && year % 100 != 0) || year % 400 == 0)) {
+            return RC::INVALID_ARGUMENT;
+        }
     }
     date = year * 10000 + month * 100 + day;
     return RC::SUCCESS;
