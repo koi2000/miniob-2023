@@ -69,12 +69,13 @@ RC InsertStmt::create(Db *db, const InsertSqlNode &inserts, Stmt *&stmt)
         // values[i].set_data(p,sizeof(date));
         // free(p); p = nullptr;
         value_init_date(const_cast<Value*>(&values[i]), date);
+        // return RC::SUCCESS;
       }
       
       
       LOG_WARN("field type mismatch. table=%s, field=%s, field type=%d, value_type=%d",
           table_name, field_meta->name(), field_type, value_type);
-      return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+      // return RC::SCHEMA_FIELD_TYPE_MISMATCH;
     }
   }
 
