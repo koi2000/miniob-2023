@@ -19,9 +19,9 @@ See the Mulan PSL v2 for more details. */
 #include "storage/table/table.h"
 #include "util/date.h"
 
-UpdateStmt::UpdateStmt(Table* table, Field* field, Value* value) : table_(table), field_(field), value_(value) {}
+UpdateStmt::UpdateStmt(Table* table, Field* field, Value value) : table_(table), field_(field), value_(value) {}
 
-UpdateStmt::UpdateStmt(Table* table, Field* field, Value* value, FilterStmt* filter_stmt)
+UpdateStmt::UpdateStmt(Table* table, Field* field, Value value, FilterStmt* filter_stmt)
     : table_(table), field_(field), value_(value), filter_stmt_(filter_stmt) {}
 
 RC UpdateStmt::create(Db* db, const UpdateSqlNode& update, Stmt*& stmt) {
@@ -76,10 +76,10 @@ RC UpdateStmt::create(Db* db, const UpdateSqlNode& update, Stmt*& stmt) {
             LOG_WARN("failed to create filter statement. rc=%d:%s", rc, strrc(rc));
             return rc;
         }
-        stmt = new UpdateStmt(table, field, &value, filter_stmt);
+        stmt = new UpdateStmt(table, field, value, filter_stmt);
     }
     else {
-        stmt = new UpdateStmt(table, field, &value);
+        stmt = new UpdateStmt(table, field, value);
     }
     return rc;
 }

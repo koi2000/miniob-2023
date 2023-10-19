@@ -170,7 +170,7 @@ RC LogicalPlanGenerator::create_plan(InsertStmt* insert_stmt, unique_ptr<Logical
 
 RC LogicalPlanGenerator::create_plan(UpdateStmt* update_stmt, unique_ptr<LogicalOperator>& logical_operator) {
     Table* table = update_stmt->table();
-    unique_ptr<LogicalOperator> update_operator(new UpdateLogicalOperator(table, update_stmt->field()->field_name(), *update_stmt->value()));
+    unique_ptr<LogicalOperator> update_operator(new UpdateLogicalOperator(table, update_stmt->field()->field_name(), update_stmt->value()));
     // 添加子节点
     FilterStmt* filter_stmt = update_stmt->filter_stmt();
     std::vector<Field> fields;

@@ -244,6 +244,9 @@ RC Table::update_record(const std::string field_name, const Value* value, Record
         if (fieldMeta->name() == field_name) {
             int copy_len = fieldMeta->len();
             if (fieldMeta->type() == CHARS) {
+                // memset(record_data + fieldMeta->offset(), 0, copy_len);
+                LOG_INFO("string value is %s",value->get_string());
+                std::string str = value->get_string();
                 int data_len = value->length();
                 if (copy_len > data_len) {
                     copy_len = data_len + 1;
