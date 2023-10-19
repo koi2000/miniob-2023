@@ -423,6 +423,14 @@ RC RecordFileHandler::recover_insert_record(const char *data, int record_size, c
   return record_page_handler.recover_insert_record(data, rid);
 }
 
+RC RecordFileHandler::update_record(char* new_data, int record_size, Record* record, RID *rid) {
+    RecordPageHandler page_handler;
+    RC ret = page_handler.init(*disk_buffer_pool_, rid->page_num, false);
+    page_handler.get_record(rid, record);
+    // 直接拿到指针
+    record->set_data(new_data,record_size);
+}
+
 RC RecordFileHandler::delete_record(const RID *rid)
 {
   RC rc = RC::SUCCESS;

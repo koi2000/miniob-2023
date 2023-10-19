@@ -28,6 +28,7 @@ class Index;
 class IndexScanner;
 class RecordDeleter;
 class Trx;
+class Field;
 
 /**
  * @brief 表
@@ -81,6 +82,11 @@ public:
    * @param record[in/out] 传入的数据包含具体的数据，插入成功会通过此字段返回RID
    */
   RC insert_record(Record &record);
+  /**
+   * @brief 修改当前表中的记录
+   * @param record中应包含更新的数据
+  */
+  RC update_record(const std::string field, const Value* value, Record &record);
   RC delete_record(const Record &record);
   RC visit_record(const RID &rid, bool readonly, std::function<void(Record &)> visitor);
   RC get_record(const RID &rid, Record &record);

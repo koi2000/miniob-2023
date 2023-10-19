@@ -15,6 +15,7 @@ See the Mulan PSL v2 for more details. */
 #include "common/log/log.h"
 #include "sql/stmt/stmt.h"
 #include "sql/stmt/insert_stmt.h"
+#include "sql/stmt/update_stmt.h"
 #include "sql/stmt/delete_stmt.h"
 #include "sql/stmt/select_stmt.h"
 #include "sql/stmt/explain_stmt.h"
@@ -41,6 +42,9 @@ RC Stmt::create_stmt(Db *db, ParsedSqlNode &sql_node, Stmt *&stmt)
     }
     case SCF_DELETE: {
       return DeleteStmt::create(db, sql_node.deletion, stmt);
+    }
+    case SCF_UPDATE: {
+      return UpdateStmt::create(db, sql_node.update, stmt);
     }
     case SCF_SELECT: {
       return SelectStmt::create(db, sql_node.selection, stmt);

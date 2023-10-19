@@ -1,7 +1,7 @@
 {
     "options": {
         //"cwd": "${workspaceFolder}/build"
-        "cwd": "/home/koi/oceanbase/miniob/miniob/build"
+        "cwd": "/home/koi/oceanbase/miniob/miniob-2023/miniob-2023/build"
     },
     "tasks": [
         {
