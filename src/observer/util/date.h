@@ -20,17 +20,17 @@ inline RC string_to_date(const char* str, int32_t& date) {
         return RC::INVALID_ARGUMENT;
     }
     if (year < 1900 || year > 9999 || month <= 0 || month > 12 || day <= 0 || day > 31) {
-        return RC::INVALID_ARGUMENT;
+        return RC::DATE_PARSE_ERROR;
     }
     int max_day_in_month[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
     const int max_day = max_day_in_month[month - 1];
     if (day > max_day) {
-        return RC::INVALID_ARGUMENT;
+        return RC::DATE_PARSE_ERROR;
     }
 
     if (month == 2 && day > 28) {
         if (!((year % 4 == 0 && year % 100 != 0) || year % 400 == 0)) {
-            return RC::INVALID_ARGUMENT;
+            return RC::DATE_PARSE_ERROR;
         }
     }
     date = year * 10000 + month * 100 + day;

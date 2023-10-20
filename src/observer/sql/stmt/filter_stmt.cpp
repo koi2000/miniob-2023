@@ -134,7 +134,9 @@ RC FilterStmt::create_filter_unit(Db* db,
         if (condition.right_value.attr_type() == CHARS) {
             int32_t date = -1;
             RC rc = string_to_date(condition.right_value.get_string().c_str(), date);
-            if (rc == RC::SUCCESS) {
+            if (rc == RC::DATE_PARSE_ERROR) {
+                return rc;
+            } else if (rc == RC::SUCCESS){
                 value_init_date(const_cast<Value*>(&condition.right_value), date);   
             }
         }
