@@ -32,3 +32,16 @@ select * from update_table_1;
 INSERT INTO update_table_1 VALUES (30, '66SL8MPKAFGN71C', 71, 52);
 UPDATE update_table_1 SET t_name='NHL5A74RM6KGN7F02' WHERE id=45;
 UPDATE update_table_1 SET t_name='NHL5A74RM6KGN7F' WHERE id=45;
+
+UPDATE update_table_1 SET id=6 WHERE t_name='2TUR2JJ66SQT6';
+
+CREATE TABLE update_table_1(id int, t_name char(20), col1 int, col2 int);
+CREATE INDEX index_id on update_table_1(id);
+INSERT INTO update_table_1 VALUES (56, '2TUR2JJ66SQT6', 75, 12);
+INSERT INTO update_table_1 VALUES (37, '9N4M5MYB00U5O2O6', 86, 71);
+INSERT INTO update_table_1 VALUES (42, 'Z2G0HSKMXFNP2C267', 86, 12);
+...
+-- update
+UPDATE update_table_1 SET t_name='XPTHPGQY4TDSWO64AL7' WHERE id=37;
+-- update2
+UPDATE update_table_1 SET col2=31 WHERE col1=75;
