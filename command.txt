@@ -138,3 +138,25 @@ CREATE TABLE join_table_4(id int, col float);
 INSERT INTO join_table_4 VALUES(1, 16.5);
 INSERT INTO join_table_4 VALUES(2, 17.5);
 ...
+
+
+Select * from join_table_4 inner join join_table_1 on join_table_1.name>join_table_4.col and join_table_1.id<join_table_4.id;
+Select * from join_table_4 inner join join_table_1 on join_table_1.name<join_table_4.col and join_table_1.id<join_table_4.id;
+  5 | 13.5 | 4 | 16a
++ 5 | 13.5 | 4 | J03EI4H4M1NXALT
+-- below are some requests executed before(partial) --
+-- init data
+CREATE TABLE join_table_1(id int, name char(20));
+CREATE TABLE join_table_2(id int, age int);
+CREATE TABLE join_table_3(id int, level int);
+create table join_table_empty_1(id int, num_empty_1 int);
+create table join_table_empty_2(id int, num_empty_2 int);
+...
+-- typecast
+INSERT INTO join_table_1 VALUES (4, '16a');
+INSERT INTO join_table_1 VALUES (4, 'J03EI4H4M1NXALT');
+Select * from join_table_1 inner join join_table_2 on join_table_1.name<join_table_2.age and join_table_1.id=join_table_2.id;
+CREATE TABLE join_table_4(id int, col float);
+INSERT INTO join_table_4 VALUES(1, 16.5);
+INSERT INTO join_table_4 VALUES(2, 17.5);
+...

@@ -218,24 +218,44 @@ int Value::compare(const Value &other) const
     float other_data = other.num_value_.int_value_;
     return common::compare_float((void *)&this->num_value_.float_value_, (void *)&other_data);
   } else if(this->attr_type_ == CHARS && other.attr_type_ == FLOATS) {
+    std::string str = this->str_value_;
+    if (!str.empty()&&!isdigit(str[0])) {
+        float this_data = 0;
+        return common::compare_float((void *)&this_data, (void *)&other.num_value_.float_value_);
+    }
     std::string other_data = float_to_string(other.num_value_.float_value_);
     return common::compare_string((void *)this->str_value_.c_str(),
             this->str_value_.length(),
             (void *)other_data.c_str(),
             other_data.length());
   } else if(this->attr_type_ == CHARS && other.attr_type_ == INTS) {
+    std::string str = this->str_value_;
+    if (!str.empty()&&!isdigit(str[0])) {
+        int this_data = 0;
+        return common::compare_int((void *)&this_data, (void *)&other.num_value_.float_value_);
+    }
     std::string other_data = int_to_string(other.num_value_.int_value_);
     return common::compare_string((void *)this->str_value_.c_str(),
             this->str_value_.length(),
             (void *)other_data.c_str(),
             other_data.length());
   } else if(this->attr_type_ == FLOATS && other.attr_type_ == CHARS) {
+    std::string str = other.str_value_;
+    if (!str.empty()&&!isdigit(str[0])) {
+        float other_data = 0;
+        return common::compare_float((void *)&this->num_value_.float_value_,(void *)&other_data);
+    }
     std::string this_data = float_to_string(this->num_value_.float_value_);
     return common::compare_string((void *)this_data.c_str(),
             this_data.length(),
             (void *)other.str_value_.c_str(),
             other.str_value_.length());
   } else if(this->attr_type_ == INTS && other.attr_type_ == CHARS) {
+    std::string str = other.str_value_;
+    if (!str.empty()&&!isdigit(str[0])) {
+        int other_data = 0;
+        return common::compare_int((void *)&this->num_value_.int_value_,(void *)&other_data);
+    }
     std::string this_data = int_to_string(this->num_value_.int_value_);
     return common::compare_string((void *)this_data.c_str(),
             this_data.length(),
