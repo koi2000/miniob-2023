@@ -101,6 +101,34 @@ RC LogicalPlanGenerator::create_plan(SelectStmt* select_stmt, unique_ptr<Logical
             JoinLogicalOperator* join_oper = new JoinLogicalOperator;
             join_oper->add_child(std::move(table_oper));
             join_oper->add_child(std::move(table_get_oper));
+            // 处理inner join中的on条件
+            FilterStmt* filter_stmt = select_stmt->inner_join_filter_stmt();
+            std::vector<unique_ptr<Expression>> cmp_exprs;
+            const std::vector<FilterUnit*>& filter_units = filter_stmt->filter_units();
+            for (const FilterUnit* filter_unit : filter_units) {
+                const FilterObj& filter_obj_left = filter_unit->left();
+                const FilterObj& filter_obj_right = filter_unit->right();
+                // 只收集on后的表明相同的条件
+                if (!((table->name()==filter_obj_left.field.table_name()&&
+                filter_obj_right.field.table_name()==tables[0]->name())||
+                (table->name()==filter_obj_right.field.table_name()&&
+                filter_obj_left.field.table_name()==tables[0]->name()))) {
+                    continue;
+                }
+                unique_ptr<Expression> left(filter_obj_left.is_attr ?
+                                                static_cast<Expression*>(new FieldExpr(filter_obj_left.field)) :
+                                                static_cast<Expression*>(new ValueExpr(filter_obj_left.value)));
+
+                unique_ptr<Expression> right(filter_obj_right.is_attr ?
+                                                static_cast<Expression*>(new FieldExpr(filter_obj_right.field)) :
+                                                static_cast<Expression*>(new ValueExpr(filter_obj_right.value)));
+
+                ComparisonExpr* cmp_expr = new ComparisonExpr(filter_unit->comp(), std::move(left), std::move(right));
+                cmp_exprs.emplace_back(cmp_expr);
+            }
+            if (!cmp_exprs.empty()) {
+                join_oper->set_predicates(std::move(cmp_exprs));
+            }
             table_oper = unique_ptr<LogicalOperator>(join_oper);
         }
     }

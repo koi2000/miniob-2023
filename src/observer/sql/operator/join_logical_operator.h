@@ -15,7 +15,7 @@ See the Mulan PSL v2 for more details. */
 #pragma once
 
 #include "sql/operator/logical_operator.h"
-
+#include "sql/stmt/filter_stmt.h"
 /**
  * @brief 连接算子
  * @ingroup LogicalOperator
@@ -32,5 +32,14 @@ public:
     return LogicalOperatorType::JOIN;
   }
 
+  void set_predicates(std::vector<std::unique_ptr<Expression>> &&exprs) {
+    predicates_ = std::move(exprs);
+  }
+
+  std::vector<std::unique_ptr<Expression>> predicates(){
+    return std::move(predicates_);
+  }
+
 private:
+  std::vector<std::unique_ptr<Expression>> predicates_;
 };

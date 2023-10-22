@@ -68,6 +68,8 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
         INSERT
         DELETE
         UPDATE
+        INNER
+        JOIN
         LBRACE
         RBRACE
         COMMA
@@ -113,7 +115,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   std::vector<Value> *              value_list;
   std::vector<ConditionSqlNode> *   condition_list;
   std::vector<RelAttrSqlNode> *     rel_attr_list;
-  std::vector<std::string> *        relation_list;
+  std::vector<JoinSqlNode> *        relation_list;
   char *                            string;
   int                               number;
   float                             floats;
@@ -137,6 +139,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <value_list>          value_list
 %type <condition_list>      where
 %type <condition_list>      condition_list
+%type <condition_list>      inner_join_conditions
 %type <rel_attr_list>       select_attr
 %type <relation_list>       rel_list
 %type <rel_attr_list>       attr_list
@@ -424,10 +427,10 @@ select_stmt:        /*  select 语句的语法解析树*/
         $$->selection.attributes.swap(*$2);
         delete $2;
       }
-      if ($5 != nullptr) {
+      /*if ($5 != nullptr) {
         $$->selection.relations.swap(*$5);
         delete $5;
-      }
+      }*/
       $$->selection.relations.push_back($4);
       std::reverse($$->selection.relations.begin(), $$->selection.relations.end());
 
@@ -435,6 +438,16 @@ select_stmt:        /*  select 语句的语法解析树*/
         $$->selection.conditions.swap(*$6);
         delete $6;
       }
+      if ($5 != nullptr){
+        for (JoinSqlNode& join_node : *$5) {
+          $$->selection.relations.push_back(join_node.table_name);
+          for(ConditionSqlNode& condition: join_node.conditions){
+              $$->selection.inner_join_conditions.push_back(condition);
+          }
+        }
+      }
+      
+
       free($4);
     }
     ;
@@ -551,13 +564,44 @@ rel_list:
       if ($3 != nullptr) {
         $$ = $3;
       } else {
-        $$ = new std::vector<std::string>;
+        $$ = new std::vector<JoinSqlNode>;
       }
 
-      $$->push_back($2);
+      $$->emplace_back($2, std::vector<ConditionSqlNode>());
       free($2);
+    } /*通过这一段可以得到所有的relation*/
+    | INNER JOIN ID inner_join_conditions rel_list {
+      if ($5 != nullptr) {
+        $$ = $5;
+      } else {
+        $$ = new std::vector<JoinSqlNode>;
+      }
+
+      $$->emplace_back($3,*$4);
+      free($3);
     }
     ;
+
+inner_join_conditions:
+	/* empty */ {
+        $$ = nullptr; // 或者可以使用一个空的条件列表
+    }
+	| ON condition {
+        $$ = new std::vector<ConditionSqlNode>; // 创建一个条件列表
+        $$->emplace_back(*$2); // 将条件添加到列表中
+	}
+	| ON condition AND condition_list {
+        if ($4 != nullptr) {
+            $$ = $4;
+        } else {
+            $$ = new std::vector<ConditionSqlNode>;
+        }
+        $$->emplace_back(*$2);
+        delete $2;
+    }
+	;
+
+
 where:
     /* empty */
     {

@@ -92,7 +92,17 @@ struct SelectSqlNode
   std::vector<RelAttrSqlNode>     attributes;    ///< attributes in select clause
   std::vector<std::string>        relations;     ///< 查询的表
   std::vector<ConditionSqlNode>   conditions;    ///< 查询条件，使用AND串联起来多个条件
+  std::vector<ConditionSqlNode>   inner_join_conditions;    ///< 查询条件，使用AND串联起来多个条件
 };
+
+struct JoinSqlNode {
+    std::string table_name; // 表名
+    std::vector<ConditionSqlNode> conditions; // INNER JOIN 条件
+    JoinSqlNode(const std::string& table, const std::vector<ConditionSqlNode>& cond)
+        : table_name(table), conditions(cond) {
+    }
+};
+
 
 /**
  * @brief 算术表达式计算的语法树

@@ -14,123 +14,185 @@ See the Mulan PSL v2 for more details. */
 
 #include "sql/operator/join_physical_operator.h"
 
-NestedLoopJoinPhysicalOperator::NestedLoopJoinPhysicalOperator()
-{}
-
-RC NestedLoopJoinPhysicalOperator::open(Trx *trx)
-{
-  if (children_.size() != 2) {
-    LOG_WARN("nlj operator should have 2 children");
-    return RC::INTERNAL;
-  }
-
-  RC rc = RC::SUCCESS;
-  left_ = children_[0].get();
-  right_ = children_[1].get();
-  right_closed_ = true;
-  round_done_ = true;
-
-  rc = left_->open(trx);
-  trx_ = trx;
-  return rc;
+NestedLoopJoinPhysicalOperator::NestedLoopJoinPhysicalOperator() {}
+NestedLoopJoinPhysicalOperator::NestedLoopJoinPhysicalOperator(std::vector<std::unique_ptr<Expression>> predicates_)
+    : predicates_(std::move(predicates_)) {
+    // 这里使用 std::move 来将传入的 predicates_ 转移所有权
+    // 以便正确地构建 std::unique_ptr
 }
 
-RC NestedLoopJoinPhysicalOperator::next()
-{
-  bool left_need_step = (left_tuple_ == nullptr);
-  RC rc = RC::SUCCESS;
-  if (round_done_) {
-    left_need_step = true;
-  } else {
-    rc = right_next();
-    if (rc != RC::SUCCESS) {
-      if (rc == RC::RECORD_EOF) {
+RC NestedLoopJoinPhysicalOperator::open(Trx* trx) {
+    if (children_.size() != 2) {
+        LOG_WARN("nlj operator should have 2 children");
+        return RC::INTERNAL;
+    }
+
+    RC rc = RC::SUCCESS;
+    left_ = children_[0].get();
+    right_ = children_[1].get();
+    right_closed_ = true;
+    round_done_ = true;
+
+    rc = left_->open(trx);
+    trx_ = trx;
+    return rc;
+}
+
+RC NestedLoopJoinPhysicalOperator::next() {
+    bool left_need_step = (left_tuple_ == nullptr);
+    RC rc = RC::SUCCESS;
+    if (round_done_) {
         left_need_step = true;
-      } else {
-        return rc;
-      }
-    } else {
-      return rc;  // got one tuple from right
     }
-  }
-
-  if (left_need_step) {
-    rc = left_next();
-    if (rc != RC::SUCCESS) {
-      return rc;
+    else {
+        rc = right_next();
+        if (rc != RC::SUCCESS) {
+            if (rc == RC::RECORD_EOF) {
+                left_need_step = true;
+            }
+            else {
+                return rc;
+            }
+        }
+        else {
+            return rc;  // got one tuple from right
+        }
     }
-  }
 
-  rc = right_next();
-  return rc;
-}
-
-RC NestedLoopJoinPhysicalOperator::close()
-{
-  RC rc = left_->close();
-  if (rc != RC::SUCCESS) {
-    LOG_WARN("failed to close left oper. rc=%s", strrc(rc));
-  }
-
-  if (!right_closed_) {
-    rc = right_->close();
-    if (rc != RC::SUCCESS) {
-      LOG_WARN("failed to close right oper. rc=%s", strrc(rc));
-    } else {
-      right_closed_ = true;
+    if (left_need_step) {
+        rc = left_next();
+        if (rc != RC::SUCCESS) {
+            return rc;
+        }
     }
-  }
-  return rc;
-}
 
-Tuple *NestedLoopJoinPhysicalOperator::current_tuple()
-{
-  return &joined_tuple_;
-}
-
-RC NestedLoopJoinPhysicalOperator::left_next()
-{
-  RC rc = RC::SUCCESS;
-  rc = left_->next();
-  if (rc != RC::SUCCESS) {
+    rc = right_next();
     return rc;
-  }
-
-  left_tuple_ = left_->current_tuple();
-  joined_tuple_.set_left(left_tuple_);
-  return rc;
 }
 
-RC NestedLoopJoinPhysicalOperator::right_next()
-{
-  RC rc = RC::SUCCESS;
-  if (round_done_) {
+RC NestedLoopJoinPhysicalOperator::close() {
+    RC rc = left_->close();
+    if (rc != RC::SUCCESS) {
+        LOG_WARN("failed to close left oper. rc=%s", strrc(rc));
+    }
+
     if (!right_closed_) {
-      rc = right_->close();
-      right_closed_ = true;
-      if (rc != RC::SUCCESS) {
-        return rc;
-      }
-    }
-
-    rc = right_->open(trx_);
-    if (rc != RC::SUCCESS) {
-      return rc;
-    }
-    right_closed_ = false;
-
-    round_done_ = false;
-  }
-
-  rc = right_->next();
-  if (rc != RC::SUCCESS) {
-    if (rc == RC::RECORD_EOF) {
-      round_done_ = true;
+        rc = right_->close();
+        if (rc != RC::SUCCESS) {
+            LOG_WARN("failed to close right oper. rc=%s", strrc(rc));
+        }
+        else {
+            right_closed_ = true;
+        }
     }
     return rc;
-  }
-
-  right_tuple_ = right_->current_tuple();
-  joined_tuple_.set_right(right_tuple_);
-  return rc;
 }
+
+Tuple* NestedLoopJoinPhysicalOperator::current_tuple() {
+    return &joined_tuple_;
+}
+
+RC NestedLoopJoinPhysicalOperator::left_next() {
+    RC rc = RC::SUCCESS;
+    rc = left_->next();
+    if (rc != RC::SUCCESS) {
+        return rc;
+    }
+
+    left_tuple_ = left_->current_tuple();
+    joined_tuple_.set_left(left_tuple_);
+    return rc;
+}
+
+RC NestedLoopJoinPhysicalOperator::right_next() {
+    RC rc = RC::SUCCESS;
+    if (round_done_) {
+        if (!right_closed_) {
+            rc = right_->close();
+            right_closed_ = true;
+            if (rc != RC::SUCCESS) {
+                return rc;
+            }
+        }
+
+        rc = right_->open(trx_);
+        if (rc != RC::SUCCESS) {
+            return rc;
+        }
+        right_closed_ = false;
+
+        round_done_ = false;
+    }
+    
+    while (true) {
+        rc = right_->next();
+        // 枚举结束直接退出
+        if (rc != RC::SUCCESS) {
+            if (rc == RC::RECORD_EOF) {
+                round_done_ = true;
+            }
+            return rc;
+        }
+
+        right_tuple_ = right_->current_tuple();
+        joined_tuple_.set_right(right_tuple_);
+        bool result = true;
+        // 枚举所有的on条件
+        for (std::unique_ptr<Expression>& expr : predicates_) {
+            Value value;
+            rc = expr->get_value(joined_tuple_, value);
+            if (rc != RC::SUCCESS) {
+                return rc;
+            }
+            result = result & value.get_boolean();
+        }
+        if (result) {
+            break;
+        }
+    }
+    return rc;
+}
+
+// 拉取右表所有数据
+// RC NestedLoopJoinPhysicalOperator::fetch_right_table() {
+//     RC rc = RC::SUCCESS;
+//     while (RC::SUCCESS == (rc = right_->next())) {
+//         // store right records
+//         CompoundRecord cpd_rcd;
+//         right_->current_tuple()->get_record(cpd_rcd);
+//         // need to deep copy the rcd and push back to rht
+//         // remember to delete them in dtor
+//         for (auto& rcd_ptr : cpd_rcd) {
+//             rcd_ptr = new Record(*rcd_ptr);
+//         }
+//         rht_.emplace_back(cpd_rcd);
+//     }
+//     LOG_INFO("Fetch Right Table Success! There are %d rows in right table.", rht_.size());
+
+//     if (RC::RECORD_EOF == rc) {
+//         return RC::SUCCESS;
+//     }
+//     return rc;
+// }
+
+// // 对右表数据进行筛选
+// RC NestedLoopJoinPhysicalOperator::filter_right_table() {
+//     RC rc = RC::SUCCESS;
+//     filtered_rht_.clear();
+//     rht_it_ = filtered_rht_.end();
+//     for (size_t i = 0; i < rht_.size(); ++i) {
+//         CompoundRecord temp(rht_[i]);
+//         tuple_.set_right_record(temp);
+//         bool res = false;
+//         if (RC::SUCCESS != (rc = PredicateOperator::do_predicate(filter_units_, tuple_, res))) {
+//             LOG_ERROR("JoinOperater do predicate Failed. RC = %d : %s", rc, strrc(rc));
+//             return rc;
+//         }
+//         if (res) {
+//             filtered_rht_.emplace_back(i);
+//         }
+//     }
+//     rht_it_ = filtered_rht_.begin();
+//     LOG_INFO("Filter Right Table Success! There are %d rows in right table satisfy predicates.",
+//     filtered_rht_.size()); return rc;
+// }

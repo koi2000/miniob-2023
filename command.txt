@@ -12,7 +12,7 @@ SELECT * FROM t1 WHERE u_date='2017-2-29';
 
 insert into t1 values(4,'2017-2-28');
 
-
+===========================================================================================
 update 测试用例
 
 create table t2 (id int,score int);
@@ -45,3 +45,42 @@ INSERT INTO update_table_1 VALUES (42, 'Z2G0HSKMXFNP2C267', 86, 12);
 UPDATE update_table_1 SET t_name='XPTHPGQY4TDSWO64AL7' WHERE id=37;
 -- update2
 UPDATE update_table_1 SET col2=31 WHERE col1=75;
+
+
+===========================================================================================
+
+Select * from join_table_1 inner join join_table_2 on join_table_1.id=join_table_2.id;
+Select name, age from join_table_1 inner join join_table_2 on join_table_1.id=join_table_2.id;
+
+Select join_table_1.name, join_table_2.age from join_table_1 inner join join_table_2 on join_table_1.id=join_table_2.id;
+Select join_table_1.name, join_table_2.age from join_table_1 inner join join_table_2 on join_table_1.id=join_table_2.id;
++ 16 | QJ0BBT5RHLHO
++ 21 | 2G0VGPDJ32O13T
++ 4 | 2Q1JWI3ZBU20H2W9ZOZ4
+-- below are some requests executed before(partial) --
+-- init data
+select * from join_table_1;
+
+CREATE TABLE join_table_1(id int, name char(20));
+CREATE TABLE join_table_2(id int, age int);
+CREATE TABLE join_table_3(id int, level int);
+create table join_table_empty_1(id int, num_empty_1 int);
+create table join_table_empty_2(id int, num_empty_2 int);
+
+
+insert into join_table_1 values(1,'s1');
+insert into join_table_1 values(2,'s2');
+insert into join_table_1 values(3,'s3');
+insert into join_table_1 values(4,'s4');
+insert into join_table_1 values(5,'s5');
+
+insert into join_table_2 values(1,11);
+insert into join_table_2 values(2,12);
+insert into join_table_2 values(3,13);
+insert into join_table_2 values(4,14);
+insert into join_table_2 values(5,15);
+
+insert into join_table_3 values(1,90);
+insert into join_table_3 values(2,91);
+insert into join_table_3 values(3,92);
+...

@@ -288,8 +288,8 @@ RC PhysicalPlanGenerator::create_plan(JoinLogicalOperator& join_oper, unique_ptr
         LOG_WARN("join operator should have 2 children, but have %d", child_opers.size());
         return RC::INTERNAL;
     }
-
-    unique_ptr<PhysicalOperator> join_physical_oper(new NestedLoopJoinPhysicalOperator);
+    NestedLoopJoinPhysicalOperator* physicalOperator = new NestedLoopJoinPhysicalOperator(std::move(join_oper.predicates()));
+    unique_ptr<PhysicalOperator> join_physical_oper(physicalOperator);
     for (auto& child_oper : child_opers) {
         unique_ptr<PhysicalOperator> child_physical_oper;
         rc = create(*child_oper, child_physical_oper);
