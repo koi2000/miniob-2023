@@ -111,7 +111,7 @@ RC LogicalPlanGenerator::create_plan(SelectStmt* select_stmt, unique_ptr<Logical
                 
                 
                 // 只收集on后的表明相同的条件
-                if (filter_obj_left.is_attr&&filter_obj_right.is_attr) {
+                if (filter_obj_left.is_attr && filter_obj_right.is_attr) {
                     if (!((table->name()==filter_obj_left.field.table_name()&&
                     filter_obj_right.field.table_name()==tables[0]->name())||
                     (table->name()==filter_obj_right.field.table_name()&&
@@ -120,10 +120,15 @@ RC LogicalPlanGenerator::create_plan(SelectStmt* select_stmt, unique_ptr<Logical
                     }
                 }
                 // 表名需要对应上
-                if (!((filter_obj_left.is_attr&&filter_obj_left.field.table_name()==table->name())||
-                (filter_obj_right.is_attr&&filter_obj_right.field.table_name()==table->name()))) {
-                    continue;
+                if (!(!filter_obj_left.is_attr&&!filter_obj_right.is_attr)) {
+                    if (!((filter_obj_left.is_attr&&filter_obj_left.field.table_name()==table->name())||
+                    (filter_obj_right.is_attr&&filter_obj_right.field.table_name()==table->name()))) {
+                        continue;
+                    }
                 }
+                
+                
+                
                 unique_ptr<Expression> left(filter_obj_left.is_attr ?
                                                 static_cast<Expression*>(new FieldExpr(filter_obj_left.field)) :
                                                 static_cast<Expression*>(new ValueExpr(filter_obj_left.value)));

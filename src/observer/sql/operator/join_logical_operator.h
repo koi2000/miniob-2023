@@ -36,7 +36,7 @@ public:
     predicates_ = std::move(exprs);
   }
 
-  std::vector<std::unique_ptr<Expression>> predicates(){
+  std::vector<std::unique_ptr<Expression>> predicates() {
     return std::move(predicates_);
   }
 
