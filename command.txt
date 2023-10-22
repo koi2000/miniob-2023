@@ -84,3 +84,15 @@ insert into join_table_3 values(1,90);
 insert into join_table_3 values(2,91);
 insert into join_table_3 values(3,92);
 ...
+
+
+Select * from join_table_1 inner join join_table_2 on join_table_1.id=join_table_2.id and join_table_2.age > 28;
++ failed to receive response from observer. reason=Failed to receive from server. poll return POLLHUP=16 or POLLERR=str(event & select.POLLERR), sql=Select * from join_table_1 inner join join_table_2 on join_table_1.id=join_table_2.id and join_table_2.age>28...
+-- below are some requests executed before(partial) --
+-- init data
+CREATE TABLE join_table_1(id int, name char(20));
+CREATE TABLE join_table_2(id int, age int);
+CREATE TABLE join_table_3(id int, level int);
+create table join_table_empty_1(id int, num_empty_1 int);
+create table join_table_empty_2(id int, num_empty_2 int);
+...

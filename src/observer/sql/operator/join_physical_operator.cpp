@@ -67,6 +67,15 @@ RC NestedLoopJoinPhysicalOperator::next() {
     }
 
     rc = right_next();
+    while (rc != RC::SUCCESS) {
+        if (left_need_step) {
+            rc = left_next();
+            if (rc != RC::SUCCESS) {
+                return rc;
+            }
+        }
+        rc = right_next();
+    }
     return rc;
 }
 
