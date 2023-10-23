@@ -38,6 +38,49 @@ inline std::string int_to_string(int num) {
 	return str;
 }
 
+bool stringToNumber(const std::string& str, float& floatValue, int& intValue, bool& isFloat, bool& isInt) {
+    // 初始化返回值
+    isFloat = false;
+    isInt = false;
+    // 检查字符串是否为空
+    if (str.empty()) {
+        return false;
+    }
+    size_t i = 0;
+    // 检查字符串是否以数字或正负号开头
+    if (i < str.length() && (isdigit(str[i]) || str[i] == '-' || str[i] == '+')) {
+        // 读取数字部分
+        size_t end = i + 1;
+        while (end < str.length() && (isdigit(str[end]) || str[end] == '.')) {
+            end++;
+        }
+        std::string numericPart = str.substr(i, end - i);
+        try {
+            floatValue = std::stof(numericPart); // 尝试将字符串转换为浮点数
+            intValue = static_cast<int>(floatValue); // 尝试将浮点数转换为整数
+            
+            // 判断是否是整数
+            if (static_cast<float>(intValue) == floatValue) {
+                isInt = true;
+                isFloat = false;
+            } else {
+                isFloat = true;
+                isInt = false;
+            }
+        } catch (const std::invalid_argument&) {
+            return false; // 无法转换为数字
+        } catch (const std::out_of_range&) {
+            return false; // 数值超出范围
+        }
+        return true;
+    } else {
+        isInt = true;
+        isFloat = false;
+        intValue = 0;
+        return false; // 非数字开头的字符串
+    }
+}
+
 const char *attr_type_to_string(AttrType type)
 {
   if (type >= UNDEFINED && type <= DATES) {
@@ -190,6 +233,8 @@ std::string Value::to_string() const
 
 int Value::compare(const Value &other) const
 {
+  bool isInt = false; bool isFloat = false;
+  int intValue = 0; float floatValue = 0;
   if (this->attr_type_ == other.attr_type_) {
     switch (this->attr_type_) {
       case INTS: case DATES: {
@@ -219,48 +264,40 @@ int Value::compare(const Value &other) const
     return common::compare_float((void *)&this->num_value_.float_value_, (void *)&other_data);
   } else if(this->attr_type_ == CHARS && other.attr_type_ == FLOATS) {
     std::string str = this->str_value_;
-    if (!str.empty()&&!isdigit(str[0])) {
-        float this_data = 0;
-        return common::compare_float((void *)&this_data, (void *)&other.num_value_.float_value_);
+    stringToNumber(str,floatValue,intValue,isFloat,isInt);
+    if (isInt) {
+        floatValue = (float)intValue;
+        return common::compare_float((void *)&floatValue, (void *)&other.num_value_.float_value_);
+    }else if(isFloat) {
+        return common::compare_float((void *)&floatValue, (void *)&other.num_value_.float_value_);
     }
-    std::string other_data = float_to_string(other.num_value_.float_value_);
-    return common::compare_string((void *)this->str_value_.c_str(),
-            this->str_value_.length(),
-            (void *)other_data.c_str(),
-            other_data.length());
+
   } else if(this->attr_type_ == CHARS && other.attr_type_ == INTS) {
+    // this为char other为int
     std::string str = this->str_value_;
-    if (!str.empty()&&!isdigit(str[0])) {
-        int this_data = 0;
-        return common::compare_int((void *)&this_data, (void *)&other.num_value_.float_value_);
+    stringToNumber(str,floatValue,intValue,isFloat,isInt);
+    if (isInt) {
+        return common::compare_int((void *)&intValue, (void *)&other.num_value_.int_value_);
+    }else if(isFloat) {
+        return common::compare_float((void *)&floatValue, (void *)&other.num_value_.float_value_);
     }
-    std::string other_data = int_to_string(other.num_value_.int_value_);
-    return common::compare_string((void *)this->str_value_.c_str(),
-            this->str_value_.length(),
-            (void *)other_data.c_str(),
-            other_data.length());
   } else if(this->attr_type_ == FLOATS && other.attr_type_ == CHARS) {
     std::string str = other.str_value_;
-    if (!str.empty()&&!isdigit(str[0])) {
-        float other_data = 0;
-        return common::compare_float((void *)&this->num_value_.float_value_,(void *)&other_data);
+    stringToNumber(str,floatValue,intValue,isFloat,isInt);
+    if (isInt) {
+        floatValue = (float)intValue;
+        return common::compare_float((void *)&this->num_value_.float_value_,(void *)&floatValue);
+    }else if(isFloat) {
+        return common::compare_float((void *)&other.num_value_.float_value_,(void *)&floatValue);
     }
-    std::string this_data = float_to_string(this->num_value_.float_value_);
-    return common::compare_string((void *)this_data.c_str(),
-            this_data.length(),
-            (void *)other.str_value_.c_str(),
-            other.str_value_.length());
   } else if(this->attr_type_ == INTS && other.attr_type_ == CHARS) {
     std::string str = other.str_value_;
-    if (!str.empty()&&!isdigit(str[0])) {
-        int other_data = 0;
-        return common::compare_int((void *)&this->num_value_.int_value_,(void *)&other_data);
+    stringToNumber(str,floatValue,intValue,isFloat,isInt);
+    if (isInt) {
+        return common::compare_int((void *)&this->num_value_.int_value_,(void *)&intValue);
+    }else if(isFloat) {
+        return common::compare_float((void *)&other.num_value_.float_value_,(void *)&floatValue);
     }
-    std::string this_data = int_to_string(this->num_value_.int_value_);
-    return common::compare_string((void *)this_data.c_str(),
-            this_data.length(),
-            (void *)other.str_value_.c_str(),
-            other.str_value_.length());
   }
   
   LOG_WARN("not supported");
