@@ -146,7 +146,7 @@ RC SelectStmt::create(Db* db, const SelectSqlNode& select_sql, Stmt*& stmt) {
     // create filter statement in 'inner join' statement
     FilterStmt* inner_join_filter_stmt = nullptr;
     rc = FilterStmt::create(db, default_table, &table_map, select_sql.inner_join_conditions.data(),
-                               static_cast<int>(select_sql.inner_join_conditions.size()), inner_join_filter_stmt);
+                            static_cast<int>(select_sql.inner_join_conditions.size()), inner_join_filter_stmt);
     if (rc != RC::SUCCESS) {
         LOG_WARN("cannot construct filter stmt");
         return rc;

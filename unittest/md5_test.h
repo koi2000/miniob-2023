@@ -19,11 +19,11 @@ See the Mulan PSL v2 for more details. */
  *
  */
 class Md5Test {
-public:
-  Md5Test();
-  virtual ~Md5Test();
+  public:
+    Md5Test();
+    virtual ~Md5Test();
 
-  void string();
+    void string();
 };
 
 #endif /* CTESTMD5_H_ */

@@ -145,7 +145,7 @@ RC MvccTrx::insert_record(Table* table, Record& record) {
     return rc;
 }
 
-RC MvccTrx::update_record(Table* table, std::string field_name, Value* value, Record &record) {
+RC MvccTrx::update_record(Table* table, std::string field_name, Value* value, Record& record) {
     return RC::SUCCESS;
 }
 

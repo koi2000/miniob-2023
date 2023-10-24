@@ -19,14 +19,14 @@ See the Mulan PSL v2 for more details. */
 
 namespace common {
 class MetricsReportEvent : public StageEvent {
-public:
-  MetricsReportEvent(){
+  public:
+    MetricsReportEvent(){
 
-  };
+    };
 
-  ~MetricsReportEvent(){
+    ~MetricsReportEvent(){
 
-  };
+    };
 };
 }  // namespace common
 #endif  //__COMMON_SEDA_METRICS_REPORT_EVENT_H__

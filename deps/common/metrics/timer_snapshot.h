@@ -18,16 +18,16 @@ See the Mulan PSL v2 for more details. */
 
 namespace common {
 class TimerSnapshot : public HistogramSnapShot {
-public:
-  TimerSnapshot();
-  virtual ~TimerSnapshot();
+  public:
+    TimerSnapshot();
+    virtual ~TimerSnapshot();
 
-  double get_tps();
-  void set_tps(double tps);
+    double get_tps();
+    void set_tps(double tps);
 
-  std::string to_string();
+    std::string to_string();
 
-protected:
-  double tps = 1.0;
+  protected:
+    double tps = 1.0;
 };
 }  // namespace common

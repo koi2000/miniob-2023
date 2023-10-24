@@ -18,21 +18,21 @@ See the Mulan PSL v2 for more details. */
 #include "sql/operator/delete_logical_operator.h"
 #include "sql/operator/explain_logical_operator.h"
 #include "sql/operator/insert_logical_operator.h"
-#include "sql/operator/update_logical_operator.h"
 #include "sql/operator/join_logical_operator.h"
 #include "sql/operator/logical_operator.h"
 #include "sql/operator/predicate_logical_operator.h"
 #include "sql/operator/project_logical_operator.h"
 #include "sql/operator/table_get_logical_operator.h"
+#include "sql/operator/update_logical_operator.h"
 
 #include "sql/stmt/calc_stmt.h"
 #include "sql/stmt/delete_stmt.h"
 #include "sql/stmt/explain_stmt.h"
 #include "sql/stmt/filter_stmt.h"
 #include "sql/stmt/insert_stmt.h"
-#include "sql/stmt/update_stmt.h"
 #include "sql/stmt/select_stmt.h"
 #include "sql/stmt/stmt.h"
+#include "sql/stmt/update_stmt.h"
 
 using namespace std;
 
@@ -108,34 +108,31 @@ RC LogicalPlanGenerator::create_plan(SelectStmt* select_stmt, unique_ptr<Logical
             for (const FilterUnit* filter_unit : filter_units) {
                 const FilterObj& filter_obj_left = filter_unit->left();
                 const FilterObj& filter_obj_right = filter_unit->right();
-                
-                
+
                 // 只收集on后的表明相同的条件
                 if (filter_obj_left.is_attr && filter_obj_right.is_attr) {
-                    if (!((table->name()==filter_obj_left.field.table_name()&&
-                    filter_obj_right.field.table_name()==tables[0]->name())||
-                    (table->name()==filter_obj_right.field.table_name()&&
-                    filter_obj_left.field.table_name()==tables[0]->name()))) {
+                    if (!((table->name() == filter_obj_left.field.table_name() &&
+                           filter_obj_right.field.table_name() == tables[0]->name()) ||
+                          (table->name() == filter_obj_right.field.table_name() &&
+                           filter_obj_left.field.table_name() == tables[0]->name()))) {
                         continue;
                     }
                 }
                 // 表名需要对应上
-                if (!(!filter_obj_left.is_attr&&!filter_obj_right.is_attr)) {
-                    if (!((filter_obj_left.is_attr&&filter_obj_left.field.table_name()==table->name())||
-                    (filter_obj_right.is_attr&&filter_obj_right.field.table_name()==table->name()))) {
+                if (!(!filter_obj_left.is_attr && !filter_obj_right.is_attr)) {
+                    if (!((filter_obj_left.is_attr && filter_obj_left.field.table_name() == table->name()) ||
+                          (filter_obj_right.is_attr && filter_obj_right.field.table_name() == table->name()))) {
                         continue;
                     }
                 }
-                
-                
-                
+
                 unique_ptr<Expression> left(filter_obj_left.is_attr ?
                                                 static_cast<Expression*>(new FieldExpr(filter_obj_left.field)) :
                                                 static_cast<Expression*>(new ValueExpr(filter_obj_left.value)));
 
                 unique_ptr<Expression> right(filter_obj_right.is_attr ?
-                                                static_cast<Expression*>(new FieldExpr(filter_obj_right.field)) :
-                                                static_cast<Expression*>(new ValueExpr(filter_obj_right.value)));
+                                                 static_cast<Expression*>(new FieldExpr(filter_obj_right.field)) :
+                                                 static_cast<Expression*>(new ValueExpr(filter_obj_right.value)));
 
                 ComparisonExpr* cmp_expr = new ComparisonExpr(filter_unit->comp(), std::move(left), std::move(right));
                 cmp_exprs.emplace_back(cmp_expr);
@@ -212,7 +209,8 @@ RC LogicalPlanGenerator::create_plan(InsertStmt* insert_stmt, unique_ptr<Logical
 
 RC LogicalPlanGenerator::create_plan(UpdateStmt* update_stmt, unique_ptr<LogicalOperator>& logical_operator) {
     Table* table = update_stmt->table();
-    unique_ptr<LogicalOperator> update_operator(new UpdateLogicalOperator(table, update_stmt->field()->field_name(), update_stmt->value()));
+    unique_ptr<LogicalOperator> update_operator(
+        new UpdateLogicalOperator(table, update_stmt->field()->field_name(), update_stmt->value()));
     // 添加子节点
     FilterStmt* filter_stmt = update_stmt->filter_stmt();
     std::vector<Field> fields;
@@ -234,7 +232,7 @@ RC LogicalPlanGenerator::create_plan(UpdateStmt* update_stmt, unique_ptr<Logical
     else {
         update_operator->add_child(std::move(table_get_oper));
     }
-    
+
     logical_operator = std::move(update_operator);
     return RC::SUCCESS;
 }

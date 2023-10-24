@@ -7,9 +7,7 @@
 #include "storage/table/table.h"
 #include "storage/trx/trx.h"
 
-UpdatePhysicalOperator::UpdatePhysicalOperator(Table* table,
-                                               std::string field_name,
-                                               Value value)
+UpdatePhysicalOperator::UpdatePhysicalOperator(Table* table, std::string field_name, Value value)
     : table_(table), field_name_(field_name), value_(std::move(value)) {}
 
 RC UpdatePhysicalOperator::open(Trx* trx) {

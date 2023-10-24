@@ -21,209 +21,193 @@ namespace common {
 
 template <typename Key, typename Value, typename Hash = std::hash<Key>, typename Pred = std::equal_to<Key>>
 class LruCache {
+    class ListNode {
+      public:
+        Key key_;
+        Value value_;
 
-  class ListNode {
+        ListNode* prev_ = nullptr;
+        ListNode* next_ = nullptr;
+
+      public:
+        ListNode(const Key& key, const Value& value) : key_(key), value_(value) {}
+    };
+
+    class PListNodeHasher {
+      public:
+        size_t operator()(ListNode* node) const {
+            if (node == nullptr) {
+                return 0;
+            }
+            return hasher_(node->key_);
+        }
+
+      private:
+        Hash hasher_;
+    };
+
+    class PListNodePredicator {
+      public:
+        bool operator()(ListNode* const node1, ListNode* const node2) const {
+            if (node1 == node2) {
+                return true;
+            }
+
+            if (node1 == nullptr || node2 == nullptr) {
+                return false;
+            }
+
+            return pred_(node1->key_, node2->key_);
+        }
+
+      private:
+        Pred pred_;
+    };
+
   public:
-    Key key_;
-    Value value_;
-
-    ListNode *prev_ = nullptr;
-    ListNode *next_ = nullptr;
-
-  public:
-    ListNode(const Key &key, const Value &value) : key_(key), value_(value)
-    {}
-  };
-
-  class PListNodeHasher {
-  public:
-    size_t operator()(ListNode *node) const
-    {
-      if (node == nullptr) {
-        return 0;
-      }
-      return hasher_(node->key_);
+    LruCache(size_t reserve = 0) {
+        if (reserve > 0) {
+            searcher_.reserve(reserve);
+        }
     }
 
-  private:
-    Hash hasher_;
-  };
+    ~LruCache() {
+        destroy();
+    }
 
-  class PListNodePredicator {
-  public:
-    bool operator()(ListNode *const node1, ListNode *const node2) const
-    {
-      if (node1 == node2) {
+    void destroy() {
+        for (ListNode* node : searcher_) {
+            delete node;
+        }
+        searcher_.clear();
+
+        lru_front_ = nullptr;
+        lru_tail_ = nullptr;
+    }
+
+    size_t count() const {
+        return searcher_.size();
+    }
+
+    bool get(const Key& key, Value& value) {
+        auto iter = searcher_.find((ListNode*)&key);
+        if (iter == searcher_.end()) {
+            return false;
+        }
+
+        lru_touch(*iter);
+        value = (*iter)->value_;
         return true;
-      }
+    }
 
-      if (node1 == nullptr || node2 == nullptr) {
-        return false;
-      }
+    void put(const Key& key, const Value& value) {
+        auto iter = searcher_.find((ListNode*)&key);
+        if (iter != searcher_.end()) {
+            ListNode* ln = *iter;
+            ln->value_ = value;
+            lru_touch(ln);
+            return;
+        }
 
-      return pred_(node1->key_, node2->key_);
+        ListNode* ln = new ListNode(key, value);
+        lru_push(ln);
+    }
+
+    void remove(const Key& key) {
+        auto iter = searcher_.find((ListNode*)&key);
+        if (iter != searcher_.end()) {
+            lru_remove(*iter);
+        }
+    }
+
+    void pop(Value*& value) {
+        // TODO
+        value = nullptr;
+    }
+
+    void foreach (std::function<bool(const Key&, const Value&)> func) {
+        for (ListNode* node = lru_front_; node != nullptr; node = node->next_) {
+            bool ret = func(node->key_, node->value_);
+            if (!ret) {
+                break;
+            }
+        }
+    }
+
+    void foreach_reverse(std::function<bool(const Key&, const Value&)> func) {
+        for (ListNode* node = lru_tail_; node != nullptr; node = node->prev_) {
+            bool ret = func(node->key_, node->value_);
+            if (!ret) {
+                break;
+            }
+        }
     }
 
   private:
-    Pred pred_;
-  };
+    void lru_touch(ListNode* node) {
+        // move node to front
+        if (nullptr == node->prev_) {
+            return;
+        }
 
-public:
-  LruCache(size_t reserve = 0)
-  {
-    if (reserve > 0) {
-      searcher_.reserve(reserve);
-    }
-  }
+        node->prev_->next_ = node->next_;
 
-  ~LruCache()
-  {
-    destroy();
-  }
+        if (node->next_ != nullptr) {
+            node->next_->prev_ = node->prev_;
+        }
+        else {
+            lru_tail_ = node->prev_;
+        }
 
-  void destroy()
-  {
-    for (ListNode *node : searcher_) {
-      delete node;
-    }
-    searcher_.clear();
-
-    lru_front_ = nullptr;
-    lru_tail_ = nullptr;
-  }
-
-  size_t count() const
-  {
-    return searcher_.size();
-  }
-
-  bool get(const Key &key, Value &value)
-  {
-    auto iter = searcher_.find((ListNode *)&key);
-    if (iter == searcher_.end()) {
-      return false;
+        node->prev_ = nullptr;
+        node->next_ = lru_front_;
+        if (lru_front_ != nullptr) {
+            lru_front_->prev_ = node;
+        }
+        lru_front_ = node;
     }
 
-    lru_touch(*iter);
-    value = (*iter)->value_;
-    return true;
-  }
+    void lru_push(ListNode* node) {
+        // push front
+        if (nullptr == lru_tail_) {
+            lru_tail_ = node;
+        }
 
-  void put(const Key &key, const Value &value)
-  {
-    auto iter = searcher_.find((ListNode *)&key);
-    if (iter != searcher_.end()) {
-      ListNode *ln = *iter;
-      ln->value_ = value;
-      lru_touch(ln);
-      return;
+        node->prev_ = nullptr;
+        node->next_ = lru_front_;
+        if (lru_front_ != nullptr) {
+            lru_front_->prev_ = node;
+        }
+
+        lru_front_ = node;
+        searcher_.insert(node);
     }
 
-    ListNode *ln = new ListNode(key, value);
-    lru_push(ln);
-  }
+    void lru_remove(ListNode* node) {
+        if (node->prev_ != nullptr) {
+            node->prev_->next_ = node->next_;
+        }
 
-  void remove(const Key &key)
-  {
-    auto iter = searcher_.find((ListNode *)&key);
-    if (iter != searcher_.end()) {
-      lru_remove(*iter);
-    }
-  }
+        if (node->next_ != nullptr) {
+            node->next_->prev_ = node->prev_;
+        }
 
-  void pop(Value *&value)
-  {
-    // TODO
-    value = nullptr;
-  }
+        if (lru_front_ == node) {
+            lru_front_ = node->next_;
+        }
+        if (lru_tail_ == node) {
+            lru_tail_ = node->prev_;
+        }
 
-  void foreach (std::function<bool(const Key &, const Value &)> func)
-  {
-    for (ListNode *node = lru_front_; node != nullptr; node = node->next_) {
-      bool ret = func(node->key_, node->value_);
-      if (!ret) {
-        break;
-      }
-    }
-  }
-
-  void foreach_reverse(std::function<bool(const Key &, const Value &)> func)
-  {
-    for (ListNode *node = lru_tail_; node != nullptr; node = node->prev_) {
-      bool ret = func(node->key_, node->value_);
-      if (!ret) {
-        break;
-      }
-    }
-  }
-
-private:
-  void lru_touch(ListNode *node)
-  {
-    // move node to front
-    if (nullptr == node->prev_) {
-      return;
+        searcher_.erase(node);
+        delete node;
     }
 
-    node->prev_->next_ = node->next_;
-
-    if (node->next_ != nullptr) {
-      node->next_->prev_ = node->prev_;
-    } else {
-      lru_tail_ = node->prev_;
-    }
-
-    node->prev_ = nullptr;
-    node->next_ = lru_front_;
-    if (lru_front_ != nullptr) {
-      lru_front_->prev_ = node;
-    }
-    lru_front_ = node;
-  }
-
-  void lru_push(ListNode *node)
-  {
-    // push front
-    if (nullptr == lru_tail_) {
-      lru_tail_ = node;
-    }
-
-    node->prev_ = nullptr;
-    node->next_ = lru_front_;
-    if (lru_front_ != nullptr) {
-      lru_front_->prev_ = node;
-    }
-
-    lru_front_ = node;
-    searcher_.insert(node);
-  }
-
-  void lru_remove(ListNode *node)
-  {
-    if (node->prev_ != nullptr) {
-      node->prev_->next_ = node->next_;
-    }
-
-    if (node->next_ != nullptr) {
-      node->next_->prev_ = node->prev_;
-    }
-
-    if (lru_front_ == node) {
-      lru_front_ = node->next_;
-    }
-    if (lru_tail_ == node) {
-      lru_tail_ = node->prev_;
-    }
-
-    searcher_.erase(node);
-    delete node;
-  }
-
-private:
-  using SearchType = std::unordered_set<ListNode *, PListNodeHasher, PListNodePredicator>;
-  SearchType searcher_;
-  ListNode *lru_front_ = nullptr;
-  ListNode *lru_tail_ = nullptr;
+  private:
+    using SearchType = std::unordered_set<ListNode*, PListNodeHasher, PListNodePredicator>;
+    SearchType searcher_;
+    ListNode* lru_front_ = nullptr;
+    ListNode* lru_tail_ = nullptr;
 };
 
 }  // namespace common

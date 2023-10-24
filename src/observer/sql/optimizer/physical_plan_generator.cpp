@@ -229,7 +229,8 @@ RC PhysicalPlanGenerator::create_plan(UpdateLogicalOperator& update_oper, unique
         }
     }
 
-    oper = unique_ptr<PhysicalOperator>(new UpdatePhysicalOperator(update_oper.table(), update_oper.field(), update_oper.value()));
+    oper = unique_ptr<PhysicalOperator>(
+        new UpdatePhysicalOperator(update_oper.table(), update_oper.field(), update_oper.value()));
 
     if (child_physical_oper) {
         oper->add_child(std::move(child_physical_oper));
@@ -288,7 +289,8 @@ RC PhysicalPlanGenerator::create_plan(JoinLogicalOperator& join_oper, unique_ptr
         LOG_WARN("join operator should have 2 children, but have %d", child_opers.size());
         return RC::INTERNAL;
     }
-    NestedLoopJoinPhysicalOperator* physicalOperator = new NestedLoopJoinPhysicalOperator(std::move(join_oper.predicates()));
+    NestedLoopJoinPhysicalOperator* physicalOperator =
+        new NestedLoopJoinPhysicalOperator(std::move(join_oper.predicates()));
     unique_ptr<PhysicalOperator> join_physical_oper(physicalOperator);
     for (auto& child_oper : child_opers) {
         unique_ptr<PhysicalOperator> child_physical_oper;

@@ -13,17 +13,17 @@ See the Mulan PSL v2 for more details. */
 //
 
 #if 0
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <unistd.h>
-#include <inttypes.h>
+#    include <inttypes.h>
+#    include <sys/socket.h>
+#    include <sys/un.h>
+#    include <unistd.h>
 
-#include <random>
-#include <stdexcept>
-#include <benchmark/benchmark.h>
+#    include <benchmark/benchmark.h>
+#    include <random>
+#    include <stdexcept>
 
-#include "rc.h"
-#include "common/log/log.h"
+#    include "common/log/log.h"
+#    include "rc.h"
 
 using namespace std;
 using namespace common;
@@ -198,4 +198,6 @@ RC Client::execute(const char *sql, ostream &result_stream)
 
 #endif
 
-int main(void) { return 0; }
+int main(void) {
+    return 0;
+}

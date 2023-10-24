@@ -12,41 +12,39 @@ See the Mulan PSL v2 for more details. */
 // Created by Wangyunlai on 2022/9/5.
 //
 
-#include <vector>
-#include "gtest/gtest.h"
 #include "common/lang/lower_bound.h"
+#include "gtest/gtest.h"
+#include <vector>
 
 using namespace common;
 
-TEST(lower_bound, test_lower_bound)
-{
-  int items[] = {1, 3, 5, 7, 9};
-  const int count = sizeof(items) / sizeof(items[0]);
-  std::vector<int> v(items, items + count);
+TEST(lower_bound, test_lower_bound) {
+    int items[] = {1, 3, 5, 7, 9};
+    const int count = sizeof(items) / sizeof(items[0]);
+    std::vector<int> v(items, items + count);
 
-  for (int i = 0; i <= 10; i++) {
-    bool found = false;
-    std::vector<int>::iterator retval = lower_bound(v.begin(), v.end(), i, &found);
-    ASSERT_EQ(retval - v.begin(), i / 2);
-    ASSERT_EQ(found, (i % 2 != 0));
-  }
+    for (int i = 0; i <= 10; i++) {
+        bool found = false;
+        std::vector<int>::iterator retval = lower_bound(v.begin(), v.end(), i, &found);
+        ASSERT_EQ(retval - v.begin(), i / 2);
+        ASSERT_EQ(found, (i % 2 != 0));
+    }
 
-  int empty_items = {};
-  const int empty_count = 0;
-  std::vector<int> empty_v(empty_items, empty_items + empty_count);
-  for (int i = 0; i <= 10; i++) {
-    bool found = false;
-    std::vector<int>::iterator retval = lower_bound(empty_v.begin(), empty_v.end(), i, &found);
-    ASSERT_EQ(retval - empty_v.begin(), 0);
-    ASSERT_EQ(found, false);
-  }
+    int empty_items = {};
+    const int empty_count = 0;
+    std::vector<int> empty_v(empty_items, empty_items + empty_count);
+    for (int i = 0; i <= 10; i++) {
+        bool found = false;
+        std::vector<int>::iterator retval = lower_bound(empty_v.begin(), empty_v.end(), i, &found);
+        ASSERT_EQ(retval - empty_v.begin(), 0);
+        ASSERT_EQ(found, false);
+    }
 }
-int main(int argc, char **argv)
-{
-  // 分析gtest程序的命令行参数
-  testing::InitGoogleTest(&argc, argv);
+int main(int argc, char** argv) {
+    // 分析gtest程序的命令行参数
+    testing::InitGoogleTest(&argc, argv);
 
-  // 调用RUN_ALL_TESTS()运行所有测试用例
-  // main函数返回RUN_ALL_TESTS()的运行结果
-  return RUN_ALL_TESTS();
+    // 调用RUN_ALL_TESTS()运行所有测试用例
+    // main函数返回RUN_ALL_TESTS()的运行结果
+    return RUN_ALL_TESTS();
 }

@@ -17,9 +17,9 @@ See the Mulan PSL v2 for more details. */
 
 // Basic includes
 #include <assert.h>
-#include <signal.h>
 #include <iostream>
 #include <set>
+#include <signal.h>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -32,7 +32,7 @@ namespace common {
 /**
  * start the seda process, do this will trigger all threads
  */
-int init_seda(ProcessParam *process_cfg);
+int init_seda(ProcessParam* process_cfg);
 
 void cleanup_seda();
 

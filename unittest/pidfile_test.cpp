@@ -15,30 +15,29 @@ See the Mulan PSL v2 for more details. */
 
 #include "gtest/gtest.h"
 
-#include "common/os/pidfile.h"
 #include "common/io/io.h"
 #include "common/lang/string.h"
+#include "common/os/pidfile.h"
 
 using namespace common;
 
-int main()
-{
-  long long pid = (long long)getpid();
+int main() {
+    long long pid = (long long)getpid();
 
-  const char *programName = "test";
-  writePidFile(programName);
+    const char* programName = "test";
+    writePidFile(programName);
 
-  std::string pidFile = getPidPath();
+    std::string pidFile = getPidPath();
 
-  char *p = NULL;
-  size_t size = 0;
-  readFromFile(pidFile, p, size);
+    char* p = NULL;
+    size_t size = 0;
+    readFromFile(pidFile, p, size);
 
-  std::string temp(p);
-  long long target = 0;
-  str_to_val(temp, target);
+    std::string temp(p);
+    long long target = 0;
+    str_to_val(temp, target);
 
-  free(p);
+    free(p);
 
-  EXPECT_EQ(pid, target);
+    EXPECT_EQ(pid, target);
 }

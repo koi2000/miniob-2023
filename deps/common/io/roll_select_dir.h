@@ -25,28 +25,26 @@ See the Mulan PSL v2 for more details. */
 namespace common {
 
 class RollSelectDir : public SelectDir {
-public:
-  RollSelectDir()
-  {
-    MUTEX_INIT(&mMutex, NULL);
-  }
-  ~RollSelectDir()
-  {
-    MUTEX_DESTROY(&mMutex);
-  }
+  public:
+    RollSelectDir() {
+        MUTEX_INIT(&mMutex, NULL);
+    }
+    ~RollSelectDir() {
+        MUTEX_DESTROY(&mMutex);
+    }
 
-public:
-  /**
-   * inherit from CSelectDir
-   */
-  std::string select();
-  void setBaseDir(std::string baseDir);
+  public:
+    /**
+     * inherit from CSelectDir
+     */
+    std::string select();
+    void setBaseDir(std::string baseDir);
 
-public:
-  std::string mBaseDir;
-  std::vector<std::string> mSubdirs;
-  pthread_mutex_t mMutex;
-  uint32_t mPos;
+  public:
+    std::string mBaseDir;
+    std::vector<std::string> mSubdirs;
+    pthread_mutex_t mMutex;
+    uint32_t mPos;
 };
 
 }  // namespace common

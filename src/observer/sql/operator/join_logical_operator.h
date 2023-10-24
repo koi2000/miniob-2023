@@ -21,25 +21,23 @@ See the Mulan PSL v2 for more details. */
  * @ingroup LogicalOperator
  * @details 连接算子，用于连接两个表。对应的物理算子或者实现，可能有NestedLoopJoin，HashJoin等等。
  */
-class JoinLogicalOperator : public LogicalOperator 
-{
-public:
-  JoinLogicalOperator() = default;
-  virtual ~JoinLogicalOperator() = default;
+class JoinLogicalOperator : public LogicalOperator {
+  public:
+    JoinLogicalOperator() = default;
+    virtual ~JoinLogicalOperator() = default;
 
-  LogicalOperatorType type() const override
-  {
-    return LogicalOperatorType::JOIN;
-  }
+    LogicalOperatorType type() const override {
+        return LogicalOperatorType::JOIN;
+    }
 
-  void set_predicates(std::vector<std::unique_ptr<Expression>> &&exprs) {
-    predicates_ = std::move(exprs);
-  }
+    void set_predicates(std::vector<std::unique_ptr<Expression>>&& exprs) {
+        predicates_ = std::move(exprs);
+    }
 
-  std::vector<std::unique_ptr<Expression>> predicates() {
-    return std::move(predicates_);
-  }
+    std::vector<std::unique_ptr<Expression>> predicates() {
+        return std::move(predicates_);
+    }
 
-private:
-  std::vector<std::unique_ptr<Expression>> predicates_;
+  private:
+    std::vector<std::unique_ptr<Expression>> predicates_;
 };

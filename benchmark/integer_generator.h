@@ -13,14 +13,15 @@ See the Mulan PSL v2 for more details. */
 //
 #include <random>
 
-class IntegerGenerator
-{
-public:
-  IntegerGenerator(int min, int max) : distrib_(min, max) {}
+class IntegerGenerator {
+  public:
+    IntegerGenerator(int min, int max) : distrib_(min, max) {}
 
-  int next() { return distrib_(rd_); }
+    int next() {
+        return distrib_(rd_);
+    }
 
-private:
-  std::random_device              rd_;
-  std::uniform_int_distribution<> distrib_;
+  private:
+    std::random_device rd_;
+    std::uniform_int_distribution<> distrib_;
 };

@@ -14,8 +14,8 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
-#include "sql/parser/parse.h"
 #include "sql/operator/physical_operator.h"
+#include "sql/parser/parse.h"
 #include "sql/stmt/filter_stmt.h"
 #include <vector>
 /**
@@ -23,41 +23,39 @@ See the Mulan PSL v2 for more details. */
  * @details 依次遍历左表的每一行，然后关联右表的每一行
  * @ingroup PhysicalOperator
  */
-class NestedLoopJoinPhysicalOperator : public PhysicalOperator
-{
-public:
-  NestedLoopJoinPhysicalOperator();
-  NestedLoopJoinPhysicalOperator(std::vector<std::unique_ptr<Expression>> predicates_);
-  virtual ~NestedLoopJoinPhysicalOperator() = default;
+class NestedLoopJoinPhysicalOperator : public PhysicalOperator {
+  public:
+    NestedLoopJoinPhysicalOperator();
+    NestedLoopJoinPhysicalOperator(std::vector<std::unique_ptr<Expression>> predicates_);
+    virtual ~NestedLoopJoinPhysicalOperator() = default;
 
-  PhysicalOperatorType type() const override
-  {
-    return PhysicalOperatorType::NESTED_LOOP_JOIN;
-  }
+    PhysicalOperatorType type() const override {
+        return PhysicalOperatorType::NESTED_LOOP_JOIN;
+    }
 
-  void set_predicates(std::vector<std::unique_ptr<Expression>> &&exprs){
-    predicates_ = std::move(exprs);
-  };
+    void set_predicates(std::vector<std::unique_ptr<Expression>>&& exprs) {
+        predicates_ = std::move(exprs);
+    };
 
-  RC open(Trx *trx) override;
-  RC next() override;
-  RC close() override;
-  Tuple *current_tuple() override;
+    RC open(Trx* trx) override;
+    RC next() override;
+    RC close() override;
+    Tuple* current_tuple() override;
 
-private:
-  RC left_next();   //! 左表遍历下一条数据
-  RC right_next();  //! 右表遍历下一条数据，如果上一轮结束了就重新开始新的一轮
+  private:
+    RC left_next();   //! 左表遍历下一条数据
+    RC right_next();  //! 右表遍历下一条数据，如果上一轮结束了就重新开始新的一轮
 
-private:
-  Trx *trx_ = nullptr;
+  private:
+    Trx* trx_ = nullptr;
 
-  //! 左表右表的真实对象是在PhysicalOperator::children_中，这里是为了写的时候更简单
-  PhysicalOperator *left_ = nullptr;
-  PhysicalOperator *right_ = nullptr;
-  Tuple *left_tuple_ = nullptr;
-  Tuple *right_tuple_ = nullptr;
-  JoinedTuple joined_tuple_;  //! 当前关联的左右两个tuple
-  bool round_done_ = true;    //! 右表遍历的一轮是否结束
-  bool right_closed_ = true;  //! 右表算子是否已经关闭
-  std::vector<std::unique_ptr<Expression>> predicates_;
+    //! 左表右表的真实对象是在PhysicalOperator::children_中，这里是为了写的时候更简单
+    PhysicalOperator* left_ = nullptr;
+    PhysicalOperator* right_ = nullptr;
+    Tuple* left_tuple_ = nullptr;
+    Tuple* right_tuple_ = nullptr;
+    JoinedTuple joined_tuple_;  //! 当前关联的左右两个tuple
+    bool round_done_ = true;    //! 右表遍历的一轮是否结束
+    bool right_closed_ = true;  //! 右表算子是否已经关闭
+    std::vector<std::unique_ptr<Expression>> predicates_;
 };

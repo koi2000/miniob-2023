@@ -132,7 +132,7 @@ RC NestedLoopJoinPhysicalOperator::right_next() {
 
         round_done_ = false;
     }
-    
+
     while (true) {
         rc = right_->next();
         // 枚举结束直接退出

@@ -15,11 +15,11 @@ See the Mulan PSL v2 for more details. */
 #pragma once
 
 #include "common/rc.h"
-#include "sql/operator/string_list_physical_operator.h"
-#include "event/sql_event.h"
 #include "event/session_event.h"
-#include "sql/executor/sql_result.h"
+#include "event/sql_event.h"
 #include "session/session.h"
+#include "sql/executor/sql_result.h"
+#include "sql/operator/string_list_physical_operator.h"
 #include "storage/db/db.h"
 
 /**
@@ -27,32 +27,30 @@ See the Mulan PSL v2 for more details. */
  * @ingroup Executor
  * @note 与CreateIndex类似，不处理并发
  */
-class ShowTablesExecutor
-{
-public:
-  ShowTablesExecutor() = default;
-  virtual ~ShowTablesExecutor() = default;
+class ShowTablesExecutor {
+  public:
+    ShowTablesExecutor() = default;
+    virtual ~ShowTablesExecutor() = default;
 
-  RC execute(SQLStageEvent *sql_event)
-  {
-    SqlResult *sql_result = sql_event->session_event()->sql_result();
-    SessionEvent *session_event = sql_event->session_event();
+    RC execute(SQLStageEvent* sql_event) {
+        SqlResult* sql_result = sql_event->session_event()->sql_result();
+        SessionEvent* session_event = sql_event->session_event();
 
-    Db *db = session_event->session()->get_current_db();
+        Db* db = session_event->session()->get_current_db();
 
-    std::vector<std::string> all_tables;
-    db->all_tables(all_tables);
+        std::vector<std::string> all_tables;
+        db->all_tables(all_tables);
 
-    TupleSchema tuple_schema;
-    tuple_schema.append_cell(TupleCellSpec("", "Tables_in_SYS", "Tables_in_SYS"));
-    sql_result->set_tuple_schema(tuple_schema);
+        TupleSchema tuple_schema;
+        tuple_schema.append_cell(TupleCellSpec("", "Tables_in_SYS", "Tables_in_SYS"));
+        sql_result->set_tuple_schema(tuple_schema);
 
-    auto oper = new StringListPhysicalOperator;
-    for (const std::string &s : all_tables) {
-      oper->append(s);
+        auto oper = new StringListPhysicalOperator;
+        for (const std::string& s : all_tables) {
+            oper->append(s);
+        }
+
+        sql_result->set_operator(std::unique_ptr<PhysicalOperator>(oper));
+        return RC::SUCCESS;
     }
-
-    sql_result->set_operator(std::unique_ptr<PhysicalOperator>(oper));
-    return RC::SUCCESS;
-  }
 };

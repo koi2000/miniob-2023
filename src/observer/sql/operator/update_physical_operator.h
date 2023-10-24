@@ -30,7 +30,7 @@ class UpdatePhysicalOperator : public PhysicalOperator {
 
   private:
     Table* table_ = nullptr;
-    Trx *trx_ = nullptr;
+    Trx* trx_ = nullptr;
     std::string field_name_;
     Value value_;
 };

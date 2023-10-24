@@ -20,16 +20,15 @@ See the Mulan PSL v2 for more details. */
 namespace common {
 
 class Metric {
-public:
-  virtual void snapshot() = 0;
+  public:
+    virtual void snapshot() = 0;
 
-  virtual Snapshot *get_snapshot()
-  {
-    return snapshot_value_;
-  }
+    virtual Snapshot* get_snapshot() {
+        return snapshot_value_;
+    }
 
-protected:
-  Snapshot *snapshot_value_;
+  protected:
+    Snapshot* snapshot_value_;
 };
 
 }  // namespace common

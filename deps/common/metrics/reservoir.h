@@ -24,23 +24,23 @@ See the Mulan PSL v2 for more details. */
 namespace common {
 
 class Reservoir : public Metric {
-public:
-  Reservoir(RandomGenerator &random);
-  virtual ~Reservoir();
+  public:
+    Reservoir(RandomGenerator& random);
+    virtual ~Reservoir();
 
-public:
-  virtual size_t size() = 0;
-  virtual size_t get_count() = 0;
+  public:
+    virtual size_t size() = 0;
+    virtual size_t get_count() = 0;
 
-  virtual void update(double one) = 0;
+    virtual void update(double one) = 0;
 
-  virtual void reset() = 0;
+    virtual void reset() = 0;
 
-protected:
-  virtual size_t next(size_t range);
+  protected:
+    virtual size_t next(size_t range);
 
-private:
-  RandomGenerator &random;
+  private:
+    RandomGenerator& random;
 };
 
 }  // namespace common
