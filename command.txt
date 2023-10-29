@@ -164,5 +164,21 @@ INSERT INTO join_table_4 VALUES(2, 17.5);
 
 CREATE TABLE multi_index(id int, col1 int, col2 float, col3 char(10), col4 date, col5 int, col6 int);
 CREATE INDEX i_1_12 ON multi_index(col1,col2);
-- SUCCESS
-+ SQL_SYNTAX > Failed to parse sql
+CREATE INDEX i_1_345 ON multi_index(col3, col4, col5);
++ failed to receive response from observer. reason=Failed to receive from server. poll return POLLHUP=16 or POLLERR=str(event & select.POLLERR)#0  __pthread_kill_implementation (no_tid=0, signo=6, threadid=140525020038720) at ./nptl/pthread_kill.c:44
+#1  __p...
+failed to receive response from observer. reason=Failed to receive from server. poll return POLLHUP=16 or POLLERR=str(event & select.POLLERR)#0  __pthread_kill_implementation (no_tid=0, signo=6, threadid=140525020038720) at ./nptl/pthread_kill.c:44
+#1  __pthread_kill_internal (signo=6, threadid=140525020038720) at ./nptl/pthread_kill.c:78
+#2  __GI___pthread_kill (threadid=140525020038720, signo=signo@entry=6) at ./nptl/pthread_kill.c:89
+#3  0x00007fce8a33b476 in __GI_raise (sig=sig@entry=6) at ../sysdeps/posix/raise.c:26
+#4  0x00007fce8a3217f3 in __GI_abort () at ./stdlib/abort.c:79
+#5  0x00007fce8a6cab9e in ?? () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007fce8a6d620c in ?? () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#7  0x00007fce8a6d6277 in std::terminate() () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#8  0x00007fce8a6d64d8 in __cxa_throw () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#9  0x00007fce8a6ca7ac in ?? () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#10 0x00005594dab6966c in __gnu_cxx::new_allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >::allocate(unsigned long, void const*) ()
+#11 0x00005594dab691bc in std::allocator_traits<std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > >::allocate(std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >&, unsigned long) ()
+#12 0x00005594dab68d66 in std::_Vector_base<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > >::_M_allocate(unsigned long) ()
+#13 0x00005594dab8c26f in void std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > >::_M_realloc_insert<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >(__gnu_cxx::__normal_iterator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >*, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&&) ()
+#14 0x00005594dab8b572 in std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >& std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > >::emplace_back<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&&) ()

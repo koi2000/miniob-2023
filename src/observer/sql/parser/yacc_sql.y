@@ -287,6 +287,8 @@ index_ids:
     | COMMA ID index_ids {
         if($3 == nullptr){
             $$ = new std::vector<std::string>();
+        } else {
+            $$ = $3;
         }
         $$->push_back($2);
         free($2);
