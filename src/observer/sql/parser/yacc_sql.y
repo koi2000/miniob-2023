@@ -70,6 +70,11 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
         UPDATE
         INNER
         JOIN
+        AGGR_MAX
+        AGGR_MIN
+        AGGR_SUM
+        AGGR_AVG
+        AGGR_COUNT
         LBRACE
         RBRACE
         COMMA
@@ -100,6 +105,9 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
         LE
         GE
         NE
+        LENGTH
+        ROUND
+        DATE_FORMAT
 
 /** union 中定义各种数据类型，真实生成的代码也是union类型，所以不能有非POD类型的数据 **/
 %union {
@@ -116,6 +124,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   std::vector<ConditionSqlNode> *   condition_list;
   std::vector<RelAttrSqlNode> *     rel_attr_list;
   std::vector<JoinSqlNode> *        relation_list;
+  std::vector<std::string> *        index_attribute_names;
   char *                            string;
   int                               number;
   float                             floats;
@@ -142,6 +151,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <condition_list>      inner_join_conditions
 %type <rel_attr_list>       select_attr
 %type <relation_list>       rel_list
+%type <index_attribute_names>       INDEX_IDS
 %type <rel_attr_list>       attr_list
 %type <expression>          expression
 %type <expression_list>     expression_list
@@ -261,18 +271,37 @@ desc_table_stmt:
     ;
 
 create_index_stmt:    /*create index 语句的语法解析树*/
-    CREATE INDEX ID ON ID LBRACE ID RBRACE
+    CREATE INDEX ID ON ID LBRACE INDEX_IDS RBRACE
     {
       $$ = new ParsedSqlNode(SCF_CREATE_INDEX);
       CreateIndexSqlNode &create_index = $$->create_index;
       create_index.index_name = $3;
       create_index.relation_name = $5;
-      create_index.attribute_name = $7;
+      if ($7 != nullptr) {
+        create_index.attribute_names.swap(*$7);
+      }
+      // create_index.attribute_name = $7;
       free($3);
       free($5);
       free($7);
     }
     ;
+
+INDEX_IDS:
+    /* empty */ {
+        $$ = nullptr;
+    }
+    | ID {
+        $$ = new vector<std::string>();
+        $$ -> push_back($1);
+    }
+    | COMMA ID INDEX_IDS{
+        if($3 == nullptr){
+            $$ -> new vector<std::string>();
+        }
+        $$ ->push_back($2);
+        free($2);
+    }
 
 drop_index_stmt:      /*drop index 语句的语法解析树*/
     DROP INDEX ID ON ID
@@ -391,7 +420,28 @@ value:
       free(tmp);
     }
     ;
-    
+
+/*aggr_func_type:
+    AGGR_MAX {
+      CONTEXT->aggrfunctype = MAX;
+    }
+    | AGGR_MIN {
+      CONTEXT->aggrfunctype = MIN;
+    }
+    | AGGR_SUM {
+      CONTEXT->aggrfunctype = SUM;
+    }
+    | AGGR_AVG {
+      CONTEXT->aggrfunctype = AVG;
+    }
+    | AGGR_COUNT {
+      CONTEXT->aggrfunctype = COUNT;
+    }
+    ;
+
+aggr_func_expr: 
+    aggr_func_expr LBRACE add_expr
+*/
 delete_stmt:    /*  delete 语句的语法解析树*/
     DELETE FROM ID where 
     {

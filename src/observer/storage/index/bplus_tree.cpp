@@ -690,8 +690,8 @@ RC BplusTreeHandler::sync() {
 }
 
 RC BplusTreeHandler::create(const char* file_name,
-                            AttrType attr_type,
-                            int attr_length,
+                            std::vector<AttrType> attr_types,
+                            std::vector<int> attr_lengths,
                             int internal_max_size /* = -1*/,
                             int leaf_max_size /* = -1 */) {
     BufferPoolManager& bpm = BufferPoolManager::instance();
@@ -724,19 +724,28 @@ RC BplusTreeHandler::create(const char* file_name,
         bpm.close_file(file_name);
         return RC::INTERNAL;
     }
+    // 计算字段的长度和
+    int meta_len = 0;
+    int attr_num = attr_lengths.size();
+    for (int len : attr_lengths) {
+        meta_len += len;
+    }
 
     if (internal_max_size < 0) {
-        internal_max_size = calc_internal_page_capacity(attr_length);
+        internal_max_size = calc_internal_page_capacity(meta_len);
     }
     if (leaf_max_size < 0) {
-        leaf_max_size = calc_leaf_page_capacity(attr_length);
+        leaf_max_size = calc_leaf_page_capacity(meta_len);
     }
 
     char* pdata = header_frame->data();
     IndexFileHeader* file_header = (IndexFileHeader*)pdata;
-    file_header->attr_length = attr_length;
-    file_header->key_length = attr_length + sizeof(RID);
-    file_header->attr_type = attr_type;
+    // 存储每个字段的长度
+    file_header->attr_lengths = attr_lengths;
+    // 重新计算key_length
+    file_header->key_length = meta_len + sizeof(RID);
+    file_header->attr_types = attr_types;
+    file_header->attr_num = attr_num;
     file_header->internal_max_size = internal_max_size;
     file_header->leaf_max_size = leaf_max_size;
     file_header->root_page = BP_INVALID_PAGE_NUM;
@@ -755,9 +764,10 @@ RC BplusTreeHandler::create(const char* file_name,
         close();
         return RC::NOMEM;
     }
-
-    key_comparator_.init(file_header->attr_type, file_header->attr_length);
-    key_printer_.init(file_header->attr_type, file_header->attr_length);
+    // 初始化key_comparator
+    key_comparator_.init(attr_types, attr_lengths);
+    // TODO: 暂时糊弄一下
+    key_printer_.init(file_header->attr_types[0], attr_lengths[0]);
 
     this->sync();
 
@@ -788,6 +798,7 @@ RC BplusTreeHandler::open(const char* file_name) {
     }
 
     char* pdata = frame->data();
+    // TODO: 修改读出的方式
     memcpy(&file_header_, pdata, sizeof(IndexFileHeader));
     header_dirty_ = false;
     disk_buffer_pool_ = disk_buffer_pool;
@@ -801,9 +812,9 @@ RC BplusTreeHandler::open(const char* file_name) {
 
     // close old page_handle
     disk_buffer_pool->unpin_page(frame);
-
-    key_comparator_.init(file_header_.attr_type, file_header_.attr_length);
-    key_printer_.init(file_header_.attr_type, file_header_.attr_length);
+    key_comparator_.init(file_header_.attr_types, file_header_.attr_lengths);
+    // TODO: 暂时糊弄一下
+    key_printer_.init(file_header_.attr_types[0], file_header_.attr_lengths[0]);
     LOG_INFO("Successfully open index %s", file_name);
     return RC::SUCCESS;
 }
@@ -1290,24 +1301,40 @@ RC BplusTreeHandler::create_new_tree(const char* key, const RID* rid) {
     return rc;
 }
 
+MemPoolItem::unique_ptr BplusTreeHandler::make_key(const char* user_key, std::vector<int> offsets, const RID& rid) {
+    MemPoolItem::unique_ptr key = mem_pool_item_->alloc_unique_ptr();
+    if (key == nullptr) {
+        LOG_WARN("Failed to alloc memory for key.");
+        return nullptr;
+    }
+    // 按照顺序依次写入
+    int offset = 0;
+    for (int i = 0; i < offsets.size(); i++) {
+        memcpy(static_cast<char*>(key.get()) + offset, user_key + offsets[i], file_header_.attr_lengths[i]);
+        offset += file_header_.attr_lengths[i];
+    }
+    memcpy(static_cast<char*>(key.get()) + file_header_.total_length, &rid, sizeof(rid));
+    return key;
+}
+
 MemPoolItem::unique_ptr BplusTreeHandler::make_key(const char* user_key, const RID& rid) {
     MemPoolItem::unique_ptr key = mem_pool_item_->alloc_unique_ptr();
     if (key == nullptr) {
         LOG_WARN("Failed to alloc memory for key.");
         return nullptr;
     }
-    memcpy(static_cast<char*>(key.get()), user_key, file_header_.attr_length);
-    memcpy(static_cast<char*>(key.get()) + file_header_.attr_length, &rid, sizeof(rid));
+    memcpy(static_cast<char*>(key.get()), user_key, file_header_.total_length);
+    memcpy(static_cast<char*>(key.get()) + file_header_.total_length, &rid, sizeof(rid));
     return key;
 }
 
-RC BplusTreeHandler::insert_entry(const char* user_key, const RID* rid) {
+RC BplusTreeHandler::insert_entry(const char* user_key, std::vector<int> offset, const RID* rid) {
     if (user_key == nullptr || rid == nullptr) {
         LOG_WARN("Invalid arguments, key is empty or rid is empty");
         return RC::INVALID_ARGUMENT;
     }
 
-    MemPoolItem::unique_ptr pkey = make_key(user_key, *rid);
+    MemPoolItem::unique_ptr pkey = make_key(user_key, offset, *rid);
     if (pkey == nullptr) {
         LOG_WARN("Failed to alloc memory for key.");
         return RC::NOMEM;
@@ -1563,7 +1590,7 @@ RC BplusTreeHandler::delete_entry_internal(LatchMemo& latch_memo, Frame* leaf_fr
     return coalesce_or_redistribute<LeafIndexNodeHandler>(latch_memo, leaf_frame);
 }
 
-RC BplusTreeHandler::delete_entry(const char* user_key, const RID* rid) {
+RC BplusTreeHandler::delete_entry(const char* user_key, std::vector<int> offsets, const RID* rid) {
     MemPoolItem::unique_ptr pkey = mem_pool_item_->alloc_unique_ptr();
     if (nullptr == pkey) {
         LOG_WARN("Failed to alloc memory for key. size=%d", file_header_.key_length);
@@ -1571,8 +1598,14 @@ RC BplusTreeHandler::delete_entry(const char* user_key, const RID* rid) {
     }
     char* key = static_cast<char*>(pkey.get());
 
-    memcpy(key, user_key, file_header_.attr_length);
-    memcpy(key + file_header_.attr_length, rid, sizeof(*rid));
+    int offset = 0;
+    for (int i = 0; i < offsets.size(); i++) {
+        memcpy(key, user_key + offset, file_header_.attr_lengths[i]);
+        offset += file_header_.attr_lengths[i];
+    }
+    // memcpy(key, user_key, file_header_.attr_length);
+
+    memcpy(key + file_header_.total_length, rid, sizeof(*rid));
 
     BplusTreeOperationType op = BplusTreeOperationType::DELETE;
     LatchMemo latch_memo(disk_buffer_pool_);
@@ -1637,17 +1670,27 @@ RC BplusTreeScanner::open(const char* left_user_key,
         iter_index_ = 0;
     }
     else {
+        // 用户输入的key的长度可能是不符合规范的，需要对其进行填充/截断
         char* fixed_left_key = const_cast<char*>(left_user_key);
-        if (tree_handler_.file_header_.attr_type == CHARS) {
-            bool should_inclusive_after_fix = false;
-            rc = fix_user_key(left_user_key, left_len, true /*greater*/, &fixed_left_key, &should_inclusive_after_fix);
-            if (rc != RC::SUCCESS) {
-                LOG_WARN("failed to fix left user key. rc=%s", strrc(rc));
-                return rc;
-            }
+        // 如果其中有一个为char类型，就要对整个key进行修复
+        for (int i = 0; i < tree_handler_.file_header_.attr_types.size(); i++) {
+            if (tree_handler_.file_header_.attr_types[i] == CHARS) {
+                // free(fixed_left_key);
+                delete fixed_left_key;
+                // 重新分配内存
+                fixed_left_key = (char*) malloc(tree_handler_.file_header_.total_length);
+                bool should_inclusive_after_fix = false;
+                rc = fix_user_key(left_user_key, left_len, true /*greater*/, &fixed_left_key,
+                                  &should_inclusive_after_fix);
+                if (rc != RC::SUCCESS) {
+                    LOG_WARN("failed to fix left user key. rc=%s", strrc(rc));
+                    return rc;
+                }
 
-            if (should_inclusive_after_fix) {
-                left_inclusive = true;
+                if (should_inclusive_after_fix) {
+                    left_inclusive = true;
+                }
+                break;
             }
         }
 
@@ -1822,9 +1865,20 @@ RC BplusTreeScanner::fix_user_key(const char* user_key,
     }
 
     // 这里很粗暴，变长字段才需要做调整，其它默认都不需要做调整
-    assert(tree_handler_.file_header_.attr_type == CHARS);
+    // assert(tree_handler_.file_header_.attr_type == CHARS);
     assert(strlen(user_key) >= static_cast<size_t>(key_len));
-
+    IndexFileHeader file_header = tree_handler_.file_header_;
+    int32_t total_length = tree_handler_.file_header_.total_length;
+    char* key_buf = new (std::nothrow) char[total_length];
+    
+    for (int i = 0; i < file_header.attr_num; i++) {
+        if (file_header.attr_types[i]!=AttrType::CHARS) {
+            memcpy(key_buf, user_key, key_len);
+            continue;
+        }
+        
+    }
+    
     *should_inclusive = false;
 
     int32_t attr_length = tree_handler_.file_header_.attr_length;

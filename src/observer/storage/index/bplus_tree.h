@@ -50,37 +50,43 @@ enum class BplusTreeOperationType {
  */
 class AttrComparator {
   public:
-    void init(AttrType type, int length) {
-        attr_type_ = type;
-        attr_length_ = length;
+    void init(std::vector<AttrType> types, std::vector<int> lengths) {
+        attr_types_ = types;
+        attr_lengths_ = lengths;
     }
 
-    int attr_length() const {
-        return attr_length_;
+    std::vector<int> attr_lengths() const {
+        return attr_lengths_;
     }
 
     int operator()(const char* v1, const char* v2) const {
-        switch (attr_type_) {
-            case INTS:
-            case DATES: {
-                return common::compare_int((void*)v1, (void*)v2);
-            } break;
-            case FLOATS: {
-                return common::compare_float((void*)v1, (void*)v2);
+        for (int i = 0; i < attr_types_.size(); i++) {
+            int result = 0;
+            switch (attr_types_[i]) {
+                case INTS:
+                case DATES: {
+                    result = common::compare_int((void*)v1, (void*)v2);
+                } break;
+                case FLOATS: {
+                    result = common::compare_float((void*)v1, (void*)v2);
+                }
+                case CHARS: {
+                    result = common::compare_string((void*)v1, attr_lengths_[i], (void*)v2, attr_lengths_[i]);
+                }
+                default: {
+                    ASSERT(false, "unknown attr type. %d", attr_type_);
+                    return 0;
+                }
             }
-            case CHARS: {
-                return common::compare_string((void*)v1, attr_length_, (void*)v2, attr_length_);
-            }
-            default: {
-                ASSERT(false, "unknown attr type. %d", attr_type_);
-                return 0;
-            }
+            if (result != 0)
+                return result;
         }
+        return 0;
     }
 
   private:
-    AttrType attr_type_;
-    int attr_length_;
+    std::vector<AttrType> attr_types_;
+    std::vector<int> attr_lengths_;
 };
 
 /**
@@ -90,8 +96,8 @@ class AttrComparator {
  */
 class KeyComparator {
   public:
-    void init(AttrType type, int length) {
-        attr_comparator_.init(type, length);
+    void init(std::vector<AttrType> types, std::vector<int> lengths) {
+        attr_comparator_.init(types, lengths);
     }
 
     const AttrComparator& attr_comparator() const {
@@ -104,8 +110,8 @@ class KeyComparator {
             return result;
         }
 
-        const RID* rid1 = (const RID*)(v1 + attr_comparator_.attr_length());
-        const RID* rid2 = (const RID*)(v2 + attr_comparator_.attr_length());
+        const RID* rid1 = (const RID*)(v1 + attr_comparator_.attr_lengths()[0]);
+        const RID* rid2 = (const RID*)(v2 + attr_comparator_.attr_lengths()[0]);
         return RID::compare(rid1, rid2);
     }
 
@@ -198,20 +204,29 @@ struct IndexFileHeader
         memset(this, 0, sizeof(IndexFileHeader));
         root_page = BP_INVALID_PAGE_NUM;
     }
-    PageNum root_page;          ///< 根节点在磁盘中的页号
-    int32_t internal_max_size;  ///< 内部节点最大的键值对数
-    int32_t leaf_max_size;      ///< 叶子节点最大的键值对数
-    int32_t attr_length;        ///< 键值的长度
-    int32_t key_length;         ///< attr length + sizeof(RID)
-    AttrType attr_type;         ///< 键值的类型
+    PageNum root_page;                  ///< 根节点在磁盘中的页号
+    int32_t internal_max_size;          ///< 内部节点最大的键值对数
+    int32_t leaf_max_size;              ///< 叶子节点最大的键值对数
+    int32_t attr_num;                   ///< 参数的数量
+    int32_t total_length;               ///< 属性的长度和
+    int32_t key_length;                 ///< attr length + sizeof(RID)
+    std::vector<int32_t> attr_lengths;  ///< 键值的长度
+    std::vector<AttrType> attr_types;   ///< 键值的类型
 
     const std::string to_string() {
         std::stringstream ss;
-
-        ss << "attr_length:" << attr_length << ","
-           << "key_length:" << key_length << ","
-           << "attr_type:" << attr_type << ","
-           << "root_page:" << root_page << ","
+        ss << "total_length:" << total_length << ","
+           << "attr_num:" << attr_num << ","
+           << "key_length:" << key_length << ",";
+        ss << "attr_lengths:";
+        for (int32_t len : attr_lengths) {
+            ss << len << ",";
+        }
+        ss << "attr_types:";
+        for (AttrType attr : attr_types) {
+            ss << attr << ",";
+        }
+        ss << "root_page:" << root_page << ","
            << "internal_max_size:" << internal_max_size << ","
            << "leaf_max_size:" << leaf_max_size << ";";
 
@@ -442,8 +457,8 @@ class BplusTreeHandler {
      * attrType描述被索引属性的类型，attrLength描述被索引属性的长度
      */
     RC create(const char* file_name,
-              AttrType attr_type,
-              int attr_length,
+              std::vector<AttrType> attr_types,
+              std::vector<int> attr_lengths,
               int internal_max_size = -1,
               int leaf_max_size = -1);
 
@@ -467,14 +482,14 @@ class BplusTreeHandler {
      * 即向索引中插入一个值为（user_key，rid）的键值对
      * @note 这里假设user_key的内存大小与attr_length 一致
      */
-    RC insert_entry(const char* user_key, const RID* rid);
+    RC insert_entry(const char* user_key, std::vector<int> offsets, const RID* rid);
 
     /**
      * 从IndexHandle句柄对应的索引中删除一个值为（*pData，rid）的索引项
      * @return RECORD_INVALID_KEY 指定值不存在
      * @note 这里假设user_key的内存大小与attr_length 一致
      */
-    RC delete_entry(const char* user_key, const RID* rid);
+    RC delete_entry(const char* user_key, std::vector<int> offsets, const RID* rid);
 
     bool is_empty() const;
 
@@ -550,6 +565,7 @@ class BplusTreeHandler {
 
   private:
     common::MemPoolItem::unique_ptr make_key(const char* user_key, const RID& rid);
+    common::MemPoolItem::unique_ptr make_key(const char* user_key, std::vector<int> offset, const RID& rid);
     void free_key(char* key);
 
   protected:
