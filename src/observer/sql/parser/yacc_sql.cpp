@@ -1754,10 +1754,10 @@ yyreduce:
       create_index.index_name = (yyvsp[-6].string);
       create_index.relation_name = (yyvsp[-4].string);
       // create_index.attribute_name = $7;
-      if ((yyvsp[-2].string) != nullptr) {
+      if ((yyvsp[-1].index_attribute_names) != nullptr) {
         create_index.attribute_names.swap(*(yyvsp[-1].index_attribute_names));
-        create_index.attribute_names.push_back((yyvsp[-2].string));
       }
+      create_index.attribute_names.push_back((yyvsp[-2].string));
       free((yyvsp[-6].string));
       free((yyvsp[-4].string));
       free((yyvsp[-2].string));
