@@ -19,16 +19,21 @@ BplusTreeIndex::~BplusTreeIndex() noexcept {
     close();
 }
 
-RC BplusTreeIndex::create(const char* file_name, const IndexMeta& index_meta, const FieldMeta& field_meta) {
+RC BplusTreeIndex::create(const char* file_name, const IndexMeta& index_meta, const std::vector<const FieldMeta *> &field_metas) {
     if (inited_) {
         LOG_WARN("Failed to create index due to the index has been created before. file_name:%s, index:%s, field:%s",
                  file_name, index_meta.name(), index_meta.field());
         return RC::RECORD_OPENNED;
     }
 
-    Index::init(index_meta, field_meta);
-
-    RC rc = index_handler_.create(file_name, field_meta.type(), field_meta.len());
+    Index::init(index_meta, *field_metas[0]);
+    col_count_ = field_metas.size();
+    for (size_t i = 0; i < col_count_; i++) {
+        offsets_.push_back(field_metas[i]->offset());
+        lens_.push_back(field_metas[i]->len());
+        types_.push_back(field_metas[i]->type());
+    }
+    RC rc = index_handler_.create(file_name, field_metas[0]->type(), field_metas[0]->len());
     if (RC::SUCCESS != rc) {
         LOG_WARN("Failed to create index_handler, file_name:%s, index:%s, field:%s, rc:%s", file_name,
                  index_meta.name(), index_meta.field(), strrc(rc));

@@ -401,24 +401,36 @@ RC Table::get_record_scanner(RecordFileScanner& scanner, Trx* trx, bool readonly
     return rc;
 }
 
-RC Table::create_index(Trx* trx, const FieldMeta* field_meta, const char* index_name) {
-    if (common::is_blank(index_name) || nullptr == field_meta) {
+RC Table::create_index(Trx* trx, std::vector<const FieldMeta*> field_metas, const char* index_name) {
+    if (common::is_blank(index_name)) {
         LOG_INFO("Invalid input arguments, table name is %s, index_name is blank or attribute_name is blank", name());
         return RC::INVALID_ARGUMENT;
     }
 
+    std::vector<std::string> field_names;
+    std::vector<FieldMeta> fieldMetas;
+    for (const FieldMeta* field_meta : field_metas) {
+        field_names.push_back(field_meta->name());
+        fieldMetas.push_back(*const_cast<FieldMeta*>(field_meta));
+    }
+    // 先校验是否有重复索引
+    if (table_meta_.index(index_name) != nullptr || table_meta_.find_index_by_fields(field_names)) {
+        LOG_INFO("Invalid input arguments, table name is %s, index %s exist or attribute %s exist index", name(),
+                 index_name);
+        return RC::SCHEMA_INDEX_EXIST;
+    }
+
     IndexMeta new_index_meta;
-    RC rc = new_index_meta.init(index_name, *field_meta);
+    RC rc = new_index_meta.init(index_name, fieldMetas);
     if (rc != RC::SUCCESS) {
-        LOG_INFO("Failed to init IndexMeta in table:%s, index_name:%s, field_name:%s", name(), index_name,
-                 field_meta->name());
+        LOG_INFO("Failed to init IndexMeta in table:%s, index_name:%s, field_name:%s", name(), index_name);
         return rc;
     }
 
     // 创建索引相关数据
     BplusTreeIndex* index = new BplusTreeIndex();
     std::string index_file = table_index_file(base_dir_.c_str(), name(), index_name);
-    rc = index->create(index_file.c_str(), new_index_meta, *field_meta);
+    rc = index->create(index_file.c_str(), new_index_meta, field_metas);
     if (rc != RC::SUCCESS) {
         delete index;
         LOG_ERROR("Failed to create bplus tree index. file name=%s, rc=%d:%s", index_file.c_str(), rc, strrc(rc));

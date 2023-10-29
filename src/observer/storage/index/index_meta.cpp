@@ -22,20 +22,25 @@ See the Mulan PSL v2 for more details. */
 const static Json::StaticString FIELD_NAME("name");
 const static Json::StaticString FIELD_FIELD_NAME("field_name");
 
-RC IndexMeta::init(const char* name, const FieldMeta& field) {
+RC IndexMeta::init(const char* name, std::vector<FieldMeta> fields) {
     if (common::is_blank(name)) {
         LOG_ERROR("Failed to init index, name is empty.");
         return RC::INVALID_ARGUMENT;
     }
-
     name_ = name;
-    field_ = field.name();
+    for (FieldMeta field : fields) {
+        fields_.push_back(field.name());
+    }
     return RC::SUCCESS;
 }
 
 void IndexMeta::to_json(Json::Value& json_value) const {
     json_value[FIELD_NAME] = name_;
-    json_value[FIELD_FIELD_NAME] = field_;
+    Json::Value fieldArray(Json::arrayValue);
+    for (std::string field : fields_) {
+        fieldArray.append(field);
+    }
+    json_value[FIELD_FIELD_NAME] = fieldArray;
 }
 
 RC IndexMeta::from_json(const TableMeta& table, const Json::Value& json_value, IndexMeta& index) {
@@ -46,19 +51,22 @@ RC IndexMeta::from_json(const TableMeta& table, const Json::Value& json_value, I
         return RC::INTERNAL;
     }
 
-    if (!field_value.isString()) {
-        LOG_ERROR("Field name of index [%s] is not a string. json value=%s", name_value.asCString(),
+    if (!field_value.isArray()) {
+        LOG_ERROR("Field name of index [%s] is not a array. json value=%s", name_value.asCString(),
                   field_value.toStyledString().c_str());
         return RC::INTERNAL;
     }
-
-    const FieldMeta* field = table.field(field_value.asCString());
-    if (nullptr == field) {
-        LOG_ERROR("Deserialize index [%s]: no such field: %s", name_value.asCString(), field_value.asCString());
-        return RC::SCHEMA_FIELD_MISSING;
+    std::vector<FieldMeta> field_names;
+    for (const Json::Value& element : field_value) {
+        const FieldMeta* field = table.field(element.asCString());
+        if (nullptr == field) {
+            LOG_ERROR("Deserialize index [%s]: no such field: %s", name_value.asCString(), field_value.asCString());
+            return RC::SCHEMA_FIELD_MISSING;
+        }
+        field_names.push_back(*const_cast<FieldMeta*>(field));
     }
 
-    return index.init(name_value.asCString(), *field);
+    return index.init(name_value.asCString(), field_names);
 }
 
 const char* IndexMeta::name() const {
@@ -66,9 +74,13 @@ const char* IndexMeta::name() const {
 }
 
 const char* IndexMeta::field() const {
-    return field_.c_str();
+    return fields_[0].c_str();
+}
+
+std::vector<std::string> IndexMeta::fields() const {
+    return fields_;
 }
 
 void IndexMeta::desc(std::ostream& os) const {
-    os << "index name=" << name_ << ", field=" << field_;
+    os << "index name=" << name_ << ", field=";
 }

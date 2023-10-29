@@ -116,6 +116,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   std::vector<ConditionSqlNode> *   condition_list;
   std::vector<RelAttrSqlNode> *     rel_attr_list;
   std::vector<JoinSqlNode> *        relation_list;
+  std::vector<std::string> *        index_attribute_names;
   char *                            string;
   int                               number;
   float                             floats;
@@ -142,6 +143,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <condition_list>      inner_join_conditions
 %type <rel_attr_list>       select_attr
 %type <relation_list>       rel_list
+%type <index_attribute_names>       index_ids
 %type <rel_attr_list>       attr_list
 %type <expression>          expression
 %type <expression_list>     expression_list
@@ -261,18 +263,34 @@ desc_table_stmt:
     ;
 
 create_index_stmt:    /*create index 语句的语法解析树*/
-    CREATE INDEX ID ON ID LBRACE ID RBRACE
+    CREATE INDEX ID ON ID LBRACE ID index_ids  RBRACE
     {
       $$ = new ParsedSqlNode(SCF_CREATE_INDEX);
       CreateIndexSqlNode &create_index = $$->create_index;
       create_index.index_name = $3;
       create_index.relation_name = $5;
-      create_index.attribute_name = $7;
+      // create_index.attribute_name = $7;
+      if ($7 != nullptr) {
+        create_index.attribute_names.swap(*$8);
+        create_index.attribute_names.push_back($7);
+      }
       free($3);
       free($5);
       free($7);
     }
     ;
+
+index_ids:
+    /* empty */ {
+        $$ = nullptr;
+    }
+    | COMMA ID index_ids {
+        if($3 == nullptr){
+            $$ = new std::vector<std::string>();
+        }
+        $$->push_back($2);
+        free($2);
+    }
 
 drop_index_stmt:      /*drop index 语句的语法解析树*/
     DROP INDEX ID ON ID

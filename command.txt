@@ -160,3 +160,9 @@ CREATE TABLE join_table_4(id int, col float);
 INSERT INTO join_table_4 VALUES(1, 16.5);
 INSERT INTO join_table_4 VALUES(2, 17.5);
 ...
+
+
+CREATE TABLE multi_index(id int, col1 int, col2 float, col3 char(10), col4 date, col5 int, col6 int);
+CREATE INDEX i_1_12 ON multi_index(col1,col2);
+- SUCCESS
++ SQL_SYNTAX > Failed to parse sql

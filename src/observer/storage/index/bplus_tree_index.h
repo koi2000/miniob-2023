@@ -26,7 +26,7 @@ class BplusTreeIndex : public Index {
     BplusTreeIndex() = default;
     virtual ~BplusTreeIndex() noexcept;
 
-    RC create(const char* file_name, const IndexMeta& index_meta, const FieldMeta& field_meta);
+    RC create(const char* file_name, const IndexMeta& index_meta, const std::vector<const FieldMeta *> &field_metas);
     RC open(const char* file_name, const IndexMeta& index_meta, const FieldMeta& field_meta);
     RC drop() override;
     RC close();
@@ -48,7 +48,16 @@ class BplusTreeIndex : public Index {
 
   private:
     bool inited_ = false;
+    std::vector<int> lens_;
+    std::vector<int> offsets_;
+    std::vector<AttrType> types_;
+    size_t col_count_;
     BplusTreeHandler index_handler_;
+    RecordFileHandler* file_handler_{nullptr};
+
+    bool is_multi_index() const {
+        return col_count_ > 1;
+    }
 };
 
 /**
