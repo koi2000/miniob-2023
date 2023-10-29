@@ -182,3 +182,16 @@ failed to receive response from observer. reason=Failed to receive from server. 
 #12 0x00005594dab68d66 in std::_Vector_base<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > >::_M_allocate(unsigned long) ()
 #13 0x00005594dab8c26f in void std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > >::_M_realloc_insert<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >(__gnu_cxx::__normal_iterator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >*, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&&) ()
 #14 0x00005594dab8b572 in std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >& std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > >::emplace_back<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&&) ()
+
+
+Select * from join_table_1 inner join join_table_2 on join_table_1.id=join_table_2.id and join_table_2.age>15 inner join join_table_3 on join_table_1.id=join_table_2.id and join_table_3.level>=23;
+- 16 | 5FE80SDIRQ | 16 | 17 | 23 | 23
++ 16 | 5FE80SDIRQ | 23 | 23 | 16 | 17
+-- below are some requests executed before(partial) --
+-- init data
+CREATE TABLE join_table_1(id int, name char(20));
+CREATE TABLE join_table_2(id int, age int);
+CREATE TABLE join_table_3(id int, level int);
+create table join_table_empty_1(id int, num_empty_1 int);
+create table join_table_empty_2(id int, num_empty_2 int);
+...
