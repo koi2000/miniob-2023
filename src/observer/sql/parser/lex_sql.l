@@ -102,6 +102,7 @@ INSERT                                  RETURN_TOKEN(INSERT);
 INTO                                    RETURN_TOKEN(INTO);
 VALUES                                  RETURN_TOKEN(VALUES);
 DELETE                                  RETURN_TOKEN(DELETE);
+UNIQUE                                  RETURN_TOKEN(UNIQUE);
 UPDATE                                  RETURN_TOKEN(UPDATE);
 INNER                                   RETURN_TOKEN(INNER);
 JOIN                                    RETURN_TOKEN(JOIN);

@@ -13,13 +13,16 @@ See the Mulan PSL v2 for more details. */
 //
 
 #include "storage/index/bplus_tree_index.h"
+#include "storage/common/limits.h"
 #include "common/log/log.h"
-
 BplusTreeIndex::~BplusTreeIndex() noexcept {
     close();
 }
 
-RC BplusTreeIndex::create(const char* file_name, const IndexMeta& index_meta, const std::vector<const FieldMeta *> &field_metas) {
+RC BplusTreeIndex::create(const char* file_name,
+                          const IndexMeta& index_meta,
+                          const std::vector<const FieldMeta*>& field_metas,
+                          RecordFileHandler *file_handler) {
     if (inited_) {
         LOG_WARN("Failed to create index due to the index has been created before. file_name:%s, index:%s, field:%s",
                  file_name, index_meta.name(), index_meta.field());
@@ -27,6 +30,7 @@ RC BplusTreeIndex::create(const char* file_name, const IndexMeta& index_meta, co
     }
 
     Index::init(index_meta, *field_metas[0]);
+    file_handler_ = file_handler;
     col_count_ = field_metas.size();
     for (size_t i = 0; i < col_count_; i++) {
         offsets_.push_back(field_metas[i]->offset());
@@ -84,6 +88,51 @@ RC BplusTreeIndex::drop() {
 }
 
 RC BplusTreeIndex::insert_entry(const char* record, const RID* rid) {
+    if (is_mem_null((void*)(record + field_meta_.offset()), field_meta_.type(), field_meta_.len())) {
+        return RC::SUCCESS;
+    }
+    if (unique_ == 1) {
+        RC rc;
+        IndexScanner* scanner = create_scanner(record + field_meta_.offset(), field_meta_.len(), true,
+                                               record + field_meta_.offset(), field_meta_.len(), true);
+        if (scanner != nullptr) {
+            if (is_multi_index()) {
+                RID rid;
+                while ((rc = scanner->next_entry(&rid)) == RC::SUCCESS) {
+                    Record oldrec;
+                    file_handler_->get_record(&rid, &oldrec);
+                    bool all_equal = true;
+                    for (size_t i = 0; i < col_count_; i++) {
+                        int off = offsets_[i];
+                        int len = lens_[i];
+                        AttrType attr_type = types_[i];
+                        // if any column is null, don't insert into index
+                        if (is_mem_null((void*)(record + off), attr_type, len)) {
+                            scanner->destroy();
+                            return RC::SUCCESS;
+                        }
+                        if (strncmp(record + off, oldrec.data() + off, len) != 0) {
+                            all_equal = false;
+                            break;
+                        }
+                    }
+                    if (all_equal) {
+                        scanner->destroy();
+                        return RC::RECORD_DUPLICATE_KEY;
+                    }
+                }
+            }
+            else {
+                RID unused_rid;
+                rc = scanner->next_entry(&unused_rid);
+                if (rc == RC::SUCCESS) {
+                    scanner->destroy();
+                    return RC::RECORD_DUPLICATE_KEY;
+                }
+            }
+            scanner->destroy();
+        }
+    }
     return index_handler_.insert_entry(record + field_meta_.offset(), rid);
 }
 

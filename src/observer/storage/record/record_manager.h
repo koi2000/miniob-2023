@@ -302,6 +302,7 @@ class RecordFileHandler {
      *       如果page_handler 释放了，那也不能再访问rec对象了。
      */
     RC get_record(RecordPageHandler& page_handler, const RID* rid, bool readonly, Record* rec);
+    RC get_record(const RID* rid, Record* rec);
 
     /**
      * @brief 与get_record类似，访问某个记录，并提供回调函数来操作相应的记录

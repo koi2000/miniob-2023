@@ -36,6 +36,7 @@ RC CreateIndexExecutor::execute(SQLStageEvent* sql_event) {
     // for (size_t i = 0; i < attribute_num; i++) {
     //     attribute_names[i] = const_cast<FieldMeta*>(field_metas[i])->name();
     // }
-    
-    return table->create_index(trx, create_index_stmt->field_metas(), create_index_stmt->index_name().c_str());
+
+    return table->create_index(trx, create_index_stmt->field_metas(), create_index_stmt->index_name().c_str(),
+                               create_index_stmt->unique());
 }

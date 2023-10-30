@@ -46,6 +46,9 @@ python3 miniob_test.py
 
 运行 basic 测试用例
 python3 miniob_test.py --test-cases=basic
+python3 miniob_test.py --test-cases=primary-multi-index
+python3 miniob_test.py --test-cases=primary-join-tables
+python3 miniob_test.py --test-cases=primary-join-tables
 
 如果要运行多个测试用例，则在 --test-cases 参数中使用 ',' 分隔写多个即可
 """

@@ -36,12 +36,17 @@ class IndexScanner;
  */
 class Index {
   public:
-    Index() = default;
+    Index(int unique = 0) : unique_(unique){};
     virtual ~Index() = default;
 
     const IndexMeta& index_meta() const {
         return index_meta_;
     }
+
+    const int unique() const {
+        return unique_;
+    }
+
     virtual RC drop() = 0;
 
     /**
@@ -89,6 +94,7 @@ class Index {
   protected:
     IndexMeta index_meta_;  ///< 索引的元数据
     FieldMeta field_meta_;  ///< 当前实现仅考虑一个字段的索引
+    int unique_;
 };
 
 /**

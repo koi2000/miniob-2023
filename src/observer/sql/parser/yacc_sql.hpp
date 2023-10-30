@@ -62,44 +62,45 @@ extern int yydebug;
     SYNC = 268,
     INSERT = 269,
     DELETE = 270,
-    UPDATE = 271,
-    INNER = 272,
-    JOIN = 273,
-    LBRACE = 274,
-    RBRACE = 275,
-    COMMA = 276,
-    TRX_BEGIN = 277,
-    TRX_COMMIT = 278,
-    TRX_ROLLBACK = 279,
-    INT_T = 280,
-    STRING_T = 281,
-    FLOAT_T = 282,
-    DATE_T = 283,
-    HELP = 284,
-    EXIT = 285,
-    DOT = 286,
-    INTO = 287,
-    VALUES = 288,
-    FROM = 289,
-    WHERE = 290,
-    AND = 291,
-    SET = 292,
-    ON = 293,
-    LOAD = 294,
-    DATA = 295,
-    INFILE = 296,
-    EXPLAIN = 297,
-    EQ = 298,
-    LT = 299,
-    GT = 300,
-    LE = 301,
-    GE = 302,
-    NE = 303,
-    NUMBER = 304,
-    FLOAT = 305,
-    ID = 306,
-    SSS = 307,
-    UMINUS = 308
+    UNIQUE = 271,
+    UPDATE = 272,
+    INNER = 273,
+    JOIN = 274,
+    LBRACE = 275,
+    RBRACE = 276,
+    COMMA = 277,
+    TRX_BEGIN = 278,
+    TRX_COMMIT = 279,
+    TRX_ROLLBACK = 280,
+    INT_T = 281,
+    STRING_T = 282,
+    FLOAT_T = 283,
+    DATE_T = 284,
+    HELP = 285,
+    EXIT = 286,
+    DOT = 287,
+    INTO = 288,
+    VALUES = 289,
+    FROM = 290,
+    WHERE = 291,
+    AND = 292,
+    SET = 293,
+    ON = 294,
+    LOAD = 295,
+    DATA = 296,
+    INFILE = 297,
+    EXPLAIN = 298,
+    EQ = 299,
+    LT = 300,
+    GT = 301,
+    LE = 302,
+    GE = 303,
+    NE = 304,
+    NUMBER = 305,
+    FLOAT = 306,
+    ID = 307,
+    SSS = 308,
+    UMINUS = 309
   };
 #endif
 
@@ -107,7 +108,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 105 "yacc_sql.y"
+#line 106 "yacc_sql.y"
 
   ParsedSqlNode *                   sql_node;
   ConditionSqlNode *                condition;
@@ -127,7 +128,7 @@ union YYSTYPE
   int                               number;
   float                             floats;
 
-#line 131 "yacc_sql.hpp"
+#line 132 "yacc_sql.hpp"
 
 };
 typedef union YYSTYPE YYSTYPE;
