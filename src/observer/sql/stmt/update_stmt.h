@@ -29,8 +29,8 @@ class FilterStmt;
 class UpdateStmt : public Stmt {
   public:
     UpdateStmt() = default;
-    UpdateStmt(Table* table, Field* field, Value value);
-    UpdateStmt(Table* table, Field* field, Value value, FilterStmt* filter_stmt);
+    UpdateStmt(Table* table, std::vector<Field> field, std::vector<Value> value);
+    UpdateStmt(Table* table, std::vector<Field> field, std::vector<Value> value, FilterStmt* filter_stmt);
 
     StmtType type() const override {
         return StmtType::UPDATE;
@@ -43,11 +43,11 @@ class UpdateStmt : public Stmt {
     Table* table() const {
         return table_;
     }
-    Value value() const {
-        return value_;
+    std::vector<Value> values() const {
+        return values_;
     }
-    Field* field() const {
-        return field_;
+    std::vector<Field> fields() const {
+        return fields_;
     }
     FilterStmt* filter_stmt() const {
         return filter_stmt_;
@@ -55,7 +55,7 @@ class UpdateStmt : public Stmt {
 
   private:
     Table* table_ = nullptr;
-    Value value_;
-    Field* field_ = nullptr;
+    std::vector<Value> values_;
+    std::vector<Field> fields_;
     FilterStmt* filter_stmt_ = nullptr;
 };

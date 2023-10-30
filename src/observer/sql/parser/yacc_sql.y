@@ -117,6 +117,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   std::vector<ConditionSqlNode> *   condition_list;
   std::vector<RelAttrSqlNode> *     rel_attr_list;
   std::vector<JoinSqlNode> *        relation_list;
+  std::vector<std::pair<std::string,Value>>* update_list;
   std::vector<std::string> *        index_attribute_names;
   char *                            string;
   int                               number;
@@ -145,6 +146,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <rel_attr_list>       select_attr
 %type <relation_list>       rel_list
 %type <index_attribute_names>       index_ids
+%type <update_list>         update_pair_list
 %type <rel_attr_list>       attr_list
 %type <expression>          expression
 %type <expression_list>     expression_list
@@ -309,6 +311,7 @@ index_ids:
         $$->push_back($2);
         free($2);
     }
+    ;
 
 drop_index_stmt:      /*drop index 语句的语法解析树*/
     DROP INDEX ID ON ID
@@ -441,20 +444,49 @@ delete_stmt:    /*  delete 语句的语法解析树*/
     }
     ;
 update_stmt:      /*  update 语句的语法解析树*/
-    UPDATE ID SET ID EQ value where 
+    UPDATE ID SET ID EQ value update_pair_list where 
     {
       $$ = new ParsedSqlNode(SCF_UPDATE);
       $$->update.relation_name = $2;
-      $$->update.attribute_name = $4;
-      $$->update.value = *$6;
+      // $$->update.attribute_name = $4;
+      // $$->update.value = *$6;
+
       if ($7 != nullptr) {
-        $$->update.conditions.swap(*$7);
-        delete $7;
+        for (std::pair<std::string,Value>& pair_node : *$7) {
+          $$->update.attribute_name.push_back(pair_node.first);
+          $$->update.value.push_back(pair_node.second);
+        }
+      }
+      $$->update.attribute_name.push_back($4);
+      $$->update.value.push_back(*$6);
+
+      if ($8 != nullptr) {
+        $$->update.conditions.swap(*$8);
+        delete $8;
       }
       free($2);
       free($4);
     }
     ;
+
+update_pair_list:
+    /*empty*/ 
+    {
+        $$ = nullptr;
+    }
+    | COMMA ID EQ value update_pair_list {
+        if($5 == nullptr){
+            $$ = new std::vector<std::pair<std::string,Value>>();
+        } else {
+            $$ = $5;
+        }
+        $$->emplace_back($2,*$4);
+        free($2);
+        free($4);
+    }
+    ;
+
+
 select_stmt:        /*  select 语句的语法解析树*/
     SELECT select_attr FROM ID rel_list where
     {

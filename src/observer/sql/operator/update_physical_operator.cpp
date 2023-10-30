@@ -7,8 +7,8 @@
 #include "storage/table/table.h"
 #include "storage/trx/trx.h"
 
-UpdatePhysicalOperator::UpdatePhysicalOperator(Table* table, std::string field_name, Value value)
-    : table_(table), field_name_(field_name), value_(std::move(value)) {}
+UpdatePhysicalOperator::UpdatePhysicalOperator(Table* table, std::vector<std::string> field_names, std::vector<Value> values)
+    : table_(table), field_names_(field_names), values_(std::move(values)) {}
 
 RC UpdatePhysicalOperator::open(Trx* trx) {
     if (children_.empty()) {
@@ -38,7 +38,7 @@ RC UpdatePhysicalOperator::next() {
         }
         RowTuple* row_tuple = static_cast<RowTuple*>(tuple);
         Record& record = row_tuple->record();
-        rc = trx_->update_record(table_, field_name_, &value_, record);
+        rc = trx_->update_record(table_, field_names_, values_, record);
         if (rc != RC::SUCCESS) {
             LOG_WARN("failed to update record: %s", strrc(rc));
             return rc;

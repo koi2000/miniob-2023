@@ -65,7 +65,7 @@ class MvccTrx : public Trx {
     virtual ~MvccTrx();
 
     RC insert_record(Table* table, Record& record) override;
-    RC update_record(Table* table, std::string field_name_, Value* value, Record& record) override;
+    RC update_record(Table* table, std::vector<std::string> field_names_, std::vector<Value> value, Record& record) override;
     RC delete_record(Table* table, Record& record) override;
 
     /**

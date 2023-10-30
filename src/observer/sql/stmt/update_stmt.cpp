@@ -19,10 +19,11 @@ See the Mulan PSL v2 for more details. */
 #include "storage/table/table.h"
 #include "util/date.h"
 
-UpdateStmt::UpdateStmt(Table* table, Field* field, Value value) : table_(table), field_(field), value_(value) {}
+UpdateStmt::UpdateStmt(Table* table, std::vector<Field> field, std::vector<Value> value)
+    : table_(table), fields_(field), values_(value) {}
 
-UpdateStmt::UpdateStmt(Table* table, Field* field, Value value, FilterStmt* filter_stmt)
-    : table_(table), field_(field), value_(value), filter_stmt_(filter_stmt) {}
+UpdateStmt::UpdateStmt(Table* table, std::vector<Field> field, std::vector<Value> value, FilterStmt* filter_stmt)
+    : table_(table), fields_(field), values_(value), filter_stmt_(filter_stmt) {}
 
 RC UpdateStmt::create(Db* db, const UpdateSqlNode& update, Stmt*& stmt) {
     const char* table_name = update.relation_name.c_str();
@@ -37,31 +38,34 @@ RC UpdateStmt::create(Db* db, const UpdateSqlNode& update, Stmt*& stmt) {
         return RC::SCHEMA_TABLE_EXIST;
     }
     // 校验update时是否有对应类型字段
-    Value value = update.value;
+    std::vector<Value> values = update.value;
     const TableMeta& table_meta = table->table_meta();
     const int field_num = table_meta.field_num() - table_meta.sys_field_num();
     const int sys_field_num = table_meta.sys_field_num();
     RC rc = RC::INVALID_ARGUMENT;
-    Field* field = nullptr;
-    for (int i = sys_field_num; i < field_num; i++) {
-        const FieldMeta* field_meta = table_meta.field(i);
-        const AttrType field_type = field_meta->type();
-        const char* field_name = field_meta->name();
-        // 匹配成功
-        if (update.attribute_name == field_name) {
-            rc = RC::SUCCESS;
-            field = new Field(table, field_meta);
-            // 针对Date类型进行特殊处理
-            if (field_type == DATES) {
-                int32_t date = -1;
-                RC rc = string_to_date(value.get_string().c_str(), date);
-                if (rc != RC::SUCCESS) {
-                    LOG_TRACE("Parse type Date Error");
-                    return rc;
+    std::vector<Field> fields;
+    for (int k = 0; k < update.attribute_name.size(); k++) {
+        for (int i = sys_field_num; i < field_num; i++) {
+            const FieldMeta* field_meta = table_meta.field(i);
+            const AttrType field_type = field_meta->type();
+            const char* field_name = field_meta->name();
+            // 匹配成功
+            if (update.attribute_name[k] == field_name) {
+                rc = RC::SUCCESS;
+                Field field = Field(table, field_meta);
+                fields.push_back(field);
+                // 针对Date类型进行特殊处理
+                if (field_type == DATES) {
+                    int32_t date = -1;
+                    RC rc = string_to_date(values[k].get_string().c_str(), date);
+                    if (rc != RC::SUCCESS) {
+                        LOG_TRACE("Parse type Date Error");
+                        return rc;
+                    }
+                    value_init_date(&values[k], date);
                 }
-                value_init_date(&value, date);
+                break;
             }
-            break;
         }
     }
 
@@ -76,10 +80,10 @@ RC UpdateStmt::create(Db* db, const UpdateSqlNode& update, Stmt*& stmt) {
             LOG_WARN("failed to create filter statement. rc=%d:%s", rc, strrc(rc));
             return rc;
         }
-        stmt = new UpdateStmt(table, field, value, filter_stmt);
+        stmt = new UpdateStmt(table, fields, values, filter_stmt);
     }
     else {
-        stmt = new UpdateStmt(table, field, value);
+        stmt = new UpdateStmt(table, fields, values);
     }
     return rc;
 }

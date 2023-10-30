@@ -209,8 +209,12 @@ RC LogicalPlanGenerator::create_plan(InsertStmt* insert_stmt, unique_ptr<Logical
 
 RC LogicalPlanGenerator::create_plan(UpdateStmt* update_stmt, unique_ptr<LogicalOperator>& logical_operator) {
     Table* table = update_stmt->table();
-    unique_ptr<LogicalOperator> update_operator(
-        new UpdateLogicalOperator(table, update_stmt->field()->field_name(), update_stmt->value()));
+    std::vector<std::string> field_names;
+    for (Field field : update_stmt->fields()) {
+        field_names.push_back(field.field_name());
+    }
+
+    unique_ptr<LogicalOperator> update_operator(new UpdateLogicalOperator(table, field_names, update_stmt->values()));
     // 添加子节点
     FilterStmt* filter_stmt = update_stmt->filter_stmt();
     std::vector<Field> fields;

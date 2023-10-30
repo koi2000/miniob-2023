@@ -223,14 +223,14 @@ RC Table::insert_record(Record& record) {
     return rc;
 }
 
-RC Table::update_record(const std::string field_name, const Value* value, Record& record) {
+RC Table::update_record(std::vector<std::string> field_names, std::vector<Value> values, Record& record) {
     // 更新分为两步，一步更新索引，一步更新磁盘
     RC rc = RC::SUCCESS;
     // 先删除索引
-    for (Index* index : indexes_) {
-        rc = index->delete_entry(record.data(), &record.rid());
-        ASSERT(RC::SUCCESS == rc, "failed to delete entry from index. table name=%s, index name=%s, rid=%s, rc=%s",
-               name(), index->index_meta().name(), record.rid().to_string().c_str(), strrc(rc));
+    rc = delete_entry_of_indexes(record.data(), record.rid(), false);
+    if (rc != RC::SUCCESS) {
+        LOG_ERROR("Failed to delete old indices when updating");
+        return rc;
     }
     Record old_rec = record;
     // 更新磁盘
@@ -240,21 +240,23 @@ RC Table::update_record(const std::string field_name, const Value* value, Record
     char* record_data = record.data();
     int record_size = table_meta_.record_size();
     // 遍历所有的field
-    for (int i = normal_field_start_index; i < field_num; i++) {
-        const FieldMeta* fieldMeta = table_meta_.field(i);
-        if (fieldMeta->name() == field_name) {
-            int copy_len = fieldMeta->len();
-            if (fieldMeta->type() == CHARS) {
-                // memset(record_data + fieldMeta->offset(), 0, copy_len);
-                LOG_INFO("string value is %s", value->get_string());
-                std::string str = value->get_string();
-                int data_len = value->length();
-                if (copy_len > data_len) {
-                    copy_len = data_len + 1;
+    for (int k = 0; k < field_names.size(); k++) {
+        for (int i = normal_field_start_index; i < field_num; i++) {
+            const FieldMeta* fieldMeta = table_meta_.field(i);
+            if (fieldMeta->name() == field_names[k]) {
+                int copy_len = fieldMeta->len();
+                if (fieldMeta->type() == CHARS) {
+                    // memset(record_data + fieldMeta->offset(), 0, copy_len);
+                    LOG_INFO("string value is %s", values[k].get_string());
+                    std::string str = values[k].get_string();
+                    int data_len = values[k].length();
+                    if (copy_len > data_len) {
+                        copy_len = data_len + 1;
+                    }
                 }
+                memcpy(record_data + fieldMeta->offset(), values[k].data(), copy_len);
+                break;
             }
-            memcpy(record_data + fieldMeta->offset(), value->data(), copy_len);
-            break;
         }
     }
 
