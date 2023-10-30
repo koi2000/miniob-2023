@@ -232,6 +232,7 @@ RC Table::update_record(const std::string field_name, const Value* value, Record
         ASSERT(RC::SUCCESS == rc, "failed to delete entry from index. table name=%s, index name=%s, rid=%s, rc=%s",
                name(), index->index_meta().name(), record.rid().to_string().c_str(), strrc(rc));
     }
+    Record old_rec = record;
     // 更新磁盘
     const int normal_field_start_index = table_meta_.sys_field_num();
     const int field_num = table_meta_.field_num();
@@ -257,21 +258,21 @@ RC Table::update_record(const std::string field_name, const Value* value, Record
         }
     }
 
-    rc = record_handler_->update_record(record_data, record_size, &record, &record.rid());
     // 插入索引
     rc = insert_entry_of_indexes(record.data(), record.rid());
-    if (rc != RC::SUCCESS) {  // 可能出现了键值重复
-        RC rc2 = delete_entry_of_indexes(record.data(), record.rid(), false /*error_on_not_exists*/);
+    if (rc == RC::RECORD_DUPLICATE_KEY) {
+        RC rc2 = insert_entry_of_indexes(old_rec.data(), old_rec.rid());
         if (rc2 != RC::SUCCESS) {
-            LOG_ERROR("Failed to rollback index data when insert index entries failed. table name=%s, rc=%d:%s", name(),
-                      rc2, strrc(rc2));
+            LOG_ERROR("Failed to reinsert old record when updating unique has problem");
+            return rc2;
         }
-        rc2 = record_handler_->delete_record(&record.rid());
-        if (rc2 != RC::SUCCESS) {
-            LOG_PANIC("Failed to rollback record data when insert index entries failed. table name=%s, rc=%d:%s",
-                      name(), rc2, strrc(rc2));
-        }
+        return rc;
     }
+    else if (rc != RC::SUCCESS) {
+        LOG_ERROR("Failed to insert new indices when updating");
+        return rc;
+    }
+    rc = record_handler_->update_record(record_data, record_size, &record, &record.rid());
     return rc;
 }
 
@@ -534,6 +535,10 @@ RC Table::delete_entry_of_indexes(const char* record, const RID& rid, bool error
     for (Index* index : indexes_) {
         rc = index->delete_entry(record, &rid);
         if (rc != RC::SUCCESS) {
+            if (rc == RC::RECORD_NOT_EXIST) {
+                rc = RC::SUCCESS;
+                continue;
+            }
             if (rc != RC::RECORD_INVALID_KEY || !error_on_not_exists) {
                 break;
             }
