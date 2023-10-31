@@ -17,11 +17,11 @@ See the Mulan PSL v2 for more details. */
 #include "sql/parser/value.h"
 #include "storage/record/record_manager.h"
 #include "storage/table/table.h"
+#include "util/utils.h"
 #include <math.h>
 #include <stddef.h>
 
 using namespace common;
-
 ConditionFilter::~ConditionFilter() {}
 
 DefaultConditionFilter::DefaultConditionFilter() {
@@ -135,7 +135,12 @@ bool DefaultConditionFilter::filter(const Record& rec) const {
     else {
         right_value.set_value(right_.value);
     }
-
+     
+    switch (comp_op_) {
+        case STR_LIKE: return wildcard_match(left_value.get_string(),right_value.get_string());
+        case STR_NOT_LIKE: return !wildcard_match(left_value.get_string(),right_value.get_string());
+        default: break;
+    }
     int cmp_result = left_value.compare(right_value);
 
     switch (comp_op_) {

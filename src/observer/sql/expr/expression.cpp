@@ -14,7 +14,7 @@ See the Mulan PSL v2 for more details. */
 
 #include "sql/expr/expression.h"
 #include "sql/expr/tuple.h"
-
+#include "util/utils.h"
 using namespace std;
 
 RC FieldExpr::get_value(const Tuple& tuple, Value& value) const {
@@ -79,6 +79,21 @@ ComparisonExpr::~ComparisonExpr() {}
 
 RC ComparisonExpr::compare_value(const Value& left, const Value& right, bool& result) const {
     RC rc = RC::SUCCESS;
+
+    switch (comp_) {
+        case STR_LIKE: {
+            result =  wildcard_match(left.get_string(),right.get_string());
+            return rc;
+            break;
+        }
+        case STR_NOT_LIKE: {
+            result =  !wildcard_match(left.get_string(),right.get_string());
+            return rc;
+            break;
+        }
+        default: break;
+    }
+
     int cmp_result = left.compare(right);
     result = false;
     switch (comp_) {
