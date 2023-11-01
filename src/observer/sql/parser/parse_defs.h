@@ -56,6 +56,15 @@ enum CompOp {
     NO_OP
 };
 
+enum AggrType{
+  UNDEFINEDAGG,
+  MAXS,
+  MINS,
+  AVGS,
+  SUMS,
+  COUNTS,
+};
+
 /**
  * @brief 表示一个条件比较
  * @ingroup SQLParser
@@ -77,6 +86,13 @@ struct ConditionSqlNode
     Value right_value;          ///< right-hand side value if right_is_attr = FALSE
 };
 
+struct AggrNode {
+    std::string relation;
+    std::string attribute;
+    int is_attr;
+    AggrType type;
+};
+
 /**
  * @brief 描述一个select语句
  * @ingroup SQLParser
@@ -93,6 +109,7 @@ struct SelectSqlNode
     std::vector<RelAttrSqlNode> attributes;               ///< attributes in select clause
     std::vector<std::string> relations;                   ///< 查询的表
     std::vector<ConditionSqlNode> conditions;             ///< 查询条件，使用AND串联起来多个条件
+    std::vector<AggrNode> aggrs;                     ///< 查询条件，使用AND串联起来多个条件
     std::vector<ConditionSqlNode> inner_join_conditions;  ///< 查询条件，使用AND串联起来多个条件
 };
 

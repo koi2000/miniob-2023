@@ -1,9 +1,9 @@
-#pragma once
-
 #include <string>
 #include <vector>
+#ifndef util
+#define util
 
-bool wildcard_match(std::string s, std::string p) {
+static bool wildcard_match(std::string s, std::string p) {
     int m = s.size();
     int n = p.size();
     std::vector<std::vector<int>> dp(m + 1, std::vector<int>(n + 1));
@@ -28,3 +28,4 @@ bool wildcard_match(std::string s, std::string p) {
     }
     return dp[m][n];
 }
+#endif

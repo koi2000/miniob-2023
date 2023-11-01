@@ -63,7 +63,11 @@ RC SelectStmt::create(Db* db, const SelectSqlNode& select_sql, Stmt*& stmt) {
         tables.push_back(table);
         table_map.insert(std::pair<std::string, Table*>(table_name, table));
     }
-
+    std::vector<AggrNode> aggrNodes = select_sql.aggrs;
+    if (!aggrNodes.empty()&&!select_sql.attributes.empty()) {
+        return RC::SCHEMA_TABLE_NOT_EXIST;
+    }
+    
     // collect query fields in `select` statement
     std::vector<Field> query_fields;
     for (int i = static_cast<int>(select_sql.attributes.size()) - 1; i >= 0; i--) {
@@ -158,6 +162,7 @@ RC SelectStmt::create(Db* db, const SelectSqlNode& select_sql, Stmt*& stmt) {
     select_stmt->query_fields_.swap(query_fields);
     select_stmt->filter_stmt_ = filter_stmt;
     select_stmt->inner_join_filter_stmt_ = inner_join_filter_stmt;
+    select_stmt->aggr_nodes_ = aggrNodes;
     stmt = select_stmt;
     return RC::SUCCESS;
 }

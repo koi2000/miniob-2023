@@ -103,6 +103,11 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
         NE
         LIKE
         NOT
+        MAX
+        MIN
+        COUNT
+        AVG
+        SUM
 
 /** union 中定义各种数据类型，真实生成的代码也是union类型，所以不能有非POD类型的数据 **/
 %union {
@@ -124,6 +129,9 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   char *                            string;
   int                               number;
   float                             floats;
+  enum AggrType                     aggr_type;
+  AggrNode*                         aggr_node;
+  std::vector<AggrNode>*            aggr_list;
 }
 
 %token <number> NUMBER
@@ -173,6 +181,9 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <sql_node>            help_stmt
 %type <sql_node>            exit_stmt
 %type <sql_node>            command_wrapper
+%type <aggr_type>           AGGR_TYPE
+%type <aggr_node>           AGG_FUNC
+%type <aggr_list>           AGG_FUNC_LIST
 // commands should be a list but I use a single command instead
 %type <sql_node>            commands
 
@@ -520,7 +531,94 @@ select_stmt:        /*  select 语句的语法解析树*/
 
       free($4);
     }
+    | SELECT AGG_FUNC_LIST select_attr AGG_FUNC_LIST FROM ID rel_list where
+    {
+      $$ = new ParsedSqlNode(SCF_SELECT);
+      if ($3 != nullptr) {
+        $$->selection.attributes.swap(*$3);
+        delete $3;
+      }
+      $$->selection.relations.push_back($6);
+      std::reverse($$->selection.relations.begin(), $$->selection.relations.end());
+
+      if ($8 != nullptr) {
+        $$->selection.conditions.swap(*$8);
+        delete $8;
+      }
+      if ($7 != nullptr){
+        for (JoinSqlNode& join_node : *$7) {
+          $$->selection.relations.push_back(join_node.table_name);
+          for(ConditionSqlNode& condition: join_node.conditions){
+              $$->selection.inner_join_conditions.push_back(condition);
+          }
+        }
+      }
+      
+      if($2 != nullptr){
+        $$->selection.aggrs.swap(*$2);
+        delete $2;
+      }
+      if($4!=nullptr){
+        for (AggrNode& aggrNode : *$4) {
+          $$->selection.aggrs.push_back(aggrNode);
+        }
+      }
+
+      free($6);
+    }
     ;
+
+AGG_FUNC_LIST:
+    /**/{
+        $$ = nullptr;
+    }
+    | AGG_FUNC {
+        $$ = new std::vector<AggrNode>();
+        $$ -> push_back(*$1);
+    }
+    | COMMA AGG_FUNC AGG_FUNC_LIST{
+        if($3 == nullptr) {
+            $$ = new std::vector<AggrNode>();
+        }else{
+            $$ = $3;
+        }
+        $$ -> push_back(*$2);
+        // free($2);
+    }
+    ;
+
+AGG_FUNC: 
+    /**/ {
+        $$ = nullptr;
+    }
+    | AGGR_TYPE LBRACE ID RBRACE {
+        $$ = new AggrNode();
+        $$->relation = "";
+        $$->attribute = $3;
+        $$->type = $1;
+    }
+    | AGGR_TYPE LBRACE '*' RBRACE {
+        $$ = new AggrNode();
+        $$->relation = "";
+        $$->attribute = "*";
+        $$->type = $1;
+    }
+    | AGGR_TYPE LBRACE ID DOT ID RBRACE {
+        $$ = new AggrNode();
+        $$->relation = $3;
+        $$->attribute = $5;
+        $$->type = $1;
+    }
+    ;
+
+AGGR_TYPE:
+    MAX     { $$ = MAXS; }
+    | MIN   { $$ = MINS; }
+    | AVG   { $$ = AVGS; }
+    | SUM   { $$ = SUMS; }
+    | COUNT { $$ = COUNTS; }
+    ;
+
 calc_stmt:
     CALC expression_list
     {
@@ -575,7 +673,10 @@ expression:
     ;
 
 select_attr:
-    '*' {
+    /**/{
+      $$ = nullptr;
+    }
+    |'*' {
       $$ = new std::vector<RelAttrSqlNode>;
       RelAttrSqlNode attr;
       attr.relation_name  = "";

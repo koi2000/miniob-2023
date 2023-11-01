@@ -16,6 +16,7 @@ See the Mulan PSL v2 for more details. */
 
 #include <memory>
 #include <vector>
+#include <unordered_map>
 
 #include "common/rc.h"
 #include "sql/stmt/stmt.h"
@@ -49,6 +50,11 @@ class SelectStmt : public Stmt {
     const std::vector<Field>& query_fields() const {
         return query_fields_;
     }
+
+    const std::vector<AggrNode>& aggr_nodes() const {
+        return aggr_nodes_;
+    }
+
     FilterStmt* filter_stmt() const {
         return filter_stmt_;
     }
@@ -56,9 +62,13 @@ class SelectStmt : public Stmt {
         return inner_join_filter_stmt_;
     }
 
+
   private:
     std::vector<Field> query_fields_;
     std::vector<Table*> tables_;
     FilterStmt* inner_join_filter_stmt_ = nullptr;
     FilterStmt* filter_stmt_ = nullptr;
+    std::vector<AggrNode> aggr_nodes_;
+    std::unordered_map<std::string, std::string> table_alias_;
+    std::vector<const char *> field_alias_;
 };

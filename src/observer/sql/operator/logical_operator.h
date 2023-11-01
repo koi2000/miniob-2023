@@ -39,6 +39,7 @@ enum class LogicalOperatorType {
     INSERT,      ///< 插入
     UPDATE,
     DELETE,   ///< 删除，删除可能会有子查询
+    AGGR,   ///< 聚合
     EXPLAIN,  ///< 查看执行计划
 };
 

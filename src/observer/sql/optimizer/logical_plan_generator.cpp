@@ -14,6 +14,7 @@ See the Mulan PSL v2 for more details. */
 
 #include "sql/optimizer/logical_plan_generator.h"
 
+#include "sql/operator/aggregate_logical_operator.h"
 #include "sql/operator/calc_logical_operator.h"
 #include "sql/operator/delete_logical_operator.h"
 #include "sql/operator/explain_logical_operator.h"
@@ -164,6 +165,38 @@ RC LogicalPlanGenerator::create_plan(SelectStmt* select_stmt, unique_ptr<Logical
         }
     }
 
+    if (!select_stmt->aggr_nodes().empty()) {
+        std::vector<AttrType> attr_types;
+        std::vector<AggrType> aggr_types;
+        std::vector<std::string> field_names;
+        for (AggrNode aggrNode : select_stmt->aggr_nodes()) {
+            aggr_types.push_back(aggrNode.type);
+            if (aggrNode.attribute == "*") {
+                field_names.push_back((*tables[0]->table_meta().field_metas())[0].name());
+            }
+            else {
+                field_names.push_back(aggrNode.attribute);
+            }
+
+            std::vector<FieldMeta> field_metas = *tables[0]->table_meta().field_metas();
+            for (FieldMeta field_meta : field_metas) {
+                if (field_meta.name() == aggrNode.attribute) {
+                    attr_types.push_back(field_meta.type());
+                    break;
+                }
+                if (aggrNode.attribute == "*") {
+                    attr_types.push_back(AttrType::INTS);
+                    break;
+                }
+            }
+        }
+
+        unique_ptr<LogicalOperator> aggr_oper(
+            new AggrLogicalOperator(string(tables[0]->name()), field_names, attr_types, aggr_types));
+        aggr_oper->add_child(std::move(project_oper));
+        logical_operator.swap(aggr_oper);
+        return RC::SUCCESS;
+    }
     logical_operator.swap(project_oper);
     return RC::SUCCESS;
 }

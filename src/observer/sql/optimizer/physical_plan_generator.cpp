@@ -16,6 +16,8 @@ See the Mulan PSL v2 for more details. */
 
 #include "common/log/log.h"
 #include "sql/expr/expression.h"
+#include "sql/operator/aggregate_logical_operator.h"
+#include "sql/operator/aggregate_physical_operator.h"
 #include "sql/operator/calc_logical_operator.h"
 #include "sql/operator/calc_physical_operator.h"
 #include "sql/operator/delete_logical_operator.h"
@@ -58,6 +60,10 @@ RC PhysicalPlanGenerator::create(LogicalOperator& logical_operator, unique_ptr<P
         case LogicalOperatorType::PROJECTION: {
             return create_plan(static_cast<ProjectLogicalOperator&>(logical_operator), oper);
         } break;
+
+        case LogicalOperatorType::AGGR: {
+            return create_plan(static_cast<AggrLogicalOperator&>(logical_operator), oper);
+        }
 
         case LogicalOperatorType::INSERT: {
             return create_plan(static_cast<InsertLogicalOperator&>(logical_operator), oper);
@@ -206,6 +212,32 @@ RC PhysicalPlanGenerator::create_plan(ProjectLogicalOperator& project_oper, uniq
 
     LOG_TRACE("create a project physical operator");
     return rc;
+}
+
+RC PhysicalPlanGenerator::create_plan(AggrLogicalOperator& aggr_oper, unique_ptr<PhysicalOperator>& oper) {
+    vector<unique_ptr<LogicalOperator>>& child_opers = aggr_oper.children();
+
+    unique_ptr<PhysicalOperator> child_physical_oper;
+
+    RC rc = RC::SUCCESS;
+    if (!child_opers.empty()) {
+        LogicalOperator* child_oper = child_opers.front().get();
+        rc = create(*child_oper, child_physical_oper);
+        if (rc != RC::SUCCESS) {
+            LOG_WARN("failed to create physical operator. rc=%s", strrc(rc));
+            return rc;
+        }
+    }
+
+    std::string table_name = aggr_oper.table_name();
+    AggrPhysicalOperator* aggr_phy_oper =
+        new AggrPhysicalOperator(table_name, aggr_oper.aggeTypes(), aggr_oper.field_names(), aggr_oper.field_types());
+
+    oper.reset(aggr_phy_oper);
+    if (child_physical_oper) {
+        oper->add_child(std::move(child_physical_oper));
+    }
+    return RC::SUCCESS;
 }
 
 RC PhysicalPlanGenerator::create_plan(InsertLogicalOperator& insert_oper, unique_ptr<PhysicalOperator>& oper) {
