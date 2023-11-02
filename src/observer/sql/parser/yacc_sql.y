@@ -126,6 +126,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   std::vector<JoinSqlNode> *        relation_list;
   std::vector<std::pair<std::string,Value>>* update_list;
   std::vector<std::string> *        index_attribute_names;
+  std::vector<std::string> *        aggr_attribute_names;
   char *                            string;
   int                               number;
   float                             floats;
@@ -160,6 +161,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <rel_attr_list>       attr_list
 %type <expression>          expression
 %type <expression_list>     expression_list
+%type <aggr_attribute_names>     AGGR_ATTR_LIST
 %type <sql_node>            calc_stmt
 %type <sql_node>            select_stmt
 %type <sql_node>            insert_stmt
@@ -554,11 +556,13 @@ select_stmt:        /*  select 语句的语法解析树*/
         }
       }
       
-      if($2 != nullptr){
+      if($2 != nullptr) {
+        reverse($2->begin(),$2->end());
         $$->selection.aggrs.swap(*$2);
         delete $2;
       }
       if($4!=nullptr){
+        reverse($4->begin(),$4->end());
         for (AggrNode& aggrNode : *$4) {
           $$->selection.aggrs.push_back(aggrNode);
         }
@@ -572,8 +576,13 @@ AGG_FUNC_LIST:
     /**/{
         $$ = nullptr;
     }
-    | AGG_FUNC {
-        $$ = new std::vector<AggrNode>();
+    | AGG_FUNC AGG_FUNC_LIST {
+        if($2 ==nullptr){
+            $$ = new std::vector<AggrNode>();
+        }else{
+            $$ = $2;
+        }
+        
         $$ -> push_back(*$1);
     }
     | COMMA AGG_FUNC AGG_FUNC_LIST{
@@ -591,23 +600,43 @@ AGG_FUNC:
     /**/ {
         $$ = nullptr;
     }
-    | AGGR_TYPE LBRACE ID RBRACE {
+    | AGGR_TYPE LBRACE AGGR_ATTR_LIST RBRACE {
         $$ = new AggrNode();
         $$->relation = "";
-        $$->attribute = $3;
+        $$->attributes.swap(*$3);
         $$->type = $1;
     }
-    | AGGR_TYPE LBRACE '*' RBRACE {
-        $$ = new AggrNode();
-        $$->relation = "";
-        $$->attribute = "*";
-        $$->type = $1;
+    ;
+
+AGGR_ATTR_LIST:
+    /* */ {
+        $$ = new std::vector<std::string>();
     }
-    | AGGR_TYPE LBRACE ID DOT ID RBRACE {
-        $$ = new AggrNode();
-        $$->relation = $3;
-        $$->attribute = $5;
-        $$->type = $1;
+    | ID AGGR_ATTR_LIST {
+        if($2==nullptr){
+            $$ = new std::vector<std::string>();
+        }else{
+            $$ = $2;
+        }
+        
+        $$->push_back($1);
+    }
+    | '*' AGGR_ATTR_LIST {
+        if($2==nullptr){
+            $$ = new std::vector<std::string>();
+        }else{
+            $$ = $2;
+        }
+        $$->push_back("*");
+    }
+    | COMMA ID AGGR_ATTR_LIST {
+        if($3 != nullptr) {
+            $$ = $3;
+        }else{
+            $$ = new std::vector<std::string>();
+        }
+        $$->push_back($2);
+        free($2);
     }
     ;
 

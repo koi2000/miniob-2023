@@ -67,15 +67,27 @@ RC SelectStmt::create(Db* db, const SelectSqlNode& select_sql, Stmt*& stmt) {
     if (!aggrNodes.empty() && !select_sql.attributes.empty()) {
         return RC::SCHEMA_TABLE_NOT_EXIST;
     }
+    if (!aggrNodes.empty()) {
+        for (AggrNode& aggrNode : aggrNodes) {
+            if (aggrNode.attributes.empty()) {
+                return RC::SCHEMA_TABLE_NOT_EXIST;
+            }
+            aggrNode.attribute = aggrNode.attributes[0];
+            if (aggrNode.attributes.size() >= 2) {
+                return RC::SCHEMA_TABLE_NOT_EXIST;
+            }
+        }
+    }
+
     for (AggrNode aggrNode : select_sql.aggrs) {
         std::vector<FieldMeta> field_metas = *tables[0]->table_meta().field_metas();
         int flag = 0;
         for (FieldMeta field_meta : field_metas) {
-            if (field_meta.name() == aggrNode.attribute) {
+            if (field_meta.name() == aggrNode.attributes[0]) {
                 flag = 1;
                 break;
             }
-            if (aggrNode.attribute == "*") {
+            if (aggrNode.attributes[0] == "*") {
                 if (aggrNode.type == MAXS || aggrNode.type == MINS || aggrNode.type == AVGS) {
                     return RC::SCHEMA_FIELD_MISSING;
                 }

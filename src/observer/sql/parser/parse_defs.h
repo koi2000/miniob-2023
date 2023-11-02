@@ -88,6 +88,7 @@ struct ConditionSqlNode
 
 struct AggrNode {
     std::string relation;
+    std::vector<std::string> attributes;
     std::string attribute;
     int is_attr;
     AggrType type;
