@@ -61,10 +61,48 @@ RC ExecuteStage::handle_request_with_physical_operator(SQLStageEvent* sql_event)
     unique_ptr<PhysicalOperator>& physical_operator = sql_event->physical_operator();
     ASSERT(physical_operator != nullptr, "physical operator should not be null");
     if (physical_operator->type() == PhysicalOperatorType::AGGR) {
-        // TupleSchema schema;
-        // schema.append_cell("Commands");
+        TupleSchema schema;
+        SelectStmt* select_stmt = static_cast<SelectStmt*>(stmt);
+        for (AggrNode aggrNode : select_stmt->aggr_nodes()) {
+            std::string head = "";
+            switch (aggrNode.type) {
+                case MAXS: {
+                    head += "MAX(";
+                    head += aggrNode.attribute;
+                    head += ")";
+                    break;
+                }
+
+                case MINS: {
+                    head += "MIN(";
+                    head += aggrNode.attribute;
+                    head += ")";
+                    break;
+                }
+                case SUMS: {
+                    head += "SUM(";
+                    head += aggrNode.attribute;
+                    head += ")";
+                    break;
+                }
+                case COUNTS: {
+                    head += "COUNT(";
+                    head += aggrNode.attribute;
+                    head += ")";
+                    break;
+                }
+                case AVGS: {
+                    head += "AVG(";
+                    head += aggrNode.attribute;
+                    head += ")";
+                    break;
+                }
+                default: break;
+            }
+            schema.append_cell(head.c_str());
+        }
         SqlResult* sql_result = sql_event->session_event()->sql_result();
-        // sql_result->set_tuple_schema(schema);
+        sql_result->set_tuple_schema(schema);
         sql_result->set_operator(std::move(physical_operator));
         return rc;
     }

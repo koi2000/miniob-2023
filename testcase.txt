@@ -349,3 +349,16 @@ INSERT INTO aggregation_func VALUES (40, 1, 6.0, '4', '1996-11-09');
 INSERT INTO aggregation_func VALUES (70, 1, 11.0, 'PY', '2010-11-29');
 INSERT INTO aggregation_func VALUES (50, 1, 11.0, 'LAY', '2002-04-17');
 ...
+
+SELECT count(*) FROM aggregation_func;
+- 50
+-- below are some requests executed before(partial) --
+-- init data
+CREATE TABLE aggregation_func(id int, num int, price float, addr char(4), birthday date);
+-- insert data:50
+INSERT INTO aggregation_func VALUES (20, 1, 1.0, 'O', '2021-04-19');
+INSERT INTO aggregation_func VALUES (80, 1, 11.0, '75', '2025-04-03');
+INSERT INTO aggregation_func VALUES (60, 1, 11.0, '3', '1991-03-02');
+INSERT INTO aggregation_func VALUES (70, 1, 6.0, 'I6W', '2011-11-21');
+INSERT INTO aggregation_func VALUES (90, 1, 6.0, 'ZE', '2000-09-19');
+...
