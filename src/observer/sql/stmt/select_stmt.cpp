@@ -63,13 +63,16 @@ RC SelectStmt::create(Db* db, const SelectSqlNode& select_sql, Stmt*& stmt) {
         tables.push_back(table);
         table_map.insert(std::pair<std::string, Table*>(table_name, table));
     }
+    if (!select_sql.aggrs.empty() && !select_sql.attributes.empty()) {
+        return RC::SCHEMA_TABLE_NOT_EXIST;
+    }
     std::vector<AggrNode> aggrNodes = select_sql.aggrs;
     if (!aggrNodes.empty()) {
         for (AggrNode& aggrNode : aggrNodes) {
             if (aggrNode.is_attr) {
                 return RC::SCHEMA_TABLE_NOT_EXIST;
             }
-            
+
             if (aggrNode.attributes.empty()) {
                 return RC::SCHEMA_TABLE_NOT_EXIST;
             }
