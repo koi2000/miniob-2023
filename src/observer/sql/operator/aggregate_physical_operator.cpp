@@ -166,7 +166,7 @@ Tuple* AggrPhysicalOperator::current_tuple() {
     std::vector<Value> cells;
     for (int i = 0; i < results.size(); i++) {
         Value value = results[i];
-        if (field_types_[i] == DATES || aggrTypes_[i] != COUNTS) {
+        if (field_types_[i] == DATES && aggrTypes_[i] != COUNTS) {
             std::string res = date_to_string(value.get_int());
             value.set_string(res.c_str());
         }
