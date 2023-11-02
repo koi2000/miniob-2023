@@ -533,22 +533,18 @@ select_stmt:        /*  select 语句的语法解析树*/
 
       free($4);
     }
-    | SELECT AGG_FUNC_LIST select_attr AGG_FUNC_LIST FROM ID rel_list where
+    | SELECT AGG_FUNC_LIST FROM ID rel_list where
     {
       $$ = new ParsedSqlNode(SCF_SELECT);
-      if ($3 != nullptr) {
-        $$->selection.attributes.swap(*$3);
-        delete $3;
-      }
-      $$->selection.relations.push_back($6);
+      $$->selection.relations.push_back($4);
       std::reverse($$->selection.relations.begin(), $$->selection.relations.end());
 
-      if ($8 != nullptr) {
-        $$->selection.conditions.swap(*$8);
-        delete $8;
+      if ($6 != nullptr) {
+        $$->selection.conditions.swap(*$6);
+        delete $6;
       }
-      if ($7 != nullptr){
-        for (JoinSqlNode& join_node : *$7) {
+      if ($5 != nullptr){
+        for (JoinSqlNode& join_node : *$5) {
           $$->selection.relations.push_back(join_node.table_name);
           for(ConditionSqlNode& condition: join_node.conditions){
               $$->selection.inner_join_conditions.push_back(condition);
@@ -557,15 +553,9 @@ select_stmt:        /*  select 语句的语法解析树*/
       }
       
       if($2 != nullptr) {
-        reverse($2->begin(),$2->end());
+        std::reverse($2->begin(),$2->end());
         $$->selection.aggrs.swap(*$2);
         delete $2;
-      }
-      if($4!=nullptr){
-        reverse($4->begin(),$4->end());
-        for (AggrNode& aggrNode : *$4) {
-          $$->selection.aggrs.push_back(aggrNode);
-        }
       }
 
       free($6);
@@ -573,8 +563,18 @@ select_stmt:        /*  select 语句的语法解析树*/
     ;
 
 AGG_FUNC_LIST:
-    /**/{
+    /* */{
         $$ = nullptr;
+    }
+    | ID AGG_FUNC_LIST {
+        if($2 ==nullptr){
+            $$ = new std::vector<AggrNode>();
+        }else{
+            $$ = $2;
+        }
+        AggrNode aggr;
+        aggr.is_attr = 1;
+        $$ -> push_back(aggr);
     }
     | AGG_FUNC AGG_FUNC_LIST {
         if($2 ==nullptr){
@@ -584,6 +584,16 @@ AGG_FUNC_LIST:
         }
         
         $$ -> push_back(*$1);
+    }
+    | COMMA ID AGG_FUNC_LIST{
+        if($3 ==nullptr){
+            $$ = new std::vector<AggrNode>();
+        }else{
+            $$ = $3;
+        }
+        AggrNode aggr;
+        aggr.is_attr = 1;
+        $$ -> push_back(aggr);
     }
     | COMMA AGG_FUNC AGG_FUNC_LIST{
         if($3 == nullptr) {
@@ -702,7 +712,7 @@ expression:
     ;
 
 select_attr:
-    /**/{
+    /**/ {
       $$ = nullptr;
     }
     |'*' {

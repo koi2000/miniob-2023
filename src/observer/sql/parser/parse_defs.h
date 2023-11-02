@@ -90,7 +90,7 @@ struct AggrNode {
     std::string relation;
     std::vector<std::string> attributes;
     std::string attribute;
-    int is_attr;
+    int is_attr = 0;
     AggrType type;
 };
 

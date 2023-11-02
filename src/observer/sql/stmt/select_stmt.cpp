@@ -69,6 +69,10 @@ RC SelectStmt::create(Db* db, const SelectSqlNode& select_sql, Stmt*& stmt) {
     }
     if (!aggrNodes.empty()) {
         for (AggrNode& aggrNode : aggrNodes) {
+            if (aggrNode.is_attr) {
+                return RC::SCHEMA_TABLE_NOT_EXIST;
+            }
+            
             if (aggrNode.attributes.empty()) {
                 return RC::SCHEMA_TABLE_NOT_EXIST;
             }
