@@ -179,16 +179,20 @@ RC LogicalPlanGenerator::create_plan(SelectStmt* select_stmt, unique_ptr<Logical
             }
 
             std::vector<FieldMeta> field_metas = *tables[0]->table_meta().field_metas();
+            int flag = 0;
             for (FieldMeta field_meta : field_metas) {
                 if (field_meta.name() == aggrNode.attribute) {
                     attr_types.push_back(field_meta.type());
+                    flag = 1;
                     break;
                 }
                 if (aggrNode.attribute == "*") {
                     attr_types.push_back(AttrType::INTS);
+                    flag = 1;
                     break;
                 }
             }
+            if(!flag) return RC::SCHEMA_FIELD_MISSING;
         }
 
         unique_ptr<LogicalOperator> aggr_oper(

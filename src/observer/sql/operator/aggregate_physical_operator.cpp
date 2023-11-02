@@ -40,19 +40,37 @@ Value AggrPhysicalOperator::getAggrValue(std::vector<Value>& values,
 
     switch (type) {
         case MAXS: {
-            int init = 0;
-            if (!values.empty()) {
-                init = values[0].get_int();
+            if (attr_type == INTS || attr_type == FLOATS) {
+                result.set_int(0);
             }
-            result.set_int(init);
+            else if (attr_type == CHARS) {
+                result.set_string(std::string("").c_str());
+            }
+            if (!values.empty()) {
+                if (attr_type == INTS || attr_type == FLOATS) {
+                    result.set_int(values[0].get_int());
+                }
+                else if (attr_type == CHARS) {
+                    result.set_string(values[0].get_string().c_str());
+                }
+            }
             break;
         }
         case MINS: {
-            int init = 0;
-            if (!values.empty()) {
-                init = values[0].get_int();
+            if (attr_type == INTS || attr_type == FLOATS) {
+                result.set_int(0);
             }
-            result.set_int(init);
+            else if (attr_type == CHARS) {
+                result.set_string(std::string("").c_str());
+            }
+            if (!values.empty()) {
+                if (attr_type == INTS || attr_type == FLOATS) {
+                    result.set_int(values[0].get_int());
+                }
+                else if (attr_type == CHARS) {
+                    result.set_string(values[0].get_string().c_str());
+                }
+            }
             break;
         }
         case AVGS: {
@@ -73,8 +91,11 @@ Value AggrPhysicalOperator::getAggrValue(std::vector<Value>& values,
                     if (attr_type == INTS) {
                         result.set_int(val.get_int());
                     }
-                    else {
+                    else if (attr_type == FLOATS) {
                         result.set_float(val.get_float());
+                    }
+                    else {
+                        result.set_string(val.get_string().c_str());
                     }
                 }
             }
@@ -83,8 +104,11 @@ Value AggrPhysicalOperator::getAggrValue(std::vector<Value>& values,
                     if (attr_type == INTS) {
                         result.set_int(val.get_int());
                     }
-                    else {
+                    else if (attr_type == FLOATS) {
                         result.set_float(val.get_float());
+                    }
+                    else {
+                        result.set_string(val.get_string().c_str());
                     }
                 }
             }

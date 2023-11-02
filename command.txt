@@ -1,3 +1,8 @@
 常用命令
 ./bin/observer -f ../etc/observer.ini -P cli
 ./bin/obclient -p 6789
+
+python3 miniob_test.py --test-cases=primary-multi-index
+python3 miniob_test.py --test-cases=primary-aggregation-func
+python3 miniob_test.py --test-cases=primary-join-tables
+python3 miniob_test.py --test-cases=primary-join-tables

@@ -64,10 +64,30 @@ RC SelectStmt::create(Db* db, const SelectSqlNode& select_sql, Stmt*& stmt) {
         table_map.insert(std::pair<std::string, Table*>(table_name, table));
     }
     std::vector<AggrNode> aggrNodes = select_sql.aggrs;
-    if (!aggrNodes.empty()&&!select_sql.attributes.empty()) {
+    if (!aggrNodes.empty() && !select_sql.attributes.empty()) {
         return RC::SCHEMA_TABLE_NOT_EXIST;
     }
-    
+    for (AggrNode aggrNode : select_sql.aggrs) {
+        std::vector<FieldMeta> field_metas = *tables[0]->table_meta().field_metas();
+        int flag = 0;
+        for (FieldMeta field_meta : field_metas) {
+            if (field_meta.name() == aggrNode.attribute) {
+                flag = 1;
+                break;
+            }
+            if (aggrNode.attribute == "*") {
+                if (aggrNode.type == MAXS || aggrNode.type == MINS || aggrNode.type == AVGS) {
+                    return RC::SCHEMA_FIELD_MISSING;
+                }
+
+                flag = 1;
+                break;
+            }
+        }
+        if (!flag)
+            return RC::SCHEMA_FIELD_MISSING;
+    }
+
     // collect query fields in `select` statement
     std::vector<Field> query_fields;
     for (int i = static_cast<int>(select_sql.attributes.size()) - 1; i >= 0; i--) {

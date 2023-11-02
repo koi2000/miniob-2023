@@ -316,6 +316,7 @@ INSERT INTO aggregation_func VALUES (50, 1, 1.0, '3G', '2023-04-25');
 
 
 SELECT count(*) FROM aggregation_func;
+SELECT count(id) FROM aggregation_func;
 - 70
 -- below are some requests executed before(partial) --
 -- init data
@@ -332,4 +333,19 @@ SELECT sum(id) FROM aggregation_func;
 SELECT max(id) FROM aggregation_func;
 SELECT min(id) FROM aggregation_func;
 
+...
+
+SELECT count(*) FROM aggregation_func;
+SELECT count(id2) FROM aggregation_func;
+SELECT count(id3) FROM aggregation_func;
+- 80
+-- below are some requests executed before(partial) --
+-- init data
+CREATE TABLE aggregation_func(id int, num int, price float, addr char(4), birthday date);
+-- insert data:80
+INSERT INTO aggregation_func VALUES (10, 1, 11.0, 'U72G', '2035-11-09');
+INSERT INTO aggregation_func VALUES (60, 1, 11.0, '6', '2011-01-31');
+INSERT INTO aggregation_func VALUES (40, 1, 6.0, '4', '1996-11-09');
+INSERT INTO aggregation_func VALUES (70, 1, 11.0, 'PY', '2010-11-29');
+INSERT INTO aggregation_func VALUES (50, 1, 11.0, 'LAY', '2002-04-17');
 ...
