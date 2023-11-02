@@ -37,6 +37,10 @@ Value AggrPhysicalOperator::getAggrValue(std::vector<Value>& values,
         result.set_int(values.size());
         return result;
     }
+    if (values.empty()) {
+        result.set_string("NULL");
+        return result;
+    }
 
     switch (type) {
         case MAXS: {
