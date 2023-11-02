@@ -503,37 +503,7 @@ update_pair_list:
 
 
 select_stmt:        /*  select 语句的语法解析树*/
-    SELECT select_attr FROM ID rel_list where
-    {
-      $$ = new ParsedSqlNode(SCF_SELECT);
-      if ($2 != nullptr) {
-        $$->selection.attributes.swap(*$2);
-        delete $2;
-      }
-      /*if ($5 != nullptr) {
-        $$->selection.relations.swap(*$5);
-        delete $5;
-      }*/
-      $$->selection.relations.push_back($4);
-      std::reverse($$->selection.relations.begin(), $$->selection.relations.end());
-
-      if ($6 != nullptr) {
-        $$->selection.conditions.swap(*$6);
-        delete $6;
-      }
-      if ($5 != nullptr){
-        for (JoinSqlNode& join_node : *$5) {
-          $$->selection.relations.push_back(join_node.table_name);
-          for(ConditionSqlNode& condition: join_node.conditions){
-              $$->selection.inner_join_conditions.push_back(condition);
-          }
-        }
-      }
-      
-
-      free($4);
-    }
-    | SELECT AGG_FUNC_LIST FROM ID rel_list where
+    /*SELECT AGG_FUNC_LIST FROM ID rel_list where
     {
       $$ = new ParsedSqlNode(SCF_SELECT);
       $$->selection.relations.push_back($4);
@@ -559,17 +529,53 @@ select_stmt:        /*  select 语句的语法解析树*/
       }
 
       free($6);
+    }*/
+    SELECT select_attr FROM ID rel_list where
+    {
+      $$ = new ParsedSqlNode(SCF_SELECT);
+      if ($2 != nullptr) {
+        std::vector<RelAttrSqlNode> realAttr;
+        std::vector<AggrNode> aggrs;
+        for (RelAttrSqlNode& relAttrSqlNode : *$2) {
+            if(relAttrSqlNode.is_aggr){
+                aggrs.push_back(relAttrSqlNode.aggrNode);
+            }else{
+                realAttr.push_back(relAttrSqlNode);
+            }
+        }
+        $$->selection.attributes.swap(realAttr);
+        reverse(aggrs.begin(),aggrs.end());
+        $$->selection.aggrs.swap(aggrs);
+        delete $2;
+      }
+      
+      $$->selection.relations.push_back($4);
+      std::reverse($$->selection.relations.begin(), $$->selection.relations.end());
+
+      if ($6 != nullptr) {
+        $$->selection.conditions.swap(*$6);
+        delete $6;
+      }
+      if ($5 != nullptr){
+        for (JoinSqlNode& join_node : *$5) {
+          $$->selection.relations.push_back(join_node.table_name);
+          for(ConditionSqlNode& condition: join_node.conditions){
+              $$->selection.inner_join_conditions.push_back(condition);
+          }
+        }
+      }
+      free($4);
     }
     ;
 
 AGG_FUNC_LIST:
-    /* */{
+    /* */ {
         $$ = nullptr;
     }
     | ID AGG_FUNC_LIST {
         if($2 ==nullptr){
             $$ = new std::vector<AggrNode>();
-        }else{
+        }else {
             $$ = $2;
         }
         AggrNode aggr;
@@ -579,7 +585,7 @@ AGG_FUNC_LIST:
     | AGG_FUNC AGG_FUNC_LIST {
         if($2 ==nullptr){
             $$ = new std::vector<AggrNode>();
-        }else{
+        } else {
             $$ = $2;
         }
         
@@ -712,7 +718,7 @@ expression:
     ;
 
 select_attr:
-    /**/ {
+    /* */ {
       $$ = nullptr;
     }
     |'*' {
@@ -745,6 +751,12 @@ rel_attr:
       $$->attribute_name = $3;
       free($1);
       free($3);
+    }
+    | AGG_FUNC {
+      $$ = new RelAttrSqlNode;
+      $$ -> is_aggr = 1;
+      $$ -> aggrNode = *$1;
+      free($1);
     }
     ;
 

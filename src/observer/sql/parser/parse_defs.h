@@ -21,7 +21,23 @@ See the Mulan PSL v2 for more details. */
 
 #include "sql/parser/value.h"
 
+enum AggrType{
+  UNDEFINEDAGG,
+  MAXS,
+  MINS,
+  AVGS,
+  SUMS,
+  COUNTS,
+};
+
 class Expression;
+struct AggrNode {
+    std::string relation;
+    std::vector<std::string> attributes;
+    std::string attribute;
+    int is_attr = 0;
+    AggrType type;
+};
 
 /**
  * @defgroup SQLParser SQL Parser
@@ -38,6 +54,8 @@ struct RelAttrSqlNode
 {
     std::string relation_name;   ///< relation name (may be NULL) 表名
     std::string attribute_name;  ///< attribute name              属性名
+    int is_aggr = 0;
+    AggrNode aggrNode;
 };
 
 /**
@@ -56,14 +74,7 @@ enum CompOp {
     NO_OP
 };
 
-enum AggrType{
-  UNDEFINEDAGG,
-  MAXS,
-  MINS,
-  AVGS,
-  SUMS,
-  COUNTS,
-};
+
 
 /**
  * @brief 表示一个条件比较
@@ -84,14 +95,6 @@ struct ConditionSqlNode
                                 ///< 1时，操作符右边是属性名，0时，是属性值
     RelAttrSqlNode right_attr;  ///< right-hand side attribute if right_is_attr = TRUE 右边的属性
     Value right_value;          ///< right-hand side value if right_is_attr = FALSE
-};
-
-struct AggrNode {
-    std::string relation;
-    std::vector<std::string> attributes;
-    std::string attribute;
-    int is_attr = 0;
-    AggrType type;
 };
 
 /**
