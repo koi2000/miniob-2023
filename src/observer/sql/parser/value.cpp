@@ -250,6 +250,14 @@ int Value::compare(const Value& other) const {
             }
         }
     }
+    else if (this->attr_type_ == INTS && other.attr_type_ == DATES) {
+        int this_data = this->num_value_.int_value_;
+        return common::compare_int((void*)&this_data, (void*)&other.num_value_.int_value_);
+    }
+    else if (this->attr_type_ == DATES && other.attr_type_ == INTS) {
+        int this_data = this->num_value_.int_value_;
+        return common::compare_int((void*)&this_data, (void*)&other.num_value_.int_value_);
+    }
     else if (this->attr_type_ == INTS && other.attr_type_ == FLOATS) {
         float this_data = this->num_value_.int_value_;
         return common::compare_float((void*)&this_data, (void*)&other.num_value_.float_value_);

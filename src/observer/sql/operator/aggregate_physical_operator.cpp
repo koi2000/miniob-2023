@@ -13,7 +13,7 @@ See the Mulan PSL v2 for more details. */
 //
 
 #include "sql/operator/aggregate_physical_operator.h"
-
+#include "util/date.h"
 RC AggrPhysicalOperator::open(Trx* trx) {
     if (children_.empty()) {
         return RC::SUCCESS;
@@ -40,14 +40,14 @@ Value AggrPhysicalOperator::getAggrValue(std::vector<Value>& values,
 
     switch (type) {
         case MAXS: {
-            if (attr_type == INTS || attr_type == FLOATS) {
+            if (attr_type == INTS || attr_type == FLOATS || attr_type == DATES) {
                 result.set_int(0);
             }
             else if (attr_type == CHARS) {
                 result.set_string(std::string("").c_str());
             }
             if (!values.empty()) {
-                if (attr_type == INTS || attr_type == FLOATS) {
+                if (attr_type == INTS || attr_type == FLOATS || attr_type == DATES) {
                     result.set_int(values[0].get_int());
                 }
                 else if (attr_type == CHARS) {
@@ -57,14 +57,14 @@ Value AggrPhysicalOperator::getAggrValue(std::vector<Value>& values,
             break;
         }
         case MINS: {
-            if (attr_type == INTS || attr_type == FLOATS) {
+            if (attr_type == INTS || attr_type == FLOATS || attr_type == DATES) {
                 result.set_int(0);
             }
             else if (attr_type == CHARS) {
                 result.set_string(std::string("").c_str());
             }
             if (!values.empty()) {
-                if (attr_type == INTS || attr_type == FLOATS) {
+                if (attr_type == INTS || attr_type == FLOATS || attr_type == DATES) {
                     result.set_int(values[0].get_int());
                 }
                 else if (attr_type == CHARS) {
@@ -88,7 +88,7 @@ Value AggrPhysicalOperator::getAggrValue(std::vector<Value>& values,
             Value val = values[i];
             if (type == MAXS) {
                 if (val.compare(result) > 0) {
-                    if (attr_type == INTS) {
+                    if (attr_type == INTS || attr_type == DATES) {
                         result.set_int(val.get_int());
                     }
                     else if (attr_type == FLOATS) {
@@ -101,7 +101,7 @@ Value AggrPhysicalOperator::getAggrValue(std::vector<Value>& values,
             }
             else {
                 if (val.compare(result) < 0) {
-                    if (attr_type == INTS) {
+                    if (attr_type == INTS || attr_type == DATES) {
                         result.set_int(val.get_int());
                     }
                     else if (attr_type == FLOATS) {
@@ -164,7 +164,12 @@ RC AggrPhysicalOperator::next() {
 Tuple* AggrPhysicalOperator::current_tuple() {
     visited = 1;
     std::vector<Value> cells;
-    for (const Value value : results) {
+    for (int i = 0; i < results.size(); i++) {
+        Value value = results[i];
+        if (field_types_[i] == DATES) {
+            std::string res = date_to_string(value.get_int());
+            value.set_string(res.c_str());
+        }
         cells.push_back(value);
     }
     tuple_.set_cells(cells);
