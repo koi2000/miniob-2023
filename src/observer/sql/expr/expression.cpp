@@ -79,15 +79,19 @@ ComparisonExpr::~ComparisonExpr() {}
 
 RC ComparisonExpr::compare_value(const Value& left, const Value& right, bool& result) const {
     RC rc = RC::SUCCESS;
+    if (left.isNull() || right.isNull()) {
+        result = false;
+        return rc;
+    }
 
     switch (comp_) {
         case STR_LIKE: {
-            result =  wildcard_match(left.get_string(),right.get_string());
+            result = wildcard_match(left.get_string(), right.get_string());
             return rc;
             break;
         }
         case STR_NOT_LIKE: {
-            result =  !wildcard_match(left.get_string(),right.get_string());
+            result = !wildcard_match(left.get_string(), right.get_string());
             return rc;
             break;
         }

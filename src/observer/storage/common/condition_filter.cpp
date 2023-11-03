@@ -135,14 +135,16 @@ bool DefaultConditionFilter::filter(const Record& rec) const {
     else {
         right_value.set_value(right_.value);
     }
-     
+
     switch (comp_op_) {
-        case STR_LIKE: return wildcard_match(left_value.get_string(),right_value.get_string());
-        case STR_NOT_LIKE: return !wildcard_match(left_value.get_string(),right_value.get_string());
+        case STR_LIKE: return wildcard_match(left_value.get_string(), right_value.get_string());
+        case STR_NOT_LIKE: return !wildcard_match(left_value.get_string(), right_value.get_string());
         default: break;
     }
     int cmp_result = left_value.compare(right_value);
-
+    if (left_value.isNull() || right_value.isNull()) {
+        return false;
+    }
     switch (comp_op_) {
         case EQUAL_TO: return 0 == cmp_result;
         case LESS_EQUAL: return cmp_result <= 0;
