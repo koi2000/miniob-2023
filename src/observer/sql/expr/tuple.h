@@ -370,6 +370,12 @@ class ValueListTuple : public Tuple {
 class JoinedTuple : public Tuple {
   public:
     JoinedTuple() = default;
+
+    JoinedTuple(const JoinedTuple& joinedTuple) {
+        this->left_ = joinedTuple.left_->clone();
+        this->right_ = joinedTuple.right_->clone();
+    }
+
     virtual ~JoinedTuple() = default;
 
     void set_left(Tuple* left) {
