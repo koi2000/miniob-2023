@@ -208,7 +208,7 @@ const char* Value::data() const {
 std::string Value::to_string() const {
     std::stringstream os;
     if (isNull()) {
-        os << "null";
+        os << "NULL";
         return os.str();
     }
     switch (attr_type_) {
@@ -239,9 +239,16 @@ int Value::compare(const Value& other) const {
     bool isFloat = false;
     int intValue = 0;
     float floatValue = 0;
-    if(this->isNull()||other.isNull()){
-
+    if (this->isNull() && !other.isNull()) {
+        return -1;
     }
+    else if (!this->isNull() && other.isNull()) {
+        return 1;
+    }
+    else if (!this->isNull() && other.isNull()) {
+        return 0;
+    }
+
     if (this->attr_type_ == other.attr_type_) {
         switch (this->attr_type_) {
             case INTS:

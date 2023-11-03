@@ -1003,6 +1003,30 @@ condition:
 
         delete $1;
     }
+    | value IS NULL_T 
+    {
+        $$ = new ConditionSqlNode;
+        $$->left_is_attr = 0;
+        $$->left_value = *$1;
+        $$->right_is_attr = 0;
+        $$->right_value = Value();
+        $$->right_value.set_isNull(true);
+        $$->comp = EQUAL_TO;
+
+        delete $1;
+    }
+    | value IS NOT NULL_T 
+    {
+        $$ = new ConditionSqlNode;
+        $$->left_is_attr = 0;
+        $$->left_value = *$1;
+        $$->right_is_attr = 0;
+        $$->right_value = Value();
+        $$->right_value.set_isNull(true);
+        $$->comp = NOT_EQUAL;
+
+        delete $1;
+    }
     ;
 
 comp_op:
