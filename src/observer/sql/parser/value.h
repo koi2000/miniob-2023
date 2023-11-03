@@ -25,6 +25,7 @@ enum AttrType {
     CHARS,     ///< 字符串类型
     INTS,      ///< 整数类型(4字节)
     FLOATS,    ///< 浮点数类型(4字节)
+    NULLS,     ///< NULL 四个字节，当作
     BOOLEANS,  ///< boolean类型，当前不是由parser解析出来的，是程序内部使用的
     DATES,
 };
@@ -40,7 +41,7 @@ class Value {
   public:
     Value() = default;
 
-    Value(AttrType attr_type, char* data, int length = 4) : attr_type_(attr_type) {
+    Value(AttrType attr_type, char* data,  bool isNull = false, int length = 4) : attr_type_(attr_type), isNull_(isNull) {
         this->set_data(data, length);
     }
 
@@ -62,6 +63,7 @@ class Value {
     void set_int(int val);
     void set_float(float val);
     void set_boolean(bool val);
+    void set_isNull(bool isNull);
     void set_string(const char* s, int len = 0);
     void set_value(const Value& value);
 
@@ -77,6 +79,10 @@ class Value {
     AttrType attr_type() const {
         return attr_type_;
     }
+    
+    bool isNull() const {
+        return isNull_;
+    }
 
   public:
     /**
@@ -91,6 +97,7 @@ class Value {
   private:
     AttrType attr_type_ = UNDEFINED;
     int length_ = 0;
+    bool isNull_ = false;
 
     union
     {

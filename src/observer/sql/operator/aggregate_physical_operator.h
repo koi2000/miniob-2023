@@ -53,4 +53,5 @@ class AggrPhysicalOperator : public PhysicalOperator {
     ValueListTuple tuple_;
     std::vector<Value> results;
     int visited = 0;
+    int count = 0;
 };

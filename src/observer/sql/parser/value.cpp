@@ -19,9 +19,8 @@ See the Mulan PSL v2 for more details. */
 #include "storage/field/field.h"
 #include "util/date.h"
 #include <sstream>
-#include <sstream>
 
-const char* ATTR_TYPE_NAME[] = {"undefined", "chars", "ints", "floats", "booleans", "dates"};
+const char* ATTR_TYPE_NAME[] = {"undefined", "chars", "ints", "null", "floats", "booleans", "dates"};
 
 inline std::string float_to_string(float num) {
     std::ostringstream oss;
@@ -154,6 +153,14 @@ void Value::set_boolean(bool val) {
     num_value_.bool_value_ = val;
     length_ = sizeof(val);
 }
+
+void Value::set_isNull(bool isNull) {
+    // if (isNull) {
+    //     attr_type_ = NULLS;
+    // }
+    isNull_ = isNull;
+}
+
 void Value::set_string(const char* s, int len /*= 0*/) {
     attr_type_ = CHARS;
     if (len > 0) {
@@ -200,6 +207,10 @@ const char* Value::data() const {
 
 std::string Value::to_string() const {
     std::stringstream os;
+    if (isNull()) {
+        os << "null";
+        return os.str();
+    }
     switch (attr_type_) {
         case INTS: {
             os << num_value_.int_value_;
@@ -228,6 +239,9 @@ int Value::compare(const Value& other) const {
     bool isFloat = false;
     int intValue = 0;
     float floatValue = 0;
+    if(this->isNull()||other.isNull()){
+
+    }
     if (this->attr_type_ == other.attr_type_) {
         switch (this->attr_type_) {
             case INTS:

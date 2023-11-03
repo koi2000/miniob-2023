@@ -16,6 +16,7 @@ See the Mulan PSL v2 for more details. */
 #include "common/lang/string.h"
 #include "common/log/log.h"
 #include "common/rc.h"
+#include "storage/common/limits.h"
 #include "storage/db/db.h"
 #include "storage/table/table.h"
 #include "util/date.h"
@@ -114,8 +115,35 @@ RC FilterStmt::create_filter_unit(Db* db,
     }
     else {
         FilterObj filter_obj;
-        filter_obj.init_value(condition.left_value);
-        filter_unit->set_left(filter_obj);
+        if (condition.right_is_attr && condition.left_value.isNull()) {
+            Table* table = nullptr;
+            const FieldMeta* field = nullptr;
+            rc = get_table_and_field(db, default_table, tables, condition.right_attr, table, field);
+            if (rc != RC::SUCCESS) {
+                LOG_WARN("cannot find attr");
+                return rc;
+            }
+            Value val;
+            val.set_isNull(true);
+            if (field->type() == INTS) {
+                val.set_int(MINIOB_INT_NULL);
+            }
+            else if (field->type() == FLOATS) {
+                val.set_float(MINIOB_FLOAT_NULL);
+            }
+            else if (field->type() == CHARS) {
+                val.set_string(&MINIOB_CHARS_NULL);
+            }
+            else if (field->type() == DATES) {
+                val.set_int(MINIOB_CHARS_NULL);
+            }
+            filter_obj.init_value(val);
+            filter_unit->set_left(filter_obj);
+        }
+        else {
+            filter_obj.init_value(condition.left_value);
+            filter_unit->set_left(filter_obj);
+        }
     }
 
     if (condition.right_is_attr) {
@@ -143,8 +171,35 @@ RC FilterStmt::create_filter_unit(Db* db,
         }
 
         FilterObj filter_obj;
-        filter_obj.init_value(condition.right_value);
-        filter_unit->set_right(filter_obj);
+        if (condition.left_is_attr && condition.right_value.isNull()) {
+            Table* table = nullptr;
+            const FieldMeta* field = nullptr;
+            rc = get_table_and_field(db, default_table, tables, condition.left_attr, table, field);
+            if (rc != RC::SUCCESS) {
+                LOG_WARN("cannot find attr");
+                return rc;
+            }
+            Value val;
+            val.set_isNull(true);
+            if (field->type() == INTS) {
+                val.set_int(MINIOB_INT_NULL);
+            }
+            else if (field->type() == FLOATS) {
+                val.set_float(MINIOB_FLOAT_NULL);
+            }
+            else if (field->type() == CHARS) {
+                val.set_string(&MINIOB_CHARS_NULL);
+            }
+            else if (field->type() == DATES) {
+                val.set_int(MINIOB_CHARS_NULL);
+            }
+            filter_obj.init_value(val);
+            filter_unit->set_right(filter_obj);
+        }
+        else {
+            filter_obj.init_value(condition.right_value);
+            filter_unit->set_right(filter_obj);
+        }
     }
 
     filter_unit->set_comp(comp);

@@ -19,6 +19,7 @@ RC AggrPhysicalOperator::open(Trx* trx) {
         return RC::SUCCESS;
     }
     visited = 0;
+    count = 0;
     std::unique_ptr<PhysicalOperator>& child = children_[0];
     RC rc = child->open(trx);
     if (rc != RC::SUCCESS) {
@@ -148,18 +149,29 @@ RC AggrPhysicalOperator::next() {
     std::vector<std::vector<Value>> values_list(aggrTypes_.size());
     while (RC::SUCCESS == (rc = child->next())) {
         Tuple* tuple = child->current_tuple();
-        // std::vector<Value> values;
+        count++;
         // 枚举所有的AggrType/字段
         for (int i = 0; i < aggrTypes_.size(); i++) {
             Value val;
             TupleCellSpec spec = TupleCellSpec(table_name_.c_str(), field_names_[i].c_str());
             tuple->find_cell(spec, val);
+            // null字段不参与聚合操作
+            if (val.isNull()) {
+                continue;
+            }
             values_list[i].push_back(val);
         }
-        // values_list.push_back(values);
     }
     // 枚举所有的AggrType/字段
     for (int i = 0; i < aggrTypes_.size(); i++) {
+        if (field_names_[i] == "*" && aggrTypes_[i] == COUNTS) {
+            Value val;
+            val.set_int(count);
+            results.push_back(val);
+            continue;
+        }else if(field_names_[i] == "*" && aggrTypes_[i] != COUNTS){
+            return RC::SCHEMA_DB_NOT_EXIST;
+        }
         results.push_back(getAggrValue(values_list[i], field_names_[i], field_types_[i], aggrTypes_[i]));
     }
     return RC::SUCCESS;
@@ -170,6 +182,9 @@ Tuple* AggrPhysicalOperator::current_tuple() {
     std::vector<Value> cells;
     for (int i = 0; i < results.size(); i++) {
         Value value = results[i];
+        // if (field_names_[i] == "*" && aggrTypes_[i] == COUNTS) {
+        //     value.set_int(count);
+        // }
         if (field_types_[i] == DATES && aggrTypes_[i] != COUNTS) {
             std::string res = date_to_string(value.get_int());
             value.set_string(res.c_str());

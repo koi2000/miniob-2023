@@ -172,12 +172,13 @@ RC LogicalPlanGenerator::create_plan(SelectStmt* select_stmt, unique_ptr<Logical
         std::vector<std::string> field_names;
         for (AggrNode aggrNode : select_stmt->aggr_nodes()) {
             aggr_types.push_back(aggrNode.type);
-            if (aggrNode.attribute == "*") {
-                field_names.push_back((*tables[0]->table_meta().field_metas())[0].name());
-            }
-            else {
-                field_names.push_back(aggrNode.attribute);
-            }
+            // if (aggrNode.attribute == "*") {
+            //     field_names.push_back((*tables[0]->table_meta().field_metas())[0].name());
+            // }
+            // else {
+            //     field_names.push_back(aggrNode.attribute);
+            // }
+            field_names.push_back(aggrNode.attribute);
 
             std::vector<FieldMeta> field_metas = *tables[0]->table_meta().field_metas();
             int flag = 0;

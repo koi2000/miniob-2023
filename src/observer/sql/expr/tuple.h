@@ -23,8 +23,8 @@ See the Mulan PSL v2 for more details. */
 #include "sql/expr/tuple_cell.h"
 #include "sql/parser/parse.h"
 #include "sql/parser/value.h"
+#include "storage/common/limits.h"
 #include "storage/record/record.h"
-
 class Table;
 
 /**
@@ -169,6 +169,9 @@ class RowTuple : public Tuple {
         const FieldMeta* field_meta = field_expr->field().meta();
         cell.set_type(field_meta->type());
         cell.set_data(this->record_->data() + field_meta->offset(), field_meta->len());
+        if (is_mem_null(this->record_->data() + field_meta->offset(), field_meta->type(), field_meta->len())) {
+            cell.set_isNull(true);
+        }
         return RC::SUCCESS;
     }
 
@@ -229,12 +232,12 @@ class RowTuple : public Tuple {
 class ProjectTuple : public Tuple {
   public:
     ProjectTuple() = default;
-    
+
     ProjectTuple(const ProjectTuple& other) {
         this->speces_ = other.speces_;
         this->tuple_ = other.tuple_->clone();
     }
-    
+
     virtual ~ProjectTuple() {
         for (TupleCellSpec* spec : speces_) {
             delete spec;

@@ -17,6 +17,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/db/db.h"
 #include "storage/table/table.h"
 #include "util/date.h"
+#include "storage/common/limits.h"
 
 InsertStmt::InsertStmt(Table* table, const Value* values, int value_amount)
     : table_(table), values_(values), value_amount_(value_amount) {}
@@ -37,7 +38,7 @@ RC InsertStmt::create(Db* db, const InsertSqlNode& inserts, Stmt*& stmt) {
     }
 
     // check the fields number
-    const Value* values = inserts.values.data();
+    Value* values = const_cast<Value*> (inserts.values.data());
     const int value_num = static_cast<int>(inserts.values.size());
     const TableMeta& table_meta = table->table_meta();
     const int field_num = table_meta.field_num() - table_meta.sys_field_num();
@@ -52,6 +53,24 @@ RC InsertStmt::create(Db* db, const InsertSqlNode& inserts, Stmt*& stmt) {
         const FieldMeta* field_meta = table_meta.field(i + sys_field_num);
         const AttrType field_type = field_meta->type();
         const AttrType value_type = values[i].attr_type();
+        if (values[i].isNull() && field_meta->allow_null()) {
+            if (field_meta->type() == INTS) {
+                values[i].set_int(MINIOB_INT_NULL);
+            }
+            else if (field_meta->type() == FLOATS) {
+                values[i].set_float(MINIOB_FLOAT_NULL);
+            }
+            else if (field_meta->type() == CHARS) {
+                values[i].set_string(&MINIOB_CHARS_NULL);
+            }
+            else if (field_meta->type() == DATES) {
+                values[i].set_int(MINIOB_CHARS_NULL);
+                continue;
+            }
+        }
+        if (values[i].isNull() && !field_meta->allow_null()) {
+            return RC::SCHEMA_FIELD_NOT_NULL;
+        }
         if (field_type != value_type) {  // TODO try to convert the value type to field type
             if (field_type == DATES) {
                 int32_t date = -1;

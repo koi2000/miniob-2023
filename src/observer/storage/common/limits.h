@@ -1,5 +1,5 @@
 #pragma once
-
+// 偷懒，使用最简单的实现方法
 #include "sql/parser/parse_defs.h"
 #include <cstdint>
 #include <cstdlib>

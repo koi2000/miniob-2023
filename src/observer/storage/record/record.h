@@ -149,6 +149,7 @@ class Record {
     void set_rid(const RID& rid) {
         this->rid_ = rid;
     }
+
     void set_rid(const PageNum page_num, const SlotNum slot_num) {
         this->rid_.page_num = page_num;
         this->rid_.slot_num = slot_num;

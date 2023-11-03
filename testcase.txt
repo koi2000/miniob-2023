@@ -1,5 +1,11 @@
 修改为从后往前更新
 =========================================
+CREATE TABLE null_table(id int not null, num int null, price float not null, birthday date null);
+- SUCCESS
++ SQL_SYNTAX > Failed to parse sql
+insert into null_table values(1,null,3.1,null);
+
+
 select * from t_order_by_1, t_order_by_2 where t_order_by_1.id=t_order_by_2.id order by t_order_by_1.id, t_order_by_2.id desc, t_order_by_2.score asc, t_order_by_2.name;
 - 2 | 2 | 1.63 | BB3S
 - 2 | 2 | 2.5 | A6

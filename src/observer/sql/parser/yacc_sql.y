@@ -103,6 +103,8 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
         NE
         LIKE
         NOT
+        NULL_T
+        IS
         MAX
         MIN
         COUNT
@@ -193,9 +195,12 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <aggr_node>           AGG_FUNC
 %type <aggr_list>           AGG_FUNC_LIST
 %type <orderby_list>        order_by
+%type <number>              nullable
 %type <orderby_list>        order_attr_list
 %type <order_policy>        order_policy
 %type <order_node>          order_attr
+
+
 // commands should be a list but I use a single command instead
 %type <sql_node>            commands
 
@@ -384,23 +389,37 @@ attr_def_list:
     ;
     
 attr_def:
-    ID type LBRACE number RBRACE 
+    ID type LBRACE number RBRACE nullable
     {
       $$ = new AttrInfoSqlNode;
       $$->type = (AttrType)$2;
       $$->name = $1;
       $$->length = $4;
+      $$->allowNull = $6;
       free($1);
     }
-    | ID type
+    | ID type nullable
     {
       $$ = new AttrInfoSqlNode;
       $$->type = (AttrType)$2;
       $$->name = $1;
       $$->length = 4;
+      $$->allowNull = $3;
       free($1);
     }
     ;
+
+nullable: 
+    /**/{
+        $$ = 1;
+    }
+    | NULL_T {
+        $$ = 1;
+    }
+    | NOT NULL_T {
+        $$ = 0;
+    }
+
 number:
     NUMBER {$$ = $1;}
     ;
@@ -448,6 +467,10 @@ value:
     |FLOAT {
       $$ = new Value((float)$1);
       @$ = @1;
+    }
+    |NULL_T {
+      $$ = new Value(0);
+      $$ -> set_isNull(true);
     }
     |SSS {
       char *tmp = common::substr($1,1,strlen($1)-2);
@@ -955,6 +978,30 @@ condition:
 
       delete $1;
       delete $3;
+    }
+    | rel_attr IS NULL_T 
+    {
+        $$ = new ConditionSqlNode;
+        $$->left_is_attr = 1;
+        $$->left_attr = *$1;
+        $$->right_is_attr = 0;
+        $$->right_value = Value();
+        $$->right_value.set_isNull(true);
+        $$->comp = EQUAL_TO;
+
+        delete $1;
+    }
+    | rel_attr IS NOT NULL_T
+    {
+        $$ = new ConditionSqlNode;
+        $$->left_is_attr = 1;
+        $$->left_attr = *$1;
+        $$->right_is_attr = 0;
+        $$->right_value = Value();
+        $$->right_value.set_isNull(true);
+        $$->comp = NOT_EQUAL;
+
+        delete $1;
     }
     ;
 

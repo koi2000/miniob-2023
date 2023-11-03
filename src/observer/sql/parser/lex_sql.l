@@ -126,6 +126,8 @@ COUNT                                   RETURN_TOKEN(COUNT);
 AVG                                     RETURN_TOKEN(AVG);
 SUM                                     RETURN_TOKEN(SUM);
 ORDER                                   RETURN_TOKEN(ORDER);
+NULL                                    RETURN_TOKEN(NULL_T);
+IS                                      RETURN_TOKEN(IS);
 ASC                                     RETURN_TOKEN(ASC);
 BY                                      RETURN_TOKEN(BY);
 {ID}                                    yylval->string=strdup(yytext); RETURN_TOKEN(ID);

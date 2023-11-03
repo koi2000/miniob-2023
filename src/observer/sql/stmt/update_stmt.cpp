@@ -18,6 +18,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/db/db.h"
 #include "storage/table/table.h"
 #include "util/date.h"
+#include "storage/common/limits.h"
 
 UpdateStmt::UpdateStmt(Table* table, std::vector<Field> field, std::vector<Value> value)
     : table_(table), fields_(field), values_(value) {}
@@ -54,6 +55,24 @@ RC UpdateStmt::create(Db* db, const UpdateSqlNode& update, Stmt*& stmt) {
                 rc = RC::SUCCESS;
                 Field field = Field(table, field_meta);
                 fields.push_back(field);
+                // 处理NULL字段
+                if (values[k].isNull() && field_meta->allow_null()) {
+                    if (field_meta->type() == INTS) {
+                        values[k].set_int(MINIOB_INT_NULL);
+                    }
+                    else if (field_meta->type() == FLOATS) {
+                        values[k].set_float(MINIOB_FLOAT_NULL);
+                    }
+                    else if (field_meta->type() == CHARS) {
+                        values[k].set_string(&MINIOB_CHARS_NULL);
+                    }
+                    else if (field_meta->type() == DATES) {
+                        values[k].set_int(MINIOB_CHARS_NULL);
+                    }
+                }
+                if (values[k].isNull() && !field_meta->allow_null()) {
+                    return RC::SCHEMA_FIELD_NOT_NULL;
+                }
                 // 针对Date类型进行特殊处理
                 if (field_type == DATES) {
                     int32_t date = -1;

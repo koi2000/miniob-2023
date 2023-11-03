@@ -21,6 +21,7 @@ See the Mulan PSL v2 for more details. */
 #include "common/log/log.h"
 #include "storage/buffer/disk_buffer_pool.h"
 #include "storage/common/condition_filter.h"
+#include "storage/common/limits.h"
 #include "storage/common/meta_util.h"
 #include "storage/index/bplus_tree_index.h"
 #include "storage/trx/trx.h"
@@ -245,6 +246,10 @@ RC Table::update_record(std::vector<std::string> field_names, std::vector<Value>
             const FieldMeta* fieldMeta = table_meta_.field(i);
             if (fieldMeta->name() == field_names[k]) {
                 int copy_len = fieldMeta->len();
+                if (values[k].isNull()) {
+                    set_mem_null(record_data + fieldMeta->offset(), fieldMeta->type(), fieldMeta->len());
+                    break;
+                }
                 if (fieldMeta->type() == CHARS) {
                     // memset(record_data + fieldMeta->offset(), 0, copy_len);
                     LOG_INFO("string value is %s", values[k].get_string());
@@ -345,6 +350,9 @@ RC Table::make_record(int value_num, const Value* values, Record& record) {
     for (int i = 0; i < value_num; i++) {
         const FieldMeta* field = table_meta_.field(i + normal_field_start_index);
         const Value& value = values[i];
+        if (value.isNull()) {
+            continue;
+        }
         if (field->type() != value.attr_type()) {
             LOG_ERROR("Invalid value type. table name =%s, field name=%s, type=%d, but given=%d", table_meta_.name(),
                       field->name(), field->type(), value.attr_type());
@@ -360,15 +368,19 @@ RC Table::make_record(int value_num, const Value* values, Record& record) {
         const FieldMeta* field = table_meta_.field(i + normal_field_start_index);
         const Value& value = values[i];
         size_t copy_len = field->len();
-        if (field->type() == CHARS) {
-            const size_t data_len = value.length();
-            if (copy_len > data_len) {
-                copy_len = data_len + 1;
+        if (!value.isNull()) {
+            if (field->type() == CHARS) {
+                const size_t data_len = value.length();
+                if (copy_len > data_len) {
+                    copy_len = data_len + 1;
+                }
             }
+            memcpy(record_data + field->offset(), value.data(), copy_len);
         }
-        memcpy(record_data + field->offset(), value.data(), copy_len);
+        else {
+            set_mem_null(record_data + field->offset(), field->type(), field->len());
+        }
     }
-
     record.set_data_owner(record_data, record_size);
     return RC::SUCCESS;
 }
