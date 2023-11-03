@@ -29,10 +29,10 @@ bool customCompare(const Tuple* a,
             Value val2;
             a->find_cell(tupleCellSpec, val1);
             b->find_cell(tupleCellSpec, val2);
-            if (val1.compare(val2) > 0) {
+            if (val1.compare(val2) < 0) {
                 return true;
             }
-            else if (val1.compare(val2) < 0) {
+            else if (val1.compare(val2) > 0) {
                 return false;
             }
         }
@@ -42,10 +42,10 @@ bool customCompare(const Tuple* a,
             Value val2;
             a->find_cell(tupleCellSpec, val1);
             b->find_cell(tupleCellSpec, val2);
-            if (val1.compare(val2) < 0) {
+            if (val1.compare(val2) > 0) {
                 return true;
             }
-            else if (val1.compare(val2) > 0) {
+            else if (val1.compare(val2) < 0) {
                 return false;
             }
         }
