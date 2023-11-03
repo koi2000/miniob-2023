@@ -55,6 +55,10 @@ class SelectStmt : public Stmt {
         return aggr_nodes_;
     }
 
+    const std::vector<OrderBySqlNode>& orderBySqlNodes() const {
+        return orderBySqlNodes_;
+    }
+
     FilterStmt* filter_stmt() const {
         return filter_stmt_;
     }
@@ -69,6 +73,7 @@ class SelectStmt : public Stmt {
     FilterStmt* inner_join_filter_stmt_ = nullptr;
     FilterStmt* filter_stmt_ = nullptr;
     std::vector<AggrNode> aggr_nodes_;
+    std::vector<OrderBySqlNode> orderBySqlNodes_;
     std::unordered_map<std::string, std::string> table_alias_;
     std::vector<const char *> field_alias_;
 };

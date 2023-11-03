@@ -103,11 +103,14 @@ extern int yydebug;
     COUNT = 309,
     AVG = 310,
     SUM = 311,
-    NUMBER = 312,
-    FLOAT = 313,
-    ID = 314,
-    SSS = 315,
-    UMINUS = 316
+    ASC = 312,
+    ORDER = 313,
+    BY = 314,
+    NUMBER = 315,
+    FLOAT = 316,
+    ID = 317,
+    SSS = 318,
+    UMINUS = 319
   };
 #endif
 
@@ -115,7 +118,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 113 "yacc_sql.y"
+#line 116 "yacc_sql.y"
 
   ParsedSqlNode *                   sql_node;
   ConditionSqlNode *                condition;
@@ -133,6 +136,9 @@ union YYSTYPE
   std::vector<std::pair<std::string,Value>>* update_list;
   std::vector<std::string> *        index_attribute_names;
   std::vector<std::string> *        aggr_attribute_names;
+  std::vector<OrderBySqlNode> *     orderby_list;
+  enum OrderPolicy                  order_policy;
+  OrderBySqlNode*                   order_node;
   char *                            string;
   int                               number;
   float                             floats;
@@ -140,7 +146,7 @@ union YYSTYPE
   AggrNode*                         aggr_node;
   std::vector<AggrNode>*            aggr_list;
 
-#line 144 "yacc_sql.hpp"
+#line 150 "yacc_sql.hpp"
 
 };
 typedef union YYSTYPE YYSTYPE;

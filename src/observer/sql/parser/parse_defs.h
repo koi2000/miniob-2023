@@ -30,6 +30,12 @@ enum AggrType{
   COUNTS,
 };
 
+enum OrderPolicy{
+  NO_ORDER,
+  ORDER_ASC,
+  ORDER_DESC,
+};
+
 class Expression;
 struct AggrNode {
     std::string relation;
@@ -98,6 +104,19 @@ struct ConditionSqlNode
 };
 
 /**
+ * @brief 描述order by子句
+ * @ingroup SQLParser
+ * @details
+*/
+struct OrderBySqlNode
+{
+    std::string attribute;
+    std::string relation;
+    OrderPolicy orderPolicy;
+};
+
+
+/**
  * @brief 描述一个select语句
  * @ingroup SQLParser
  * @details 一个正常的select语句描述起来比这个要复杂很多，这里做了简化。
@@ -107,14 +126,14 @@ struct ConditionSqlNode
  * where 条件 conditions，这里表示使用AND串联起来多个条件。正常的SQL语句会有OR，NOT等，
  * 甚至可以包含复杂的表达式。
  */
-
 struct SelectSqlNode
 {
     std::vector<RelAttrSqlNode> attributes;               ///< attributes in select clause
     std::vector<std::string> relations;                   ///< 查询的表
     std::vector<ConditionSqlNode> conditions;             ///< 查询条件，使用AND串联起来多个条件
-    std::vector<AggrNode> aggrs;                     ///< 查询条件，使用AND串联起来多个条件
-    std::vector<ConditionSqlNode> inner_join_conditions;  ///< 查询条件，使用AND串联起来多个条件
+    std::vector<AggrNode> aggrs;                          ///< aggregate
+    std::vector<ConditionSqlNode> inner_join_conditions;  ///< join condition
+    std::vector<OrderBySqlNode> order_bys;                ///< order by
 };
 
 struct JoinSqlNode

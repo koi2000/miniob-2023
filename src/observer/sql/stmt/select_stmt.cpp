@@ -63,6 +63,7 @@ RC SelectStmt::create(Db* db, const SelectSqlNode& select_sql, Stmt*& stmt) {
         tables.push_back(table);
         table_map.insert(std::pair<std::string, Table*>(table_name, table));
     }
+    // 处理aggregate相关问题
     if (!select_sql.aggrs.empty() && !select_sql.attributes.empty()) {
         return RC::SCHEMA_TABLE_NOT_EXIST;
     }
@@ -105,6 +106,28 @@ RC SelectStmt::create(Db* db, const SelectSqlNode& select_sql, Stmt*& stmt) {
 
     // collect query fields in `select` statement
     std::vector<Field> query_fields;
+    std::vector<OrderBySqlNode> orderBySqlNodes = select_sql.order_bys;
+    // 校验一下表和字段
+    for (int i = 0; i < orderBySqlNodes.size(); i++) {
+        OrderBySqlNode* orderBySqlNode = &orderBySqlNodes[i];
+        if (orderBySqlNode->relation == "") {
+            orderBySqlNode->relation = tables[0]->name();
+        }
+        if (!table_map.count(orderBySqlNode->relation)) {
+            return RC::SCHEMA_TABLE_NOT_EXIST;
+        }
+        Table* table = table_map[orderBySqlNode->relation];
+        const std::vector<FieldMeta> field_metas = *table->table_meta().field_metas();
+        int flag = 0;
+        for (FieldMeta field_meta : field_metas) {
+            if (field_meta.name() == orderBySqlNode->attribute) {
+                flag = 1;
+            }
+        }
+        if (!flag)
+            return RC::SCHEMA_FIELD_MISSING;
+    }
+
     for (int i = static_cast<int>(select_sql.attributes.size()) - 1; i >= 0; i--) {
         const RelAttrSqlNode& relation_attr = select_sql.attributes[i];
 
@@ -198,6 +221,7 @@ RC SelectStmt::create(Db* db, const SelectSqlNode& select_sql, Stmt*& stmt) {
     select_stmt->filter_stmt_ = filter_stmt;
     select_stmt->inner_join_filter_stmt_ = inner_join_filter_stmt;
     select_stmt->aggr_nodes_ = aggrNodes;
+    select_stmt->orderBySqlNodes_ = orderBySqlNodes;
     stmt = select_stmt;
     return RC::SUCCESS;
 }

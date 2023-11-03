@@ -47,6 +47,7 @@ enum class PhysicalOperatorType {
     DELETE,
     INSERT,
     AGGR,
+    ORDERBY,
     UPDATE,
 };
 

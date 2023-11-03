@@ -108,6 +108,9 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
         COUNT
         AVG
         SUM
+        ASC
+        ORDER
+        BY
 
 /** union 中定义各种数据类型，真实生成的代码也是union类型，所以不能有非POD类型的数据 **/
 %union {
@@ -127,6 +130,9 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   std::vector<std::pair<std::string,Value>>* update_list;
   std::vector<std::string> *        index_attribute_names;
   std::vector<std::string> *        aggr_attribute_names;
+  std::vector<OrderBySqlNode> *     orderby_list;
+  enum OrderPolicy                  order_policy;
+  OrderBySqlNode*                   order_node;
   char *                            string;
   int                               number;
   float                             floats;
@@ -186,6 +192,10 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
 %type <aggr_type>           AGGR_TYPE
 %type <aggr_node>           AGG_FUNC
 %type <aggr_list>           AGG_FUNC_LIST
+%type <orderby_list>        order_by
+%type <orderby_list>        order_attr_list
+%type <order_policy>        order_policy
+%type <order_node>          order_attr
 // commands should be a list but I use a single command instead
 %type <sql_node>            commands
 
@@ -503,34 +513,7 @@ update_pair_list:
 
 
 select_stmt:        /*  select 语句的语法解析树*/
-    /*SELECT AGG_FUNC_LIST FROM ID rel_list where
-    {
-      $$ = new ParsedSqlNode(SCF_SELECT);
-      $$->selection.relations.push_back($4);
-      std::reverse($$->selection.relations.begin(), $$->selection.relations.end());
-
-      if ($6 != nullptr) {
-        $$->selection.conditions.swap(*$6);
-        delete $6;
-      }
-      if ($5 != nullptr){
-        for (JoinSqlNode& join_node : *$5) {
-          $$->selection.relations.push_back(join_node.table_name);
-          for(ConditionSqlNode& condition: join_node.conditions){
-              $$->selection.inner_join_conditions.push_back(condition);
-          }
-        }
-      }
-      
-      if($2 != nullptr) {
-        std::reverse($2->begin(),$2->end());
-        $$->selection.aggrs.swap(*$2);
-        delete $2;
-      }
-
-      free($6);
-    }*/
-    SELECT select_attr FROM ID rel_list where
+    SELECT select_attr FROM ID rel_list where order_by
     {
       $$ = new ParsedSqlNode(SCF_SELECT);
       if ($2 != nullptr) {
@@ -556,6 +539,10 @@ select_stmt:        /*  select 语句的语法解析树*/
         $$->selection.conditions.swap(*$6);
         delete $6;
       }
+      if ($7 != nullptr) {
+        $$->selection.order_bys.swap(*$7);
+        delete $7;
+      }
       if ($5 != nullptr){
         for (JoinSqlNode& join_node : *$5) {
           $$->selection.relations.push_back(join_node.table_name);
@@ -565,6 +552,75 @@ select_stmt:        /*  select 语句的语法解析树*/
         }
       }
       free($4);
+    }
+    ;
+
+order_by:
+    /* empty */ {
+        $$ = nullptr;
+    }
+    | ORDER BY order_attr order_attr_list {
+        if ($4 == nullptr){
+            $$ = new std::vector<OrderBySqlNode>();
+        }else {
+            $$ = $4;
+        }
+        $$ -> push_back(*$3);
+        free($3);
+    }
+    ;
+
+order_attr:
+    ID order_policy {
+        OrderBySqlNode* order_by = new OrderBySqlNode;
+        order_by->relation = "";
+        order_by->attribute = $1;
+        order_by->orderPolicy = $2;
+        free($1);
+        $$ = order_by;
+    }
+    | ID DOT ID order_policy {
+        OrderBySqlNode* order_by = new OrderBySqlNode;
+        order_by->relation = $1;
+        order_by->attribute = $3;
+        order_by->orderPolicy = $4;
+        free($1);
+        free($3);
+        $$ = order_by;
+    }
+    ;
+
+order_attr_list:
+    /* empty */ {
+        $$ = nullptr;
+    }
+    | order_attr order_attr_list {
+        if ($2 == nullptr) {
+            $$ = new std::vector<OrderBySqlNode>();
+        } else {
+            $$ = $2;
+        }
+        $$ -> push_back(*$1);
+    }
+    | COMMA order_attr order_attr_list{
+        if($3 == nullptr) {
+            $$ = new std::vector<OrderBySqlNode>();
+        }else {
+            $$ = $3;
+        }
+        $$ -> push_back(*$2);
+    }
+    ;
+
+order_policy:
+    /* empty */ {
+        $$ = ORDER_ASC;
+    }
+    | ASC {
+        $$ = ORDER_ASC;
+    }
+    | DESC {
+        $$ = ORDER_DESC;
     }
     ;
 

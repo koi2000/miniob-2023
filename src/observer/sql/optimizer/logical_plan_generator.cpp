@@ -21,6 +21,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/operator/insert_logical_operator.h"
 #include "sql/operator/join_logical_operator.h"
 #include "sql/operator/logical_operator.h"
+#include "sql/operator/orderby_logical_operator.h"
 #include "sql/operator/predicate_logical_operator.h"
 #include "sql/operator/project_logical_operator.h"
 #include "sql/operator/table_get_logical_operator.h"
@@ -164,7 +165,7 @@ RC LogicalPlanGenerator::create_plan(SelectStmt* select_stmt, unique_ptr<Logical
             project_oper->add_child(std::move(table_oper));
         }
     }
-
+    // 处理aggregate
     if (!select_stmt->aggr_nodes().empty()) {
         std::vector<AttrType> attr_types;
         std::vector<AggrType> aggr_types;
@@ -192,13 +193,30 @@ RC LogicalPlanGenerator::create_plan(SelectStmt* select_stmt, unique_ptr<Logical
                     break;
                 }
             }
-            if(!flag) return RC::SCHEMA_FIELD_MISSING;
+            if (!flag)
+                return RC::SCHEMA_FIELD_MISSING;
         }
 
         unique_ptr<LogicalOperator> aggr_oper(
             new AggrLogicalOperator(string(tables[0]->name()), field_names, attr_types, aggr_types));
         aggr_oper->add_child(std::move(project_oper));
         logical_operator.swap(aggr_oper);
+        return RC::SUCCESS;
+    }
+    // 处理orderBy
+    if (!select_stmt->orderBySqlNodes().empty()) {
+        std::vector<std::string> table_names;
+        std::vector<std::string> field_names;
+        std::vector<OrderPolicy> order_policys;
+        for (OrderBySqlNode orderby_node : select_stmt->orderBySqlNodes()) {
+            table_names.push_back(orderby_node.relation);
+            field_names.push_back(orderby_node.attribute);
+            order_policys.push_back(orderby_node.orderPolicy);
+        }
+
+        unique_ptr<LogicalOperator> orderby_oper(new OrderByLogicalOperator(table_names, field_names, order_policys));
+        orderby_oper->add_child(std::move(project_oper));
+        logical_operator.swap(orderby_oper);
         return RC::SUCCESS;
     }
     logical_operator.swap(project_oper);

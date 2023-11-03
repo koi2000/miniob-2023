@@ -37,6 +37,8 @@ See the Mulan PSL v2 for more details. */
 #include "sql/operator/table_scan_physical_operator.h"
 #include "sql/operator/update_logical_operator.h"
 #include "sql/operator/update_physical_operator.h"
+#include "sql/operator/orderby_physical_operator.h"
+#include "sql/operator/orderby_logical_operator.h"
 #include "sql/optimizer/physical_plan_generator.h"
 
 using namespace std;
@@ -83,6 +85,10 @@ RC PhysicalPlanGenerator::create(LogicalOperator& logical_operator, unique_ptr<P
 
         case LogicalOperatorType::JOIN: {
             return create_plan(static_cast<JoinLogicalOperator&>(logical_operator), oper);
+        } break;
+
+        case LogicalOperatorType::ORDERBY: {
+            return create_plan(static_cast<OrderByLogicalOperator&>(logical_operator), oper);
         } break;
 
         default: {
@@ -234,6 +240,31 @@ RC PhysicalPlanGenerator::create_plan(AggrLogicalOperator& aggr_oper, unique_ptr
         new AggrPhysicalOperator(table_name, aggr_oper.aggeTypes(), aggr_oper.field_names(), aggr_oper.field_types());
 
     oper.reset(aggr_phy_oper);
+    if (child_physical_oper) {
+        oper->add_child(std::move(child_physical_oper));
+    }
+    return RC::SUCCESS;
+}
+
+RC PhysicalPlanGenerator::create_plan(OrderByLogicalOperator& orderby_oper, unique_ptr<PhysicalOperator>& oper) {
+    vector<unique_ptr<LogicalOperator>>& child_opers = orderby_oper.children();
+
+    unique_ptr<PhysicalOperator> child_physical_oper;
+
+    RC rc = RC::SUCCESS;
+    if (!child_opers.empty()) {
+        LogicalOperator* child_oper = child_opers.front().get();
+        rc = create(*child_oper, child_physical_oper);
+        if (rc != RC::SUCCESS) {
+            LOG_WARN("failed to create physical operator. rc=%s", strrc(rc));
+            return rc;
+        }
+    }
+
+    OrderByPhysicalOperator* orderby_phy_oper =
+        new OrderByPhysicalOperator(orderby_oper.table_names(), orderby_oper.field_names(), orderby_oper.order_policys());
+
+    oper.reset(orderby_phy_oper);
     if (child_physical_oper) {
         oper->add_child(std::move(child_physical_oper));
     }

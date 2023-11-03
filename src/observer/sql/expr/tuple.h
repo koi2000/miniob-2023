@@ -118,6 +118,7 @@ class Tuple {
         }
         return str;
     }
+    virtual Tuple* clone() const = 0;
 };
 
 /**
@@ -128,6 +129,13 @@ class Tuple {
 class RowTuple : public Tuple {
   public:
     RowTuple() = default;
+
+    RowTuple(const RowTuple& other) {
+        this->record_ = new Record(*other.record_);
+        this->table_ = new Table(*other.table_);
+        this->speces_ = other.speces_;
+    };
+
     virtual ~RowTuple() {
         for (FieldExpr* spec : speces_) {
             delete spec;
@@ -181,6 +189,10 @@ class RowTuple : public Tuple {
         return RC::NOTFOUND;
     }
 
+    Tuple* clone() const override {
+        return new RowTuple(*this);
+    }
+
 #if 0
   RC cell_spec_at(int index, const TupleCellSpec *&spec) const override
   {
@@ -217,11 +229,21 @@ class RowTuple : public Tuple {
 class ProjectTuple : public Tuple {
   public:
     ProjectTuple() = default;
+    
+    ProjectTuple(const ProjectTuple& other) {
+        this->speces_ = other.speces_;
+        this->tuple_ = other.tuple_->clone();
+    }
+    
     virtual ~ProjectTuple() {
         for (TupleCellSpec* spec : speces_) {
             delete spec;
         }
         speces_.clear();
+    }
+
+    Tuple* clone() const override {
+        return new ProjectTuple(*this);
     }
 
     void set_tuple(Tuple* tuple) {
@@ -294,6 +316,10 @@ class ExpressionTuple : public Tuple {
         return RC::NOTFOUND;
     }
 
+    Tuple* clone() const override {
+        return new ExpressionTuple(*this);
+    }
+
   private:
     const std::vector<std::unique_ptr<Expression>>& expressions_;
 };
@@ -309,6 +335,10 @@ class ValueListTuple : public Tuple {
 
     void set_cells(const std::vector<Value>& cells) {
         cells_ = cells;
+    }
+
+    virtual Tuple* clone() const override {
+        return new ValueListTuple(*this);
     }
 
     virtual int cell_num() const override {
@@ -347,6 +377,10 @@ class JoinedTuple : public Tuple {
     }
     void set_right(Tuple* right) {
         right_ = right;
+    }
+
+    Tuple* clone() const override {
+        return new JoinedTuple(*this);
     }
 
     int cell_num() const override {
