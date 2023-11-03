@@ -1,5 +1,36 @@
 修改为从后往前更新
 =========================================
+select * from t_order_by_2 order by id, score, name;
++ 6 | 3.5 | 1P
++ 8 | 3.8 | 1YS
++ 3 | 2.89 | 4
++ 6 | 4.02 | 6
++ 5 | 3.52 | 9
++ 8 | 4.13 | 96I
+  1 | 1.47 | AQU
++ 3 | 2.14 | B
++ 6 | 1.05 | E
++ 6 | 4.21 | HES
++ 5 | 4.2 | HUFZ
++ 3 | 2.99 | J0
++ 4 | 2.35 | K
+-- below are some requests executed before(partial) --
+-- init data
+create table t_order_by_1(id int);
+create table t_order_by_2(id int, score float, name char(4));
+insert into t_order_by_1 VALUES (1);
+insert into t_order_by_1 VALUES (8);
+
+insert into t_order_by_2 VALUES (1,1.47,'AQU');
+insert into t_order_by_2 VALUES (3,2.14,'B');
+insert into t_order_by_2 VALUES (6,1.05,'E');
+insert into t_order_by_2 VALUES (6,4.21,'HES');
+insert into t_order_by_2 VALUES (5,4.2,'HUFZ');
+insert into t_order_by_2 VALUES (3,2.99,'J0');
+insert into t_order_by_2 VALUES (3,2.99,'A0');
+...
+
+
 select * from t_order_by_1 order by id;
   1
 + 3

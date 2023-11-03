@@ -565,7 +565,9 @@ order_by:
         }else {
             $$ = $4;
         }
-        $$ -> push_back(*$3);
+        std::reverse($$->begin(),$$->end());
+        $$->insert($$->begin(), *$3);
+        //$$ -> push_back(*$3);
         free($3);
     }
     ;
