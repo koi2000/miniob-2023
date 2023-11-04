@@ -245,7 +245,7 @@ int Value::compare(const Value& other) const {
     else if (!this->isNull() && other.isNull()) {
         return 1;
     }
-    else if (!this->isNull() && !other.isNull()) {
+    else if (this->isNull() && other.isNull()) {
         return 0;
     }
 

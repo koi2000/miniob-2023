@@ -1,5 +1,23 @@
 修改为从后往前更新
 =========================================
+select * from big_order_by_0, big_order_by_1, big_order_by_2, big_order_by_3 order by big_order_by_2.addr, big_order_by_0.addr, big_order_by_0.id, big_order_by_1.addr, big_order_by_3.birthday, big_order_by_2.price, big_order_by_0.price, big_order_by_1.num,...
++ failed to receive response from observer. reason=Poll timeout after 10.0 second(s)
+failed to receive response from observer. reason=Poll timeout after 10.0 second(s)
+-- below are some requests executed before(partial) --
+-- init data: create 4 tables
+CREATE TABLE big_order_by_0(id int, num int, price float, addr char(10), birthday date);
+CREATE TABLE big_order_by_1(id int, num int, price float, addr char(10), birthday date);
+CREATE TABLE big_order_by_2(id int, num int, price float, addr char(10), birthday date);
+CREATE TABLE big_order_by_3(id int, num int, price float, addr char(10), birthday date);
+-- insert data: insert 19 records into 4 tables
+INSERT INTO big_order_by_0 VALUES (5, 39, 43.34, 'Q7RF3', '1994-09-23');
+INSERT INTO big_order_by_0 VALUES (8, 27, 46.01, 'GWL3IEKRDK', '1990-07-16');
+INSERT INTO big_order_by_0 VALUES (29, 46, 72.92, 'UM2M', '2004-06-30');
+INSERT INTO big_order_by_0 VALUES (14, 45, 22.70, '2', '1996-03-18');
+INSERT INTO big_order_by_0 VALUES (1, 20, 58.78, 'SRW8G804B', '1992-10-01');
+...
+
+
 SELECT * FROM null_table where 9 is not null;
 - 1 | 9 | 45.87 | 2013-11-18
 - 2 | 1 | 45.94 | 2019-09-16
@@ -27,6 +45,7 @@ insert into null_table VALUES (1, 9, 45.87, '2013-11-18');
 
 
 SELECT * FROM null_table where 1<>null;
+SELECT * FROM null_table where id > 1;
 + 1 | 5 | 26.29 | 2020-07-26
 + 1 | 7 | 42.18 | 2014-04-11
 + 2 | 1 | 29.74 | 2003-10-01

@@ -4,5 +4,8 @@
 
 python3 miniob_test.py --test-cases=primary-multi-index
 python3 miniob_test.py --test-cases=primary-aggregation-func
-python3 miniob_test.py --test-cases=primary-join-tables
+python3 miniob_test.py --test-cases=primary-insert
+python3 miniob_test.py --test-cases=primary-date
+python3 miniob_test.py --test-cases=primary-unique
+python3 miniob_test.py --test-cases=primary-update
 python3 miniob_test.py --test-cases=primary-join-tables
