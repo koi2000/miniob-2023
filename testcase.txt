@@ -1,5 +1,16 @@
 修改为从后往前更新
 =========================================
+create table Update_table_not_exist(t_name char(20),col1 int,id int);
+
+
+UPDATE Update_table_not_exist SET t_name='CV5O1E',col1=8 WHERE id=6;
+UPDATE Update_select_t1 SET t_name=(select Update_table_not_exist.t_name from Update_table_not_exist where Update_table_not_exist.id=916) WHERE id=909;
+UPDATE Update_select_t1 SET t_name='A4NTKXA6',col3=1 WHERE id=6;
+- FAILURE
++ SUCCESS
+insert into Update_select_t1 values('ahj',1,6);
+
+
 UPDATE null_table4 SET id=null where num is null;
 UPDATE null_table4 SET num=(SELECT null_table3.num from null_table3 where null_table3.id=4) where id=6;
 - SUCCESS

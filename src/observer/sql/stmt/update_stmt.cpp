@@ -51,6 +51,7 @@ RC UpdateStmt::create(Db* db, const UpdateSqlNode& update, Stmt*& stmt) {
     RC rc = RC::INVALID_ARGUMENT;
     std::vector<Field> fields;
     for (int k = 0; k < update.attribute_name.size(); k++) {
+        int match = 0;
         for (int i = sys_field_num; i < field_num; i++) {
             const FieldMeta* field_meta = table_meta.field(i);
             const AttrType field_type = field_meta->type();
@@ -60,6 +61,7 @@ RC UpdateStmt::create(Db* db, const UpdateSqlNode& update, Stmt*& stmt) {
                 rc = RC::SUCCESS;
                 Field field = Field(table, field_meta);
                 fields.push_back(field);
+                match = 1;
                 // 如果是普通字段
                 if (!values[k].isSubQuery) {
                     // 处理NULL字段
@@ -110,6 +112,8 @@ RC UpdateStmt::create(Db* db, const UpdateSqlNode& update, Stmt*& stmt) {
                 }
             }
         }
+        if (!match)
+            return RC::SCHEMA_FIELD_NOT_EXIST;
     }
 
     // 处理Where子句
