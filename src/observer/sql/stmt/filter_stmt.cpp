@@ -140,6 +140,24 @@ RC FilterStmt::create_filter_unit(Db* db,
             filter_obj.init_value(val);
             filter_unit->set_left(filter_obj);
         }
+        else if (!condition.right_is_attr && condition.left_value.isNull()) {
+            Value val;
+            val.set_isNull(true);
+            if (condition.right_value.attr_type() == INTS) {
+                val.set_int(MINIOB_INT_NULL);
+            }
+            else if (condition.right_value.attr_type() == FLOATS) {
+                val.set_float(MINIOB_FLOAT_NULL);
+            }
+            else if (condition.right_value.attr_type() == CHARS) {
+                val.set_string(&MINIOB_CHARS_NULL);
+            }
+            else if (condition.right_value.attr_type() == DATES) {
+                val.set_int(MINIOB_DATE_NULL);
+            }
+            filter_obj.init_value(val);
+            filter_unit->set_left(filter_obj);
+        }
         else {
             filter_obj.init_value(condition.left_value);
             filter_unit->set_left(filter_obj);
@@ -199,6 +217,7 @@ RC FilterStmt::create_filter_unit(Db* db,
         }
         else if (!condition.left_is_attr && condition.right_value.isNull()) {
             Value val;
+            val.set_isNull(true);
             if (condition.left_value.attr_type() == INTS) {
                 val.set_int(MINIOB_INT_NULL);
             }
