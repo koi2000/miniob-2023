@@ -79,27 +79,20 @@ ComparisonExpr::~ComparisonExpr() {}
 
 RC ComparisonExpr::compare_value(const Value& left, const Value& right, bool& result) const {
     RC rc = RC::SUCCESS;
-    if (left.isNull() || right.isNull()) {
-        result = false;
-        return rc;
-    }
+    
     // 先尝试走is判断
     if (comp_ == IS_COM) {
-        if (left.isNull() && !right.isNull()) {
-            result = false;
+        if (left.isNull()) {
+            result = true;
             return rc;
         }
-        else if (!left.isNull() && right.isNull()) {
-            result = false;
-            return rc;
-        }
-        else if (left.isNull() && right.isNull()) {
+        else if (!left.isNull()) {
             result = false;
             return rc;
         }
     }
     else if (comp_ == ISNOT_COM) {
-        if (left.isNull() && right.isNull()) {
+        if (left.isNull()) {
             result = false;
             return rc;
         }

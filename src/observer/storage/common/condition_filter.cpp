@@ -142,18 +142,15 @@ bool DefaultConditionFilter::filter(const Record& rec) const {
         default: break;
     }
     if (comp_op_ == IS_COM) {
-        if (left_value.isNull() && !right_value.isNull()) {
-            return false;
-        }
-        else if (!left_value.isNull() && right_value.isNull()) {
-            return false;
-        }
-        else if (left_value.isNull() && right_value.isNull()) {
+        if (left_value.isNull()) {
             return true;
+        }
+        else if (!left_value.isNull()) {
+            return false;
         }
     }
     else if (comp_op_ == ISNOT_COM) {
-        if (left_value.isNull() && right_value.isNull()) {
+        if (left_value.isNull()) {
             return false;
         }
         else {
