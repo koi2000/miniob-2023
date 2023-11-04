@@ -1,5 +1,31 @@
 修改为从后往前更新
 =========================================
+SELECT * FROM null_table where 9 is not null;
+- 1 | 9 | 45.87 | 2013-11-18
+- 2 | 1 | 45.94 | 2019-09-16
+- 2 | 5 | 23.39 | 2000-01-20
+- 2 | 5 | 41.22 | NULL
+- 2 | 8 | 26.64 | 2010-10-11
+- 3 | 3 | 17.16 | 2010-12-03
+- 4 | 1 | 37.72 | 2009-02-11
+- 5 | 15 | 40 | NULL
+- 5 | 5 | 31.39 | 2009-08-22
+- 5 | 6 | 17.32 | 2021-12-15
+- 6 | 2 | 31.79 | 2005-11-30
+- 7 | 3 | 35.38 | 2016-01-17
+- 7 | NULL | 18.38 | 2012-08-10
+-- below are some requests executed before(partial) --
+-- INITIALIZATION
+CREATE TABLE null_table(id int not null, num int null, price float not null, birthday date null);
+CREATE TABLE null_table2(id int not null, num int null, price float not null, birthday date null);
+CREATE INDEX index_num on null_table(num);
+insert into null_table VALUES (5, 6, 17.32, '2021-12-15');
+insert into null_table VALUES (1, 9, 45.87, '2013-11-18');
+...
+
+
+
+
 SELECT * FROM null_table where 1<>null;
 + 1 | 5 | 26.29 | 2020-07-26
 + 1 | 7 | 42.18 | 2014-04-11

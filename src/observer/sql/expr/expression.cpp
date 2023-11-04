@@ -83,6 +83,31 @@ RC ComparisonExpr::compare_value(const Value& left, const Value& right, bool& re
         result = false;
         return rc;
     }
+    // 先尝试走is判断
+    if (comp_ == IS_COM) {
+        if (left.isNull() && !right.isNull()) {
+            result = false;
+            return rc;
+        }
+        else if (!left.isNull() && right.isNull()) {
+            result = false;
+            return rc;
+        }
+        else if (left.isNull() && right.isNull()) {
+            result = false;
+            return rc;
+        }
+    }
+    else if (comp_ == ISNOT_COM) {
+        if (left.isNull() && right.isNull()) {
+            result = false;
+            return rc;
+        }
+        else {
+            result = true;
+            return rc;
+        }
+    }
 
     switch (comp_) {
         case STR_LIKE: {
@@ -97,7 +122,10 @@ RC ComparisonExpr::compare_value(const Value& left, const Value& right, bool& re
         }
         default: break;
     }
-
+    if (left.isNull() || right.isNull()) {
+        result = false;
+        return rc;
+    }
     int cmp_result = left.compare(right);
     result = false;
     switch (comp_) {

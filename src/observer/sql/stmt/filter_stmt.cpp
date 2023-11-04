@@ -171,6 +171,7 @@ RC FilterStmt::create_filter_unit(Db* db,
         }
 
         FilterObj filter_obj;
+
         if (condition.left_is_attr && condition.right_value.isNull()) {
             Table* table = nullptr;
             const FieldMeta* field = nullptr;
@@ -191,7 +192,24 @@ RC FilterStmt::create_filter_unit(Db* db,
                 val.set_string(&MINIOB_CHARS_NULL);
             }
             else if (field->type() == DATES) {
-                val.set_int(MINIOB_CHARS_NULL);
+                val.set_int(MINIOB_DATE_NULL);
+            }
+            filter_obj.init_value(val);
+            filter_unit->set_right(filter_obj);
+        }
+        else if (!condition.left_is_attr && condition.right_value.isNull()) {
+            Value val;
+            if (condition.left_value.attr_type() == INTS) {
+                val.set_int(MINIOB_INT_NULL);
+            }
+            else if (condition.left_value.attr_type() == FLOATS) {
+                val.set_float(MINIOB_FLOAT_NULL);
+            }
+            else if (condition.left_value.attr_type() == CHARS) {
+                val.set_string(&MINIOB_CHARS_NULL);
+            }
+            else if (condition.left_value.attr_type() == DATES) {
+                val.set_int(MINIOB_DATE_NULL);
             }
             filter_obj.init_value(val);
             filter_unit->set_right(filter_obj);

@@ -987,7 +987,7 @@ condition:
         $$->right_is_attr = 0;
         $$->right_value = Value();
         $$->right_value.set_isNull(true);
-        $$->comp = EQUAL_TO;
+        $$->comp = IS_COM;
 
         delete $1;
     }
@@ -999,7 +999,7 @@ condition:
         $$->right_is_attr = 0;
         $$->right_value = Value();
         $$->right_value.set_isNull(true);
-        $$->comp = NOT_EQUAL;
+        $$->comp = ISNOT_COM;
 
         delete $1;
     }
@@ -1011,7 +1011,7 @@ condition:
         $$->right_is_attr = 0;
         $$->right_value = Value();
         $$->right_value.set_isNull(true);
-        $$->comp = EQUAL_TO;
+        $$->comp = IS_COM;
 
         delete $1;
     }
@@ -1023,7 +1023,7 @@ condition:
         $$->right_is_attr = 0;
         $$->right_value = Value();
         $$->right_value.set_isNull(true);
-        $$->comp = NOT_EQUAL;
+        $$->comp = ISNOT_COM;
 
         delete $1;
     }

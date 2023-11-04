@@ -64,7 +64,7 @@ RC InsertStmt::create(Db* db, const InsertSqlNode& inserts, Stmt*& stmt) {
                 values[i].set_string(&MINIOB_CHARS_NULL);
             }
             else if (field_meta->type() == DATES) {
-                values[i].set_int(MINIOB_CHARS_NULL);
+                values[i].set_int(MINIOB_DATE_NULL);
                 continue;
             }
         }

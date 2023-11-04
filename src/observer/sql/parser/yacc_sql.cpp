@@ -2784,7 +2784,7 @@ yyreduce:
         (yyval.condition)->right_is_attr = 0;
         (yyval.condition)->right_value = Value();
         (yyval.condition)->right_value.set_isNull(true);
-        (yyval.condition)->comp = EQUAL_TO;
+        (yyval.condition)->comp = IS_COM;
 
         delete (yyvsp[-2].rel_attr);
     }
@@ -2800,7 +2800,7 @@ yyreduce:
         (yyval.condition)->right_is_attr = 0;
         (yyval.condition)->right_value = Value();
         (yyval.condition)->right_value.set_isNull(true);
-        (yyval.condition)->comp = NOT_EQUAL;
+        (yyval.condition)->comp = ISNOT_COM;
 
         delete (yyvsp[-3].rel_attr);
     }
@@ -2816,7 +2816,7 @@ yyreduce:
         (yyval.condition)->right_is_attr = 0;
         (yyval.condition)->right_value = Value();
         (yyval.condition)->right_value.set_isNull(true);
-        (yyval.condition)->comp = EQUAL_TO;
+        (yyval.condition)->comp = IS_COM;
 
         delete (yyvsp[-2].value);
     }
@@ -2832,7 +2832,7 @@ yyreduce:
         (yyval.condition)->right_is_attr = 0;
         (yyval.condition)->right_value = Value();
         (yyval.condition)->right_value.set_isNull(true);
-        (yyval.condition)->comp = NOT_EQUAL;
+        (yyval.condition)->comp = ISNOT_COM;
 
         delete (yyvsp[-3].value);
     }

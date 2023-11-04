@@ -141,7 +141,28 @@ bool DefaultConditionFilter::filter(const Record& rec) const {
         case STR_NOT_LIKE: return !wildcard_match(left_value.get_string(), right_value.get_string());
         default: break;
     }
+    if (comp_op_ == IS_COM) {
+        if (left_value.isNull() && !right_value.isNull()) {
+            return false;
+        }
+        else if (!left_value.isNull() && right_value.isNull()) {
+            return false;
+        }
+        else if (left_value.isNull() && right_value.isNull()) {
+            return true;
+        }
+    }
+    else if (comp_op_ == ISNOT_COM) {
+        if (left_value.isNull() && right_value.isNull()) {
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+
     int cmp_result = left_value.compare(right_value);
+
     if (left_value.isNull() || right_value.isNull()) {
         return false;
     }

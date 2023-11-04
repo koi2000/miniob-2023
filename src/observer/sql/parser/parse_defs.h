@@ -72,6 +72,8 @@ enum CompOp {
     EQUAL_TO,     ///< "="
     LESS_EQUAL,   ///< "<="
     NOT_EQUAL,    ///< "<>"
+    IS_COM,           ///< "is"
+    ISNOT_COM,        ///< "is not"
     LESS_THAN,    ///< "<"
     GREAT_EQUAL,  ///< ">="
     GREAT_THAN,   ///< ">"
