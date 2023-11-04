@@ -20,6 +20,18 @@ See the Mulan PSL v2 for more details. */
 
 class Table;
 class FilterStmt;
+class SelectStmt;
+
+/**
+ * @brief 存储Update
+ * @ingroup SQLParser 
+*/
+struct UpdateValueStmt
+{
+    int isSubQuery;
+    Value value;
+    SelectStmt* select;
+};
 
 /**
  * @brief 更新语句
@@ -29,8 +41,8 @@ class FilterStmt;
 class UpdateStmt : public Stmt {
   public:
     UpdateStmt() = default;
-    UpdateStmt(Table* table, std::vector<Field> field, std::vector<Value> value);
-    UpdateStmt(Table* table, std::vector<Field> field, std::vector<Value> value, FilterStmt* filter_stmt);
+    UpdateStmt(Table* table, std::vector<Field> field, std::vector<UpdateValueStmt> value);
+    UpdateStmt(Table* table, std::vector<Field> field, std::vector<UpdateValueStmt> value, FilterStmt* filter_stmt);
 
     StmtType type() const override {
         return StmtType::UPDATE;
@@ -43,7 +55,7 @@ class UpdateStmt : public Stmt {
     Table* table() const {
         return table_;
     }
-    std::vector<Value> values() const {
+    std::vector<UpdateValueStmt> values() const {
         return values_;
     }
     std::vector<Field> fields() const {
@@ -55,7 +67,7 @@ class UpdateStmt : public Stmt {
 
   private:
     Table* table_ = nullptr;
-    std::vector<Value> values_;
+    std::vector<UpdateValueStmt> values_;
     std::vector<Field> fields_;
     FilterStmt* filter_stmt_ = nullptr;
 };

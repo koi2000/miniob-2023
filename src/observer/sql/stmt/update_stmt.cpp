@@ -15,15 +15,19 @@ See the Mulan PSL v2 for more details. */
 #include "sql/stmt/update_stmt.h"
 #include "common/log/log.h"
 #include "sql/stmt/filter_stmt.h"
+#include "sql/stmt/select_stmt.h"
+#include "storage/common/limits.h"
 #include "storage/db/db.h"
 #include "storage/table/table.h"
 #include "util/date.h"
-#include "storage/common/limits.h"
 
-UpdateStmt::UpdateStmt(Table* table, std::vector<Field> field, std::vector<Value> value)
+UpdateStmt::UpdateStmt(Table* table, std::vector<Field> field, std::vector<UpdateValueStmt> value)
     : table_(table), fields_(field), values_(value) {}
 
-UpdateStmt::UpdateStmt(Table* table, std::vector<Field> field, std::vector<Value> value, FilterStmt* filter_stmt)
+UpdateStmt::UpdateStmt(Table* table,
+                       std::vector<Field> field,
+                       std::vector<UpdateValueStmt> value,
+                       FilterStmt* filter_stmt)
     : table_(table), fields_(field), values_(value), filter_stmt_(filter_stmt) {}
 
 RC UpdateStmt::create(Db* db, const UpdateSqlNode& update, Stmt*& stmt) {
@@ -39,7 +43,8 @@ RC UpdateStmt::create(Db* db, const UpdateSqlNode& update, Stmt*& stmt) {
         return RC::SCHEMA_TABLE_EXIST;
     }
     // 校验update时是否有对应类型字段
-    std::vector<Value> values = update.value;
+    std::vector<UpdateValueNode> values = update.value;
+    std::vector<UpdateValueStmt> updateValueStmts;
     const TableMeta& table_meta = table->table_meta();
     const int field_num = table_meta.field_num() - table_meta.sys_field_num();
     const int sys_field_num = table_meta.sys_field_num();
@@ -55,35 +60,54 @@ RC UpdateStmt::create(Db* db, const UpdateSqlNode& update, Stmt*& stmt) {
                 rc = RC::SUCCESS;
                 Field field = Field(table, field_meta);
                 fields.push_back(field);
-                // 处理NULL字段
-                if (values[k].isNull() && field_meta->allow_null()) {
-                    if (field_meta->type() == INTS) {
-                        values[k].set_int(MINIOB_INT_NULL);
+                // 如果是普通字段
+                if (!values[k].isSubQuery) {
+                    // 处理NULL字段
+                    if (values[k].value.isNull() && field_meta->allow_null()) {
+                        if (field_meta->type() == INTS) {
+                            values[k].value.set_int(MINIOB_INT_NULL);
+                        }
+                        else if (field_meta->type() == FLOATS) {
+                            values[k].value.set_float(MINIOB_FLOAT_NULL);
+                        }
+                        else if (field_meta->type() == CHARS) {
+                            values[k].value.set_string(&MINIOB_CHARS_NULL);
+                        }
+                        else if (field_meta->type() == DATES) {
+                            values[k].value.set_int(MINIOB_CHARS_NULL);
+                        }
                     }
-                    else if (field_meta->type() == FLOATS) {
-                        values[k].set_float(MINIOB_FLOAT_NULL);
+                    if (values[k].value.isNull() && !field_meta->allow_null()) {
+                        return RC::SCHEMA_FIELD_NOT_NULL;
                     }
-                    else if (field_meta->type() == CHARS) {
-                        values[k].set_string(&MINIOB_CHARS_NULL);
+                    // 针对Date类型进行特殊处理
+                    if (field_type == DATES) {
+                        int32_t date = -1;
+                        RC rc = string_to_date(values[k].value.get_string().c_str(), date);
+                        if (rc != RC::SUCCESS) {
+                            LOG_TRACE("Parse type Date Error");
+                            return rc;
+                        }
+                        value_init_date(&values[k].value, date);
                     }
-                    else if (field_meta->type() == DATES) {
-                        values[k].set_int(MINIOB_CHARS_NULL);
-                    }
+                    UpdateValueStmt updateValueStmt;
+                    updateValueStmt.isSubQuery = 0;
+                    updateValueStmt.value = values[k].value;
+                    updateValueStmts.push_back(updateValueStmt);
+                    break;
                 }
-                if (values[k].isNull() && !field_meta->allow_null()) {
-                    return RC::SCHEMA_FIELD_NOT_NULL;
-                }
-                // 针对Date类型进行特殊处理
-                if (field_type == DATES) {
-                    int32_t date = -1;
-                    RC rc = string_to_date(values[k].get_string().c_str(), date);
+                else {
+                    Stmt* select_stmt = nullptr;
+                    RC rc = SelectStmt::create(db, values[k].select, select_stmt);
                     if (rc != RC::SUCCESS) {
-                        LOG_TRACE("Parse type Date Error");
+                        LOG_WARN("failed to create filter statement. rc=%d:%s", rc, strrc(rc));
                         return rc;
                     }
-                    value_init_date(&values[k], date);
+                    UpdateValueStmt updateValueStmt;
+                    updateValueStmt.isSubQuery = 1;
+                    updateValueStmt.select = dynamic_cast<SelectStmt*>(select_stmt);
+                    updateValueStmts.push_back(updateValueStmt);
                 }
-                break;
             }
         }
     }
@@ -99,10 +123,10 @@ RC UpdateStmt::create(Db* db, const UpdateSqlNode& update, Stmt*& stmt) {
             LOG_WARN("failed to create filter statement. rc=%d:%s", rc, strrc(rc));
             return rc;
         }
-        stmt = new UpdateStmt(table, fields, values, filter_stmt);
+        stmt = new UpdateStmt(table, fields, updateValueStmts, filter_stmt);
     }
     else {
-        stmt = new UpdateStmt(table, fields, values);
+        stmt = new UpdateStmt(table, fields, updateValueStmts);
     }
     return rc;
 }

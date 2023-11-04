@@ -291,9 +291,29 @@ RC PhysicalPlanGenerator::create_plan(UpdateLogicalOperator& update_oper, unique
             return rc;
         }
     }
+    std::vector<UpdateValuePhysicalOperator> opers;
+    for (UpdateValueLogicalOperator& uvoper : update_oper.values()) {
+        UpdateValuePhysicalOperator oper;
+        if (uvoper.isSubQuery) {
+            unique_ptr<PhysicalOperator> sub_physical_operator;
+            RC rc = create(*uvoper.select, sub_physical_operator);
+            if (rc != RC::SUCCESS) {
+                return rc;
+            }
+            oper.isSubQuery = 1;
+            oper.select = std::move(sub_physical_operator);
+            opers.push_back(std::move(oper));
+        }
+        else {
+            oper.isSubQuery = 0;
+            oper.value = uvoper.value;
+            opers.push_back(std::move(oper));
+        }
+    }
+
 
     oper = unique_ptr<PhysicalOperator>(
-        new UpdatePhysicalOperator(update_oper.table(), update_oper.fields(), update_oper.values()));
+        new UpdatePhysicalOperator(update_oper.table(), update_oper.fields(), std::move(opers)));
 
     if (child_physical_oper) {
         oper->add_child(std::move(child_physical_oper));

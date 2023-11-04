@@ -135,7 +135,7 @@ union YYSTYPE
   std::vector<ConditionSqlNode> *   condition_list;
   std::vector<RelAttrSqlNode> *     rel_attr_list;
   std::vector<JoinSqlNode> *        relation_list;
-  std::vector<std::pair<std::string,Value>>* update_list;
+  std::vector<std::pair<std::string,UpdateValueNode>>* update_list;
   std::vector<std::string> *        index_attribute_names;
   std::vector<std::string> *        aggr_attribute_names;
   std::vector<OrderBySqlNode> *     orderby_list;

@@ -269,8 +269,27 @@ RC LogicalPlanGenerator::create_plan(UpdateStmt* update_stmt, unique_ptr<Logical
     for (Field field : update_stmt->fields()) {
         field_names.push_back(field.field_name());
     }
+    std::vector<UpdateValueLogicalOperator> opers;
+    for (UpdateValueStmt stmt : update_stmt->values()) {
+        UpdateValueLogicalOperator oper;
+        if (stmt.isSubQuery) {
+            unique_ptr<LogicalOperator> sub_logical_operator;
+            RC rc = create_plan(stmt.select, sub_logical_operator);
+            if (rc != RC::SUCCESS) {
+                return rc;
+            }
+            oper.isSubQuery = 1;
+            oper.select = std::move(sub_logical_operator);
+            opers.push_back(std::move(oper));
+        }
+        else {
+            oper.isSubQuery = 0;
+            oper.value = stmt.value;
+            opers.push_back(std::move(oper));
+        }
+    }
 
-    unique_ptr<LogicalOperator> update_operator(new UpdateLogicalOperator(table, field_names, update_stmt->values()));
+    unique_ptr<LogicalOperator> update_operator(new UpdateLogicalOperator(table, field_names, std::move(opers)));
     // 添加子节点
     FilterStmt* filter_stmt = update_stmt->filter_stmt();
     std::vector<Field> fields;

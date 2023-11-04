@@ -129,7 +129,7 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   std::vector<ConditionSqlNode> *   condition_list;
   std::vector<RelAttrSqlNode> *     rel_attr_list;
   std::vector<JoinSqlNode> *        relation_list;
-  std::vector<std::pair<std::string,Value>>* update_list;
+  std::vector<std::pair<std::string,UpdateValueNode>>* update_list;
   std::vector<std::string> *        index_attribute_names;
   std::vector<std::string> *        aggr_attribute_names;
   std::vector<OrderBySqlNode> *     orderby_list;
@@ -492,25 +492,21 @@ delete_stmt:    /*  delete 语句的语法解析树*/
     }
     ;
 update_stmt:      /*  update 语句的语法解析树*/
-    UPDATE ID SET ID EQ value update_pair_list where 
+    UPDATE ID SET update_pair_list where 
     {
       $$ = new ParsedSqlNode(SCF_UPDATE);
       $$->update.relation_name = $2;
-      // $$->update.attribute_name = $4;
-      // $$->update.value = *$6;
 
-      if ($7 != nullptr) {
-        for (std::pair<std::string,Value>& pair_node : *$7) {
+      if ($4 != nullptr) {
+        for (std::pair<std::string,UpdateValueNode>& pair_node : *$4) {
           $$->update.attribute_name.push_back(pair_node.first);
           $$->update.value.push_back(pair_node.second);
         }
       }
-      $$->update.attribute_name.push_back($4);
-      $$->update.value.push_back(*$6);
-
-      if ($8 != nullptr) {
-        $$->update.conditions.swap(*$8);
-        delete $8;
+    
+      if ($5 != nullptr) {
+        $$->update.conditions.swap(*$5);
+        delete $5;
       }
       free($2);
       free($4);
@@ -522,13 +518,55 @@ update_pair_list:
     {
         $$ = nullptr;
     }
+    | ID EQ LBRACE select_stmt RBRACE update_pair_list {
+        if($6 == nullptr) {
+            $$ = new std::vector<std::pair<std::string,UpdateValueNode>>();
+        } else {
+            $$ = $6;
+        }
+        UpdateValueNode updNode;
+        updNode.isSubQuery = 1;
+        updNode.select = $4->selection;
+        $$->emplace_back($1, updNode);
+        free($1);
+        free($4);
+    }
+    | COMMA ID EQ LBRACE select_stmt RBRACE update_pair_list{
+        if($7 == nullptr) {
+            $$ = new std::vector<std::pair<std::string,UpdateValueNode>>();
+        } else {
+            $$ = $7;
+        }
+        UpdateValueNode updNode;
+        updNode.isSubQuery = 1;
+        updNode.select = $5->selection;
+        $$->emplace_back($2, updNode);
+        free($2);
+        free($5);
+    }   
+    | ID EQ value update_pair_list {
+        if($4 == nullptr) {
+            $$ = new std::vector<std::pair<std::string,UpdateValueNode>>();
+        } else {
+            $$ = $4;
+        }
+        UpdateValueNode updNode;
+        updNode.isSubQuery = 0;
+        updNode.value = *$3;
+        $$->emplace_back($1,updNode);
+        free($1);
+        free($3);
+    }
     | COMMA ID EQ value update_pair_list {
         if($5 == nullptr){
-            $$ = new std::vector<std::pair<std::string,Value>>();
+            $$ = new std::vector<std::pair<std::string,UpdateValueNode>>();
         } else {
             $$ = $5;
         }
-        $$->emplace_back($2,*$4);
+        UpdateValueNode updNode;
+        updNode.isSubQuery = 0;
+        updNode.value = *$4;
+        $$->emplace_back($2,updNode);
         free($2);
         free($4);
     }

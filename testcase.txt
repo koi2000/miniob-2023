@@ -1,5 +1,26 @@
 修改为从后往前更新
 =========================================
+UPDATE null_table4 SET id=null where num is null;
+UPDATE null_table4 SET num=(SELECT null_table3.num from null_table3 where null_table3.id=4) where id=6;
+- SUCCESS
++ SQL_SYNTAX > Failed to parse sql
+-- below are some requests executed before(partial) --
+-- init update-select
+CREATE TABLE null_table4(id int not null, num int null, name char(10) null);
+CREATE TABLE null_table3(id int not null, num int null, name char(10) null);
+INSERT INTO null_table4 VALUES (7, 7, 'N7');
+INSERT INTO null_table4 VALUES (9, 9, 'N9');
+INSERT INTO null_table4 VALUES (5, 5, 'N5');
+UPDATE null_table4 SET num=null where id=9;
+...
+-- update-select
+UPDATE null_table4 SET name=null where num is null;
+
+UPDATE null_table4 SET num=(SELECT null_table3.num from null_table3 where null_table3.id=4) where id=7;
+UPDATE null_table4 SET num=(SELECT null_table3.num from null_table3 where null_table3.id=5) where id=7;
+INSERT INTO null_table3 VALUES (4, 5, 'N5');
+INSERT INTO null_table3 VALUES (5, 7, 'N5');
+
 SELECT * FROM null_table where 1 is not null;
 - 1 | 1 | 19.18 | 2003-10-07
 - 1 | 7 | 16.1 | 2016-11-26
