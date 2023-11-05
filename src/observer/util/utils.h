@@ -1,8 +1,39 @@
 #include "date.h"
+#include <math.h>
 #include <string>
 #include <vector>
 #ifndef util
 #    define util
+static std::string double2string(double v) {
+    char buf[256];
+    snprintf(buf, sizeof(buf), "%.2f", v);
+    size_t len = strlen(buf);
+    while (buf[len - 1] == '0') {
+        len--;
+    }
+    if (buf[len - 1] == '.') {
+        len--;
+    }
+
+    return std::string(buf, len);
+}
+
+static bool is_numeric_type(AttrType type) {
+    return type == INTS || type == FLOATS;
+}
+
+std::string value2string(const Value& value) {
+    if (value.attr_type() == INTS) {
+        return std::to_string(*(int*)value.data());
+    }
+    else if (value.attr_type() == FLOATS) {
+        return double2string(static_cast<double>(*(float*)value.data()));
+    }
+    else if (value.attr_type() == CHARS) {
+        return (char*)value.data();
+    }
+    return "";
+}
 
 static bool wildcard_match(std::string s, std::string p) {
     int m = s.size();
@@ -56,10 +87,13 @@ static void try_to_cast(AttrType to_type, bool nullable, Value& value) {
         std::string str = std::to_string(value.get_float());
         value.set_string(str.c_str());
     }
-    else if (to_type == CHARS && value.attr_type() == DATES) {
-        int date = value.get_int();
-        std::string res = date_to_string(date);
-        value.set_string(res.c_str());
+    else if (to_type == INTS && value.attr_type() == FLOATS) {
+        int int_val = std::round(*(float*)value.data());
+        value.set_int(int_val);
+    }
+    else if (to_type == FLOATS && value.attr_type() == INTS) {
+        float float_val = static_cast<float>(*(int*)value.data());
+        value.set_float(float_val);
     }
 }
 #endif
