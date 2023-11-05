@@ -26,6 +26,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/index/bplus_tree_index.h"
 #include "storage/trx/trx.h"
 #include "util/date.h"
+#include "util/utils.h"
 
 Table::~Table() {
     if (record_handler_ != nullptr) {
@@ -247,23 +248,7 @@ RC Table::update_record(std::vector<std::string> field_names, std::vector<Value>
             const FieldMeta* fieldMeta = table_meta_.field(i);
             if (fieldMeta->name() == field_names[k]) {
                 if (fieldMeta->type() != values[k].attr_type()) {
-                    if (fieldMeta->type() == INTS && values[k].attr_type() == CHARS) {
-                        int num = 0;
-                        std::istringstream ss(values[k].get_string());
-                        ss >> num;
-                        values[k].set_int(num);
-                    }
-                    else if (fieldMeta->type() == FLOATS && values[k].attr_type() == CHARS) {
-                        float num = 0;
-                        std::istringstream ss(values[k].get_string());
-                        ss >> num;
-                        values[k].set_float(num);
-                    }
-                    if (fieldMeta->type() == DATES && values[k].attr_type() == CHARS) {
-                        int date = 0;
-                        string_to_date(values[k].get_string().c_str(), date);
-                        values[k].set_int(date);
-                    }
+                    try_to_cast(fieldMeta->type(), true, values[k]);
                 }
                 int copy_len = fieldMeta->len();
                 if (values[k].isNull()) {

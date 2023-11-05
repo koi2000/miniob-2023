@@ -1,7 +1,8 @@
+#include "date.h"
 #include <string>
 #include <vector>
 #ifndef util
-#define util
+#    define util
 
 static bool wildcard_match(std::string s, std::string p) {
     int m = s.size();
@@ -27,5 +28,38 @@ static bool wildcard_match(std::string s, std::string p) {
         }
     }
     return dp[m][n];
+}
+
+static void try_to_cast(AttrType to_type, bool nullable, Value& value) {
+    if (to_type == INTS && value.attr_type() == CHARS) {
+        int num = 0;
+        std::istringstream ss(value.get_string());
+        ss >> num;
+        value.set_int(num);
+    }
+    else if (to_type == FLOATS && value.attr_type() == CHARS) {
+        float num = 0;
+        std::istringstream ss(value.get_string());
+        ss >> num;
+        value.set_float(num);
+    }
+    else if (to_type == DATES && value.attr_type() == CHARS) {
+        int date = 0;
+        string_to_date(value.get_string().c_str(), date);
+        value.set_int(date);
+    }
+    else if (to_type == CHARS && value.attr_type() == INTS) {
+        std::string str = std::to_string(value.get_int());
+        value.set_string(str.c_str());
+    }
+    else if (to_type == CHARS && value.attr_type() == FLOATS) {
+        std::string str = std::to_string(value.get_float());
+        value.set_string(str.c_str());
+    }
+    else if (to_type == CHARS && value.attr_type() == DATES) {
+        int date = value.get_int();
+        std::string res = date_to_string(date);
+        value.set_string(res.c_str());
+    }
 }
 #endif

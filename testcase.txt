@@ -1,6 +1,48 @@
 修改为从后往前更新
 =========================================
 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+UPDATE Update_select_t2 SET t_name=623,col1=475.17 WHERE id=7;
+UPDATE Update_select_t2 SET t_name=(select Update_select_t1.col1 from Update_select_t1 where Update_select_t1.id=8),col1=(select min(Update_select_t1.col1) from Update_select_t1) where id=2;
+SELECT * FROM Update_select_t2;
+  3 | 80 | 9 | 4
+  4 | 80 | 9 | 4
+  4 | 80 | 9 | 4
+- 7 | 623 | 475 | 4
+- 7 | 623 | 475 | 4
++ 7 | o | 1139643843 | 4
++ 7 | o | 1139643843 | 4
+  8 | 80 | 9 | 4
+  8 | 80 | 9 | 4
+-- below are some requests executed before(partial) --
+-- init data
+CREATE TABLE Update_select_t1(id int, t_name char(10), col1 int, col2 int);
+CREATE TABLE Update_select_t2(id int, t_name char(10), col1 int, col2 int);
+insert into Update_select_t1 VALUES (2, '3POIXO', 8, 4);
+insert into Update_select_t1 VALUES (3, 'JYA2AU', 1, 5);
+insert into Update_select_t1 VALUES (2, 'CWPTO9HNI', 9, 5);
+...
+-- update a row
+UPDATE Update_select_t1 SET t_name='S', col2=4 WHERE id=4;
+SELECT * FROM Update_select_t1;
+UPDATE Update_select_t1 SET col1=2, col2=(select Update_select_t2.col2 from Update_select_t2 where Update_select_t2.id=1) WHERE id=2;
+SELECT * FROM Update_select_t1;
+-- update rows
+UPDATE Update_select_t1 SET col1=7, col2=1 WHERE col2=1;
+SELECT * FROM Update_select_t1;
+-- update without condition
+UPDATE Update_select_t2 SET t_name=(select Update_select_t1.t_name from Update_select_t1 where Update_select_t1.id=5);
+SELECT * FROM Update_select_t2;
+UPDATE Update_select_t2 SET col1=9,col2=4;
+SELECT * FROM Update_select_t2;
+-- update in vain
+UPDATE Update_select_t2 SET t_name='1FP',col1=367 where col1=109;
+-- aggregation
+UPDATE Update_select_t2 SET col1=(select max(Update_select_t1.col2) from Update_select_t1),col2=(select max(Update_select_t1.col1) from Update_select_t1) where id=6;
+SELECT * FROM Update_select_t2;
+UPDATE Update_select_t2 SET col1=(select Update_select_t1.col1 from Update_select_t1 where Update_select_t1.id=2),col2=(select Update_select_t1.col2 from Update_select_t1 where Update_select_t1.id=2) where id=5;
+SELECT * FROM Update_select_t2;
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++
 UPDATE null_table4 SET id=(SELECT null_table3.num from null_table3 where null_table3.id=3) where id=4;
 + failed to receive response from observer. reason=Failed to receive from server. poll return POLLHUP=16 or POLLERR=str(event & select.POLLERR)#0  0x000056421235a4a2 in Value::attr_type() const ()
 #1  0x0000564212351c75 in Table::update_record(std::vector<st...
