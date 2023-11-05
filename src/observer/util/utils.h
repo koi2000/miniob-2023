@@ -22,7 +22,7 @@ static bool is_numeric_type(AttrType type) {
     return type == INTS || type == FLOATS;
 }
 
-std::string value2string(const Value& value) {
+static std::string value2string(const Value& value) {
     if (value.attr_type() == INTS) {
         return std::to_string(*(int*)value.data());
     }
