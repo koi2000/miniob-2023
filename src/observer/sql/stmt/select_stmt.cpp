@@ -38,12 +38,12 @@ static void wildcard_fields(Table* table, std::vector<Field>& field_metas) {
     }
 }
 
-RC SelectStmt::create(Db* db, const SelectSqlNode& select_sql, Stmt*& stmt) {
+RC SelectStmt::create(Db* db, const SelectSqlNode& select_sqls, Stmt*& stmt) {
     if (nullptr == db) {
         LOG_WARN("invalid argument. db is null");
         return RC::INVALID_ARGUMENT;
     }
-
+    SelectSqlNode& select_sql = const_cast<SelectSqlNode&>(select_sqls);
     // collect tables in `from` statement
     std::vector<Table*> tables;
     std::unordered_map<std::string, Table*> table_map;
@@ -63,11 +63,15 @@ RC SelectStmt::create(Db* db, const SelectSqlNode& select_sql, Stmt*& stmt) {
         tables.push_back(table);
         table_map.insert(std::pair<std::string, Table*>(table_name, table));
     }
+    Table* default_table = nullptr;
+    if (tables.size() == 1) {
+        default_table = tables[0];
+    }
     // 处理aggregate相关问题
     if (!select_sql.aggrs.empty() && !select_sql.attributes.empty()) {
         return RC::SCHEMA_TABLE_NOT_EXIST;
     }
-    std::vector<AggrNode> aggrNodes = select_sql.aggrs;
+    std::vector<AggrNode>& aggrNodes = const_cast<std::vector<AggrNode>&>(select_sql.aggrs);
     if (!aggrNodes.empty()) {
         for (AggrNode& aggrNode : aggrNodes) {
             if (aggrNode.is_attr) {
@@ -77,22 +81,47 @@ RC SelectStmt::create(Db* db, const SelectSqlNode& select_sql, Stmt*& stmt) {
             if (aggrNode.attributes.empty()) {
                 return RC::SCHEMA_TABLE_NOT_EXIST;
             }
-            aggrNode.attribute = aggrNode.attributes[0];
+            std::string relAttr = aggrNode.attributes[0];
+            char delimiter = '.';
+            if (relAttr.find(delimiter) != std::string::npos) {
+                // 分割字符串
+                std::vector<std::string> tokens;
+                size_t startPos = 0;
+                size_t endPos = relAttr.find(delimiter);
+
+                while (endPos != std::string::npos) {
+                    tokens.push_back(relAttr.substr(startPos, endPos - startPos));
+                    startPos = endPos + 1;
+                    endPos = relAttr.find(delimiter, startPos);
+                }
+                // 处理最后一个分割后的部分
+                tokens.push_back(relAttr.substr(startPos));
+                aggrNode.relation = tokens[0];
+                aggrNode.attribute = tokens[1];
+            }
+            else {
+                aggrNode.relation = default_table->name();
+                aggrNode.attribute = aggrNode.attributes[0];
+            }
             if (aggrNode.attributes.size() >= 2) {
                 return RC::SCHEMA_TABLE_NOT_EXIST;
             }
         }
     }
 
-    for (AggrNode aggrNode : select_sql.aggrs) {
-        std::vector<FieldMeta> field_metas = *tables[0]->table_meta().field_metas();
+    for (AggrNode& aggrNode : select_sql.aggrs) {
+        if (aggrNode.relation == "") {
+            aggrNode.relation = default_table->name();
+        }
+        std::vector<FieldMeta> field_metas = *table_map[aggrNode.relation]->table_meta().field_metas();
         int flag = 0;
         for (FieldMeta field_meta : field_metas) {
-            if (field_meta.name() == aggrNode.attributes[0]) {
+            std::string re = aggrNode.attribute;
+            if (field_meta.name() == aggrNode.attribute) {
                 flag = 1;
                 break;
             }
-            if (aggrNode.attributes[0] == "*") {
+            if (aggrNode.attribute == "*") {
                 if (aggrNode.type == MAXS || aggrNode.type == MINS || aggrNode.type == AVGS) {
                     return RC::SCHEMA_FIELD_MISSING;
                 }
@@ -192,11 +221,6 @@ RC SelectStmt::create(Db* db, const SelectSqlNode& select_sql, Stmt*& stmt) {
 
     LOG_INFO("got %d tables in from stmt and %d fields in query stmt", tables.size(), query_fields.size());
 
-    Table* default_table = nullptr;
-    if (tables.size() == 1) {
-        default_table = tables[0];
-    }
-
     // create filter statement in `where` statement
     FilterStmt* filter_stmt = nullptr;
     RC rc = FilterStmt::create(db, default_table, &table_map, select_sql.conditions.data(),
@@ -217,6 +241,7 @@ RC SelectStmt::create(Db* db, const SelectSqlNode& select_sql, Stmt*& stmt) {
     SelectStmt* select_stmt = new SelectStmt();
     // TODO add expression copy
     select_stmt->tables_.swap(tables);
+    select_stmt->table_map_.swap(table_map);
     select_stmt->query_fields_.swap(query_fields);
     select_stmt->filter_stmt_ = filter_stmt;
     select_stmt->inner_join_filter_stmt_ = inner_join_filter_stmt;

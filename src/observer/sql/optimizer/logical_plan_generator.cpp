@@ -86,6 +86,7 @@ RC LogicalPlanGenerator::create_plan(SelectStmt* select_stmt, unique_ptr<Logical
     unique_ptr<LogicalOperator> table_oper(nullptr);
 
     const std::vector<Table*>& tables = select_stmt->tables();
+    std::unordered_map<std::string, Table*> table_map = select_stmt->table_map();
     const std::vector<Field>& all_fields = select_stmt->query_fields();
     for (Table* table : tables) {
         std::vector<Field> fields;
@@ -180,7 +181,7 @@ RC LogicalPlanGenerator::create_plan(SelectStmt* select_stmt, unique_ptr<Logical
             // }
             field_names.push_back(aggrNode.attribute);
 
-            std::vector<FieldMeta> field_metas = *tables[0]->table_meta().field_metas();
+            std::vector<FieldMeta> field_metas = *table_map[aggrNode.relation]->table_meta().field_metas();
             int flag = 0;
             for (FieldMeta field_meta : field_metas) {
                 if (field_meta.name() == aggrNode.attribute) {

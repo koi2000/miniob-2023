@@ -773,6 +773,28 @@ AGGR_ATTR_LIST:
         $$->push_back($2);
         free($2);
     }
+    | ID DOT ID AGGR_ATTR_LIST {
+        if($4 != nullptr) {
+            $$ = $4;
+        }else{
+            $$ = new std::vector<std::string>();
+        }
+        std::string str = std::string($1) + "." + std::string($3);
+        $$->push_back(str);
+        free($1);
+        free($3);
+    }
+    | COMMA ID DOT ID AGGR_ATTR_LIST {
+        if ($5 != nullptr) {
+            $$ = $5;
+        }else {
+            $$ = new std::vector<std::string>();
+        }
+        std::string str = std::string($2) + "." + std::string($4);
+        $$->push_back(str);
+        free($2);
+        free($4);
+    }
     ;
 
 AGGR_TYPE:

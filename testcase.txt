@@ -1,5 +1,68 @@
 修改为从后往前更新
 =========================================
++++++++++++++++++++++++++++++++++++++++++++++++++++++
+UPDATE Update_select_t2 SET col1=(select max(Update_select_t1.col2) from Update_select_t1),col2=(select max(Update_select_t1.col1) from Update_select_t1) where id=1;
+UPDATE Update_select_t2 SET col1=(select max(Update_select_t1.col1) from Update_select_t1) where id=1;
+UPDATE Update_select_t2 SET col2=(select max(Update_select_t1.col1) from Update_select_t1) where id=1;
+
+CREATE TABLE Update_select_t1(id int, t_name char(10), col1 int, col2 int);
+CREATE TABLE Update_select_t2(id int, t_name char(10), col1 int, col2 int);
+insert into Update_select_t2 VALUES (1, '2', 7, 5);
+insert into Update_select_t1 VALUES (8, 'KR4YK3O', 2, 2);
+insert into Update_select_t1 VALUES (1, '2', 7, 5);
+insert into Update_select_t1 VALUES (9, 'GC', 6, 9);
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++
+UPDATE null_table4 SET id=null where num is null;
+UPDATE null_table4 SET num=(SELECT null_table3.num from null_table3 where null_table3.id=3) where id=7;
+- SUCCESS
++ FAILURE
+-- below are some requests executed before(partial) --
+-- init update-select
+CREATE TABLE null_table4(id int not null, num int null, name char(10) null);
+INSERT INTO null_table4 VALUES (8, 8, 'N8');
+INSERT INTO null_table4 VALUES (7, 7, 'N7');
+INSERT INTO null_table4 VALUES (5, 5, 'N5');
+UPDATE null_table4 SET num=null where id=8;
+...
+-- update-select
+UPDATE null_table4 SET name=null where num is null;
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++
+UPDATE Update_select_t2 SET col1=(select max(Update_select_t1.col2) from Update_select_t1),col2=(select max(Update_select_t1.col1) from Update_select_t1) where id=1;
+UPDATE Update_select_t2 SET col1=(select max(Update_select_t1.col1) from Update_select_t1) where id=1;
+- SUCCESS
++ SQL_SYNTAX > Failed to parse sql
+-- below are some requests executed before(partial) --
+-- init data
+CREATE TABLE Update_select_t1(id int, t_name char(10), col1 int, col2 int);
+CREATE TABLE Update_select_t2(id int, t_name char(10), col1 int, col2 int);
+insert into Update_select_t2 VALUES (1, '2', 7, 5);
+
+insert into Update_select_t1 VALUES (8, 'KR4YK3O', 2, 2);
+insert into Update_select_t1 VALUES (1, '2', 7, 5);
+insert into Update_select_t1 VALUES (9, 'GC', 6, 9);
+...
+-- update a row
+UPDATE Update_select_t1 SET t_name='AXOLVWZ', col2=5 WHERE id=3;
+SELECT * FROM Update_select_t1;
+UPDATE Update_select_t1 SET col1=2, col2=(select Update_select_t2.col2 from Update_select_t2 where Update_select_t2.id=1) WHERE id=8;
+SELECT * FROM Update_select_t1;
+-- update rows
+UPDATE Update_select_t1 SET col1=5, col2=4 WHERE col2=8;
+SELECT * FROM Update_select_t1;
+-- update without condition
+UPDATE Update_select_t2 SET t_name=(select Update_select_t1.t_name from Update_select_t1 where Update_select_t1.id=3);
+SELECT * FROM Update_select_t2;
+UPDATE Update_select_t2 SET col1=7,col2=3;
+SELECT * FROM Update_select_t2;
+-- update in vain
+UPDATE Update_select_t2 SET t_name='Q',col1=171 where col1=106;
+++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
 create table Update_table_not_exist(t_name char(20),col1 int,id int);
 
 
