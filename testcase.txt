@@ -1,6 +1,43 @@
 修改为从后往前更新
 目前update-select和simple-sub-query存在问题
 =========================================
+UPDATE null_table6 set id1=(select null_table5.id from null_table5 where null_table5.num=9),id2=2 where id1=2 and num=2;
+- SUCCESS
++ FAILURE
+-- below are some requests executed before(partial) --
+-- unique index
+CREATE TABLE null_table5(id int null, num int not null);
+CREATE UNIQUE INDEX index_id on null_table5(id);
+INSERT INTO null_table5 VALUES(1,1);
+INSERT INTO null_table5 VALUES(1,1);
+INSERT INTO null_table5 VALUES(null,1);
+...
+-- null in join
+CREATE TABLE null_table6(id1 int null, id2 int null, num int not null);
+CREATE UNIQUE INDEX index_id on null_table6(id1, id2);
+INSERT INTO null_table6 VALUES(2,null,2);
+INSERT INTO null_table6 VALUES(1,null,1);
+INSERT INTO null_table6 VALUES(null,null,1);
+...
+++++++++++++++++++++++++++++++++++++++++++++++++++++
+select * from ssq_1 where feat1 >= (select min(ssq_2.feat2) from ssq_2);
+- 1 | 62 | 68.34
+- 18 | 9 | 62.25
+- 66 | 98 | 31.05
+- 83 | 39 | 94.95
+- 88 | 98 | 52.75
+- 90 | 6 | 72.85
+- 93 | 12 | 91.31
+- 94 | 87 | 61.88
+-- below are some requests executed before(partial) --
+-- init data
+CREATE TABLE ssq_1(id int, col1 int, feat1 float);
+CREATE TABLE ssq_2(id int, col2 int, feat2 float);
+CREATE TABLE ssq_3(id int, col3 int, feat3 float);
+CREATE TABLE ssq_4(id int, col4 char(20));
+INSERT INTO ssq_1 VALUES (18, 9, 62.25);
+...
++++++++++++++++++++++++++++++++++++++++++++++++++++++
 select * from ssq_1 where id = (select ssq_2.id from ssq_2 where col2 = 66);
 - FAILURE
 -- below are some requests executed before(partial) --

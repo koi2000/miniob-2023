@@ -52,8 +52,11 @@ Value AggrPhysicalOperator::getAggrValue(std::vector<Value>& values,
                 result.set_string(std::string("").c_str());
             }
             if (!values.empty()) {
-                if (attr_type == INTS || attr_type == FLOATS || attr_type == DATES) {
+                if (attr_type == INTS || attr_type == DATES) {
                     result.set_int(values[0].get_int());
+                }
+                else if (attr_type == FLOATS) {
+                    result.set_float(values[0].get_float());
                 }
                 else if (attr_type == CHARS) {
                     result.set_string(values[0].get_string().c_str());
@@ -69,8 +72,11 @@ Value AggrPhysicalOperator::getAggrValue(std::vector<Value>& values,
                 result.set_string(std::string("").c_str());
             }
             if (!values.empty()) {
-                if (attr_type == INTS || attr_type == FLOATS || attr_type == DATES) {
+                if (attr_type == INTS || attr_type == DATES) {
                     result.set_int(values[0].get_int());
+                }
+                else if (attr_type == FLOATS) {
+                    result.set_float(values[0].get_float());
                 }
                 else if (attr_type == CHARS) {
                     result.set_string(values[0].get_string().c_str());
@@ -169,7 +175,8 @@ RC AggrPhysicalOperator::next() {
             val.set_int(count);
             results.push_back(val);
             continue;
-        }else if(field_names_[i] == "*" && aggrTypes_[i] != COUNTS){
+        }
+        else if (field_names_[i] == "*" && aggrTypes_[i] != COUNTS) {
             return RC::SCHEMA_DB_NOT_EXIST;
         }
         results.push_back(getAggrValue(values_list[i], field_names_[i], field_types_[i], aggrTypes_[i]));

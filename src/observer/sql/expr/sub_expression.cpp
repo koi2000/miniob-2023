@@ -47,7 +47,7 @@ RC InComparisonExpr::compare_value(const Value& left, std::vector<Value>& right,
     RC rc = RC::SUCCESS;
     value = false;
     if (!(comp_ == IN || comp_ == NOT_IN || comp_ == EXISTS || comp_ == NOT_EXISTS)) {
-        if (right.size() >= 1) {
+        if (right.size() > 1) {
             rc = RC::INTERNAL;
             return rc;
         }
