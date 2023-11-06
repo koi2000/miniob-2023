@@ -57,6 +57,9 @@ RC UpdatePhysicalOperator::next() {
                     return RC::FILE_NOT_EXIST;
                 }
                 if (count == 0) {
+                    Value val;
+                    val.set_isNull(true);
+                    values.push_back(val);
                     return RC::FILE_NOT_EXIST;
                 }
             }

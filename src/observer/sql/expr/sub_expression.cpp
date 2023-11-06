@@ -62,36 +62,28 @@ RC InComparisonExpr::compare_value(const Value& left, std::vector<Value>& right,
         if (left.attr_type() == INTS) {
             try_to_cast(INTS, true, val);
             if (val.get_int() == left.get_int()) {
-                if (comp_ == IN) {
-                    value = true;
-                }
+                value = true;
                 break;
             }
         }
         if (left.attr_type() == FLOATS) {
             try_to_cast(FLOATS, true, val);
             if (val.get_float() == left.get_float()) {
-                if (comp_ == IN) {
-                    value = true;
-                }
+                value = true;
                 break;
             }
         }
         if (left.attr_type() == CHARS) {
             try_to_cast(CHARS, true, val);
             if (val.get_string() == left.get_string()) {
-                if (comp_ == IN) {
-                    value = true;
-                }
+                value = true;
                 break;
             }
         }
         if (left.attr_type() == DATES) {
             try_to_cast(DATES, true, val);
             if (val.get_int() == left.get_int()) {
-                if (comp_ == IN) {
-                    value = true;
-                }
+                value = true;
                 break;
             }
         }
@@ -99,6 +91,9 @@ RC InComparisonExpr::compare_value(const Value& left, std::vector<Value>& right,
     if (comp_ == NOT_IN) {
         if (!value) {
             value = true;
+        }
+        else {
+            value = false;
         }
     }
     return RC::SUCCESS;
