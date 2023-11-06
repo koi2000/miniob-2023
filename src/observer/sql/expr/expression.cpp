@@ -79,7 +79,7 @@ ComparisonExpr::~ComparisonExpr() {}
 
 RC ComparisonExpr::compare_value(const Value& left, const Value& right, bool& result) const {
     RC rc = RC::SUCCESS;
-    
+
     // 先尝试走is判断
     if (comp_ == IS_COM) {
         if (left.isNull()) {
@@ -119,7 +119,7 @@ RC ComparisonExpr::compare_value(const Value& left, const Value& right, bool& re
         }
         default: break;
     }
-    
+
     int cmp_result = left.compare(right);
     result = false;
     switch (comp_) {

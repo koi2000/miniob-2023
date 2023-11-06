@@ -16,6 +16,7 @@ See the Mulan PSL v2 for more details. */
 
 #include "sql/expr/expression.h"
 #include "sql/parser/parse_defs.h"
+#include "sql/stmt/select_stmt.h"
 #include "sql/stmt/stmt.h"
 #include "util/date.h"
 #include <unordered_map>
@@ -28,8 +29,22 @@ class FieldMeta;
 struct FilterObj
 {
     bool is_attr;
+    int is_subselect = 0;
+
     Field field;
     Value value;
+    std::vector<Value> in_values;
+    SelectStmt* select_stmt;
+
+    void init_sub_constant(std::vector<Value> in_values_) {
+        is_subselect = 1;
+        in_values.swap(in_values_);
+    }
+
+    void init_sub_select(SelectStmt* select_stmt_){
+        is_subselect = 2;
+        select_stmt = std::move(select_stmt_);
+    }
 
     void init_attr(const Field& field) {
         is_attr = true;

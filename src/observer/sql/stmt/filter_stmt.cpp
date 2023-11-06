@@ -176,6 +176,22 @@ RC FilterStmt::create_filter_unit(Db* db,
         filter_obj.init_attr(Field(table, field));
         filter_unit->set_right(filter_obj);
     }
+    else if (condition.right_is_subselect == 1) {
+        FilterObj filter_obj;
+        filter_obj.init_sub_constant(condition.in_values);
+        filter_unit->set_right(filter_obj);
+    }
+    else if (condition.right_is_subselect == 2) {
+        FilterObj filter_obj;
+        Stmt* select_stmt = nullptr;
+        RC rc = SelectStmt::create(db, *condition.select, select_stmt);
+        if (rc != RC::SUCCESS) {
+            LOG_WARN("failed to create filter statement. rc=%d:%s", rc, strrc(rc));
+            return rc;
+        }
+        filter_obj.init_sub_select(std::move(dynamic_cast<SelectStmt*>(select_stmt)));
+        filter_unit->set_right(filter_obj);
+    }
     else {
         if (condition.right_value.attr_type() == CHARS) {
             int32_t date = -1;

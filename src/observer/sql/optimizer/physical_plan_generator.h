@@ -45,7 +45,7 @@ class PhysicalPlanGenerator {
 
     RC create(LogicalOperator& logical_operator, std::unique_ptr<PhysicalOperator>& oper);
 
-  private:
+  public:
     RC create_plan(TableGetLogicalOperator& logical_oper, std::unique_ptr<PhysicalOperator>& oper);
     RC create_plan(PredicateLogicalOperator& logical_oper, std::unique_ptr<PhysicalOperator>& oper);
     RC create_plan(ProjectLogicalOperator& logical_oper, std::unique_ptr<PhysicalOperator>& oper);

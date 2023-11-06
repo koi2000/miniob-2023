@@ -26,6 +26,8 @@ See the Mulan PSL v2 for more details. */
 #include "sql/operator/project_logical_operator.h"
 #include "sql/operator/table_get_logical_operator.h"
 #include "sql/operator/update_logical_operator.h"
+#include "sql/optimizer/physical_plan_generator.h"
+#include "sql/expr/sub_expression.h"
 
 #include "sql/stmt/calc_stmt.h"
 #include "sql/stmt/delete_stmt.h"
@@ -236,12 +238,38 @@ RC LogicalPlanGenerator::create_plan(FilterStmt* filter_stmt, unique_ptr<Logical
                                         static_cast<Expression*>(new FieldExpr(filter_obj_left.field)) :
                                         static_cast<Expression*>(new ValueExpr(filter_obj_left.value)));
 
-        unique_ptr<Expression> right(filter_obj_right.is_attr ?
-                                         static_cast<Expression*>(new FieldExpr(filter_obj_right.field)) :
-                                         static_cast<Expression*>(new ValueExpr(filter_obj_right.value)));
+        if (filter_obj_right.is_subselect == 1) {
+            unique_ptr<Expression> right(static_cast<Expression*>(new ValueListExpr(filter_obj_right.in_values)));
 
-        ComparisonExpr* cmp_expr = new ComparisonExpr(filter_unit->comp(), std::move(left), std::move(right));
-        cmp_exprs.emplace_back(cmp_expr);
+            InComparisonExpr* cmp_expr = new InComparisonExpr(filter_unit->comp(), std::move(left), std::move(right));
+            cmp_exprs.emplace_back(cmp_expr);
+        }
+        else if (filter_obj_right.is_subselect == 2) {
+            unique_ptr<LogicalOperator> logical_operator;
+            unique_ptr<PhysicalOperator> physical_operator;
+            RC rc = create_plan(filter_obj_right.select_stmt, logical_operator);
+
+            if (rc != RC::SUCCESS) {
+                return rc;
+            }
+            PhysicalPlanGenerator phy;
+            rc = phy.create(*logical_operator.get(), physical_operator);
+            if (rc != RC::SUCCESS) {
+                return rc;
+            }
+            unique_ptr<Expression> right(static_cast<Expression*>(new SubSelectExpr(std::move(physical_operator))));
+            InComparisonExpr* cmp_expr = new InComparisonExpr(filter_unit->comp(), std::move(left), std::move(right));
+
+            cmp_exprs.emplace_back(cmp_expr);
+        }
+        else {
+            unique_ptr<Expression> right(filter_obj_right.is_attr ?
+                                             static_cast<Expression*>(new FieldExpr(filter_obj_right.field)) :
+                                             static_cast<Expression*>(new ValueExpr(filter_obj_right.value)));
+
+            ComparisonExpr* cmp_expr = new ComparisonExpr(filter_unit->comp(), std::move(left), std::move(right));
+            cmp_exprs.emplace_back(cmp_expr);
+        }
     }
 
     unique_ptr<PredicateLogicalOperator> predicate_oper;

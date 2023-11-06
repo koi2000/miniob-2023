@@ -37,6 +37,7 @@ enum OrderPolicy{
 };
 
 class Expression;
+struct SelectSqlNode;
 struct AggrNode {
     std::string relation;
     std::vector<std::string> attributes;
@@ -79,6 +80,10 @@ enum CompOp {
     GREAT_THAN,   ///< ">"
     STR_LIKE,       ///< "like"
     STR_NOT_LIKE,   ///< "not like"
+    EXISTS,
+    NOT_EXISTS,
+    IN,
+    NOT_IN,
     NO_OP
 };
 
@@ -103,6 +108,11 @@ struct ConditionSqlNode
                                 ///< 1时，操作符右边是属性名，0时，是属性值
     RelAttrSqlNode right_attr;  ///< right-hand side attribute if right_is_attr = TRUE 右边的属性
     Value right_value;          ///< right-hand side value if right_is_attr = FALSE
+
+    int right_is_subselect;       ///< 记录是不是子查询
+                                  ///< 记录是不是子查询
+    std::vector<Value> in_values; ///< 记录右面value的list
+    SelectSqlNode* select;         ///< 右面的子查询语句
 };
 
 /**

@@ -128,6 +128,8 @@ SUM                                     RETURN_TOKEN(SUM);
 ORDER                                   RETURN_TOKEN(ORDER);
 NULL                                    RETURN_TOKEN(NULL_T);
 IS                                      RETURN_TOKEN(IS);
+IN                                      RETURN_TOKEN(INS);
+EXISTS                                  RETURN_TOKEN(EXISTSS);
 ASC                                     RETURN_TOKEN(ASC);
 BY                                      RETURN_TOKEN(BY);
 {ID}                                    yylval->string=strdup(yytext); RETURN_TOKEN(ID);

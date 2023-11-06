@@ -105,6 +105,8 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
         NOT
         NULL_T
         IS
+        INS
+        EXISTSS
         MAX
         MIN
         COUNT
@@ -448,6 +450,15 @@ value_list:
     /* empty */
     {
       $$ = nullptr;
+    }
+    | value value_list {
+        if ($2 != nullptr) {
+            $$ = $2;
+        } else {
+            $$ = new std::vector<Value>;
+        }
+        $$->emplace_back(*$1);
+        delete $1;
     }
     | COMMA value value_list  { 
       if ($3 != nullptr) {
@@ -1087,6 +1098,50 @@ condition:
 
         delete $1;
     }
+    | value comp_op LBRACE value_list RBRACE {
+        $$ = new ConditionSqlNode;
+        $$ -> left_is_attr = 0;
+        $$ -> left_value = *$1;
+        $$ -> right_is_attr = 0;
+        $$ -> right_is_subselect = 1;
+        $$ -> in_values.swap(*$4);
+        $$ -> comp = $2;
+
+        delete $1;
+    }
+    | value comp_op LBRACE select_stmt RBRACE {
+        $$ = new ConditionSqlNode;
+        $$ -> left_is_attr = 0;
+        $$ -> left_value = *$1;
+        $$ -> right_is_attr = 0;
+        $$ -> right_is_subselect = 2;
+        $$ -> select = &($4 -> selection);
+        $$ -> comp = $2;
+
+        delete $1;
+    } 
+    | rel_attr comp_op LBRACE value_list RBRACE {
+        $$ = new ConditionSqlNode;
+        $$->left_is_attr = 1;
+        $$->left_attr = *$1;
+        $$->right_is_attr = 0;
+        $$->right_is_subselect = 1;
+        $$->in_values.swap(*$4);
+        $$->comp = $2;
+
+        delete $1;
+    }
+    | rel_attr comp_op LBRACE select_stmt RBRACE {
+        $$ = new ConditionSqlNode;
+        $$ -> left_is_attr = 1;
+        $$ -> left_attr = *$1;
+        $$ -> right_is_attr = 0;
+        $$ -> right_is_subselect = 2;
+        $$ -> select = &($4 -> selection);
+        $$ -> comp = $2;
+
+        delete $1;
+    }
     ;
 
 comp_op:
@@ -1098,6 +1153,10 @@ comp_op:
     | NE { $$ = NOT_EQUAL; }
     | LIKE { $$ = STR_LIKE; };
     | NOT LIKE { $$ = STR_NOT_LIKE; };    
+    | INS { $$ = IN; };    
+    | NOT INS { $$ = NOT_IN; };    
+    | EXISTSS { $$ = EXISTS; };    
+    | NOT EXISTSS { $$ = NOT_EXISTS; };    
     ;
 
 load_data_stmt:

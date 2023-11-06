@@ -100,19 +100,21 @@ extern int yydebug;
     NOT = 306,
     NULL_T = 307,
     IS = 308,
-    MAX = 309,
-    MIN = 310,
-    COUNT = 311,
-    AVG = 312,
-    SUM = 313,
-    ASC = 314,
-    ORDER = 315,
-    BY = 316,
-    NUMBER = 317,
-    FLOAT = 318,
-    ID = 319,
-    SSS = 320,
-    UMINUS = 321
+    INS = 309,
+    EXISTSS = 310,
+    MAX = 311,
+    MIN = 312,
+    COUNT = 313,
+    AVG = 314,
+    SUM = 315,
+    ASC = 316,
+    ORDER = 317,
+    BY = 318,
+    NUMBER = 319,
+    FLOAT = 320,
+    ID = 321,
+    SSS = 322,
+    UMINUS = 323
   };
 #endif
 
@@ -120,7 +122,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 118 "yacc_sql.y"
+#line 120 "yacc_sql.y"
 
   ParsedSqlNode *                   sql_node;
   ConditionSqlNode *                condition;
@@ -148,7 +150,7 @@ union YYSTYPE
   AggrNode*                         aggr_node;
   std::vector<AggrNode>*            aggr_list;
 
-#line 152 "yacc_sql.hpp"
+#line 154 "yacc_sql.hpp"
 
 };
 typedef union YYSTYPE YYSTYPE;
