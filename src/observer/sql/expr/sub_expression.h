@@ -80,6 +80,7 @@ class SubSelectExpr : public Expression {
                 value.set_isNull(true);
                 values.push_back(value);
             }
+            visited = 1;
         }
         return values;
     }
