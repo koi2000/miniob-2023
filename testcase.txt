@@ -1,6 +1,94 @@
 修改为从后往前更新
 目前update-select和simple-sub-query存在问题
 =========================================
+UPDATE Update_select_t1 SET t_name='C', col2=8 WHERE id=2;
+SELECT * FROM Update_select_t1;
+UPDATE Update_select_t1 SET col1=2, col2=(select Update_select_t2.col2 from Update_select_t2 where Update_select_t2.id=1) WHERE id=3;
++ failed to receive response from observer. reason=Failed to receive from server. poll return POLLHUP=16 or POLLERR=str(event & select.POLLERR)#0  __pthread_kill_implementation (no_tid=0, signo=6, threadid=140246510319168) at ./nptl/pthread_kill.c:44
+#1  __p...
+failed to receive response from observer. reason=Failed to receive from server. poll return POLLHUP=16 or POLLERR=str(event & select.POLLERR)#0  __pthread_kill_implementation (no_tid=0, signo=6, threadid=140246510319168) at ./nptl/pthread_kill.c:44
+#1  __pthread_kill_internal (signo=6, threadid=140246510319168) at ./nptl/pthread_kill.c:78
+#2  __GI___pthread_kill (threadid=140246510319168, signo=signo@entry=6) at ./nptl/pthread_kill.c:89
+#3  0x00007f8db13a9476 in __GI_raise (sig=sig@entry=6) at ../sysdeps/posix/raise.c:26
+#4  0x00007f8db138f7f3 in __GI_abort () at ./stdlib/abort.c:79
+#5  0x00007f8db138f71b in __assert_fail_base (fmt=0x7f8db1544150 "%s%s%s:%u: %s%sAssertion `%s' failed.\n%n", assertion=0x55cbbd155612 "tuple != nullptr", file=0x55cbbd1553f0 "/home/miniob/miniob_test/players/miniob/src/observer/net/plain_communicator.cpp", line=224, function=<optimized out>) at ./assert/assert.c:92
+#6  0x00007f8db13a0e96 in __GI___assert_fail (assertion=0x55cbbd155612 "tuple != nullptr", file=0x55cbbd1553f0 "/home/miniob/miniob_test/players/miniob/src/observer/net/plain_communicator.cpp", line=224, function=0x55cbbd1555d0 "RC PlainCommunicator::write_result_internal(SessionEvent*, bool&)") at ./assert/assert.c:101
+#7  0x000055cbbd02125f in PlainCommunicator::write_result_internal(SessionEvent*, bool&) ()
+#8  0x000055cbbd0203c1 in PlainCommunicator::write_result(SessionEvent*, bool&) ()
+#9  0x000055cbbcf8a3eb in SessionStage::handle_request(common::StageEvent*) ()
+#10 0x000055cbbcf89eab in SessionStage::handle_event(common::StageEvent*) ()
+#11 0x000055cbbd106e5e in common::Threadpool::run_thread(void*) ()
+#12 0x00007f8db13fbb43 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:442
+#13 0x00007f8db148cbb4 in clone () at ../sysdeps/unix/sysv/linux/x86_64/clone.S:100
+-- below are some requests executed before(partial) --
+-- init data
+CREATE TABLE Update_select_t1(id int, t_name char(10), col1 int, col2 int);
+CREATE TABLE Update_select_t2(id int, t_name char(10), col1 int, col2 int);
+insert into Update_select_t1 VALUES (6, 'O', 7, 4);
+insert into Update_select_t1 VALUES (7, 'MWWKJB', 7, 3);
+insert into Update_select_t1 VALUES (6, 'Z3KKJ4UX2R', 1, 1);
+...
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+UPDATE null_table4 SET id=null where num is null;
+UPDATE null_table4 SET num=(SELECT null_table3.num from null_table3 where null_table3.id=9) where id=4;
++ failed to receive response from observer. reason=Failed to receive from server. poll return POLLHUP=16 or POLLERR=str(event & select.POLLERR)#0  __pthread_kill_implementation (no_tid=0, signo=6, threadid=140035910305344) at ./nptl/pthread_kill.c:44
+#1  __p...
+failed to receive response from observer. reason=Failed to receive from server. poll return POLLHUP=16 or POLLERR=str(event & select.POLLERR)#0  __pthread_kill_implementation (no_tid=0, signo=6, threadid=140035910305344) at ./nptl/pthread_kill.c:44
+#1  __pthread_kill_internal (signo=6, threadid=140035910305344) at ./nptl/pthread_kill.c:78
+#2  __GI___pthread_kill (threadid=140035910305344, signo=signo@entry=6) at ./nptl/pthread_kill.c:89
+#3  0x00007f5ca8fd7476 in __GI_raise (sig=sig@entry=6) at ../sysdeps/posix/raise.c:26
+#4  0x00007f5ca8fbd7f3 in __GI_abort () at ./stdlib/abort.c:79
+#5  0x00007f5ca8fbd71b in __assert_fail_base (fmt=0x7f5ca9172150 "%s%s%s:%u: %s%sAssertion `%s' failed.\n%n", assertion=0x55f00b8a9612 "tuple != nullptr", file=0x55f00b8a93f0 "/home/miniob/miniob_test/players/miniob/src/observer/net/plain_communicator.cpp", line=224, function=<optimized out>) at ./assert/assert.c:92
+#6  0x00007f5ca8fcee96 in __GI___assert_fail (assertion=0x55f00b8a9612 "tuple != nullptr", file=0x55f00b8a93f0 "/home/miniob/miniob_test/players/miniob/src/observer/net/plain_communicator.cpp", line=224, function=0x55f00b8a95d0 "RC PlainCommunicator::write_result_internal(SessionEvent*, bool&)") at ./assert/assert.c:101
+#7  0x000055f00b77525f in PlainCommunicator::write_result_internal(SessionEvent*, bool&) ()
+#8  0x000055f00b7743c1 in PlainCommunicator::write_result(SessionEvent*, bool&) ()
+#9  0x000055f00b6de3eb in SessionStage::handle_request(common::StageEvent*) ()
+#10 0x000055f00b6ddeab in SessionStage::handle_event(common::StageEvent*) ()
+#11 0x000055f00b85ae5e in common::Threadpool::run_thread(void*) ()
+#12 0x00007f5ca9029b43 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:442
+#13 0x00007f5ca90babb4 in clone () at ../sysdeps/unix/sysv/linux/x86_64/clone.S:100
+-- below are some requests executed before(partial) --
+-- init update-select
+CREATE TABLE null_table4(id int not null, num int null, name char(10) null);
+INSERT INTO null_table4 VALUES (4, 4, 'N4');
+INSERT INTO null_table4 VALUES (1, 1, 'N1');
+INSERT INTO null_table4 VALUES (3, 3, 'N3');
+UPDATE null_table4 SET num=null where id=3;
+...
+-- update-select
+UPDATE null_table4 SET name=null where num is null;
++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+INSERT INTO null_table3 VALUES (6, 5, 'N5');
+
+UPDATE null_table4 SET id=null where num is null;
+UPDATE null_table4 SET num=(SELECT null_table3.num from null_table3 where null_table3.id=6) where id=5;
++ failed to receive response from observer. reason=Failed to receive from server. poll return POLLHUP=16 or POLLERR=str(event & select.POLLERR)#0  __pthread_kill_implementation (no_tid=0, signo=6, threadid=140524382377536) at ./nptl/pthread_kill.c:44
+#1  __p...
+failed to receive response from observer. reason=Failed to receive from server. poll return POLLHUP=16 or POLLERR=str(event & select.POLLERR)#0  __pthread_kill_implementation (no_tid=0, signo=6, threadid=140524382377536) at ./nptl/pthread_kill.c:44
+#1  __pthread_kill_internal (signo=6, threadid=140524382377536) at ./nptl/pthread_kill.c:78
+#2  __GI___pthread_kill (threadid=140524382377536, signo=signo@entry=6) at ./nptl/pthread_kill.c:89
+#3  0x00007fce6331a476 in __GI_raise (sig=sig@entry=6) at ../sysdeps/posix/raise.c:26
+#4  0x00007fce633007f3 in __GI_abort () at ./stdlib/abort.c:79
+#5  0x00007fce6330071b in __assert_fail_base (fmt=0x7fce634b5150 "%s%s%s:%u: %s%sAssertion `%s' failed.\n%n", assertion=0x56388190e612 "tuple != nullptr", file=0x56388190e3f0 "/home/miniob/miniob_test/players/miniob/src/observer/net/plain_communicator.cpp", line=224, function=<optimized out>) at ./assert/assert.c:92
+#6  0x00007fce63311e96 in __GI___assert_fail (assertion=0x56388190e612 "tuple != nullptr", file=0x56388190e3f0 "/home/miniob/miniob_test/players/miniob/src/observer/net/plain_communicator.cpp", line=224, function=0x56388190e5d0 "RC PlainCommunicator::write_result_internal(SessionEvent*, bool&)") at ./assert/assert.c:101
+#7  0x00005638817da25f in PlainCommunicator::write_result_internal(SessionEvent*, bool&) ()
+#8  0x00005638817d93c1 in PlainCommunicator::write_result(SessionEvent*, bool&) ()
+#9  0x00005638817433eb in SessionStage::handle_request(common::StageEvent*) ()
+#10 0x0000563881742eab in SessionStage::handle_event(common::StageEvent*) ()
+#11 0x00005638818bfe5e in common::Threadpool::run_thread(void*) ()
+#12 0x00007fce6336cb43 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:442
+#13 0x00007fce633fdbb4 in clone () at ../sysdeps/unix/sysv/linux/x86_64/clone.S:100
+-- below are some requests executed before(partial) --
+-- init update-select
+CREATE TABLE null_table4(id int not null, num int null, name char(10) null);
+INSERT INTO null_table4 VALUES (8, 8, 'N8');
+INSERT INTO null_table4 VALUES (5, 5, 'N5');
+INSERT INTO null_table4 VALUES (2, 2, 'N2');
+UPDATE null_table4 SET num=null where id=2;
+...
+-- update-select
+UPDATE null_table4 SET name=null where num is null;
++++++++++++++++++++++++++++++++++++++++++++++++++++++
 select * from ssq_1 where (select min(ssq_2.feat2) from ssq_2) <= feat1;
 - 13 | 97 | 89.69
 - 15 | 76 | 93.84

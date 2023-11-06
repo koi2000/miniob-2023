@@ -60,7 +60,6 @@ RC UpdatePhysicalOperator::next() {
                     Value val;
                     val.set_isNull(true);
                     values.push_back(val);
-                    return RC::SUCCESS;
                 }
             }
             else {
