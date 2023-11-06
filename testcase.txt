@@ -1,6 +1,25 @@
 修改为从后往前更新
 目前update-select和simple-sub-query存在问题
 =========================================
+select * from ssq_1 where (select min(ssq_2.feat2) from ssq_2) <= feat1;
+- 13 | 97 | 89.69
+- 15 | 76 | 93.84
+- 18 | 23 | 96.64
+- 35 | 23 | 42.79
+- 35 | 80 | 25.36
+- 58 | 51 | 78.15
+- 66 | 75 | 93.28
+- 77 | 51 | 84.62
+- 88 | 93 | 90.92
+-- below are some requests executed before(partial) --
+-- init data
+CREATE TABLE ssq_1(id int, col1 int, feat1 float);
+CREATE TABLE ssq_2(id int, col2 int, feat2 float);
+CREATE TABLE ssq_3(id int, col3 int, feat3 float);
+CREATE TABLE ssq_4(id int, col4 char(20));
+INSERT INTO ssq_1 VALUES (15, 76, 93.84);
+...
+++++++++++++++++++++++++++++++++++++++++++++++++++++
 select * from ssq_1 where feat1 >= (select min(ssq_2.feat2) from ssq_2);
 - 12 | 34 | 46.28
 - 12 | 68 | 60.24

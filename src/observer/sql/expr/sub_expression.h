@@ -1,5 +1,6 @@
 #include "sql/expr/expression.h"
 #include "sql/operator/physical_operator.h"
+#include "storage/trx/vacuous_trx.h"
 #include "util/utils.h"
 #include <memory>
 /**
@@ -56,11 +57,48 @@ class SubSelectExpr : public Expression {
     SubSelectExpr(std::unique_ptr<PhysicalOperator> physical_operator)
         : select_physical_operator(std::move(physical_operator)) {}
 
+    RC init(CompOp comp_) {
+        VacuousTrxKit kit;
+        RC rc = select_physical_operator->open(kit.create_trx(1));
+        if (rc != RC::SUCCESS) {
+            LOG_WARN("failed to open child operator: %s", strrc(rc));
+        }
+        std::vector<Tuple*> tuples;
+        while (RC::SUCCESS == (rc = select_physical_operator->next())) {
+            Tuple* tuple = select_physical_operator->current_tuple();
+            // tuples.push_back(tuple->clone());
+            if (tuple->cell_num() > 1) {
+                rc = RC::SUB_SELECT_ERROR;
+                return rc;
+            }
+
+            Value value;
+            value.set_string(tuple->to_string().c_str());
+            values.push_back(value);
+        }
+        if (values.empty()) {
+            Value value;
+            value.set_isNull(true);
+            values.push_back(value);
+        }
+        if (!(comp_ == IN || comp_ == NOT_IN || comp_ == EXISTS || comp_ == NOT_EXISTS)) {
+            if (values.size() > 1) {
+                rc = RC::SUB_SELECT_ERROR;
+                return rc;
+            }
+        }
+
+        visited = 1;
+        return RC::SUCCESS;
+    }
+
     virtual ~SubSelectExpr() = default;
 
-    std::vector<Value> get_values(Trx* trx) {
+    RC get_values(Trx* trx, std::vector<Value>& vals) {
+        RC rc = RC::SUCCESS;
         if (visited) {
-            return values;
+            vals = values;
+            return rc;
         }
         else {
             RC rc = select_physical_operator->open(trx);
@@ -71,6 +109,11 @@ class SubSelectExpr : public Expression {
             while (RC::SUCCESS == (rc = select_physical_operator->next())) {
                 Tuple* tuple = select_physical_operator->current_tuple();
                 // tuples.push_back(tuple->clone());
+                if (tuple->cell_num() >= 1) {
+                    rc = RC::SUB_SELECT_ERROR;
+                    return rc;
+                }
+
                 Value value;
                 value.set_string(tuple->to_string().c_str());
                 values.push_back(value);
@@ -82,7 +125,7 @@ class SubSelectExpr : public Expression {
             }
             visited = 1;
         }
-        return values;
+        return rc;
     }
 
     AttrType value_type() const override {

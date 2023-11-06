@@ -91,11 +91,16 @@ void SessionStage::handle_request(StageEvent* event) {
     Session::set_current_session(sev->session());
     sev->session()->set_current_request(sev);
     SQLStageEvent sql_event(sev, sql);
-    (void)handle_sql(&sql_event);
+    RC rc = RC::SUCCESS;
+    rc = handle_sql(&sql_event);
 
     Communicator* communicator = sev->get_communicator();
     bool need_disconnect = false;
-    RC rc = communicator->write_result(sev, need_disconnect);
+    if (rc == RC::SUB_SELECT_ERROR) {
+        sev->sql_result()->set_return_code(rc);
+    }
+
+    rc = communicator->write_result(sev, need_disconnect);
     LOG_INFO("write result return %s", strrc(rc));
     if (need_disconnect) {
         Server::close_connection(communicator);

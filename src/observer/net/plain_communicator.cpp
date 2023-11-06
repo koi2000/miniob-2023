@@ -168,6 +168,9 @@ RC PlainCommunicator::write_result_internal(SessionEvent* event, bool& need_disc
 
     SqlResult* sql_result = event->sql_result();
 
+    if (RC::SUB_SELECT_ERROR == sql_result->return_code()) {
+        return write_state(event, need_disconnect);
+    }
     if (RC::SUCCESS != sql_result->return_code() || !sql_result->has_operator()) {
         return write_state(event, need_disconnect);
     }

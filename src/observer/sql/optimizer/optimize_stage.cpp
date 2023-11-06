@@ -61,7 +61,6 @@ RC OptimizeStage::handle_request(SQLStageEvent* sql_event) {
     }
 
     sql_event->set_operator(std::move(physical_operator));
-
     return rc;
 }
 

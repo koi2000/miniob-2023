@@ -10,3 +10,4 @@ python3 miniob_test.py --test-cases=primary-unique
 python3 miniob_test.py --test-cases=primary-null
 python3 miniob_test.py --test-cases=primary-update
 python3 miniob_test.py --test-cases=primary-join-tables
+python3 miniob_test.py --test-cases=primary-simple-sub-query

@@ -1149,7 +1149,17 @@ condition:
         $$ -> right_is_attr = 0;
         $$ -> right_is_subselect = 2;
         $$ -> select = &($2 -> selection);
-        $$ -> comp = $4;
+        if ($4 == LESS_THAN) {
+            $$ -> comp = GREAT_THAN;
+        } else if($4 == LESS_EQUAL){
+            $$ -> comp = GREAT_EQUAL;
+        } else if ($4 == GREAT_THAN){
+            $$ -> comp = LESS_THAN;
+        } else if($4 == GREAT_EQUAL){
+            $$ -> comp = LESS_EQUAL;
+        }else {
+            $$ -> comp = $4;
+        }
 
         delete $5;
     }

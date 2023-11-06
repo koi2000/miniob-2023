@@ -22,7 +22,10 @@ RC InComparisonExpr::get_value(const Tuple& tuple, Value& value) const {
     else if (right_->type() == ExprType::SUBSELECT) {
         SubSelectExpr* val = dynamic_cast<SubSelectExpr*>(right_.get());
         VacuousTrxKit kit;
-        values = val->get_values(kit.create_trx(1));
+        rc = val->get_values(kit.create_trx(1), values);
+        if (rc != RC::SUCCESS) {
+            return rc;
+        }
     }
 
     // rc = right_->get_value(tuple, right_value);
@@ -48,7 +51,7 @@ RC InComparisonExpr::compare_value(const Value& left, std::vector<Value>& right,
     value = false;
     if (!(comp_ == IN || comp_ == NOT_IN || comp_ == EXISTS || comp_ == NOT_EXISTS)) {
         if (right.size() > 1) {
-            rc = RC::INTERNAL;
+            rc = RC::SUB_SELECT_ERROR;
             return rc;
         }
         Value right_value = right[0];
@@ -97,7 +100,7 @@ RC InComparisonExpr::compare_value(const Value& left, std::vector<Value>& right,
 
     if (comp_ == EXISTS) {
         if (!(right.empty() || (right.size() == 1 && right[0].isNull()))) {
-            value = true;   
+            value = true;
         }
         return RC::SUCCESS;
     }

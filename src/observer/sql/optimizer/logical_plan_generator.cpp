@@ -14,6 +14,7 @@ See the Mulan PSL v2 for more details. */
 
 #include "sql/optimizer/logical_plan_generator.h"
 
+#include "sql/expr/sub_expression.h"
 #include "sql/operator/aggregate_logical_operator.h"
 #include "sql/operator/calc_logical_operator.h"
 #include "sql/operator/delete_logical_operator.h"
@@ -27,7 +28,6 @@ See the Mulan PSL v2 for more details. */
 #include "sql/operator/table_get_logical_operator.h"
 #include "sql/operator/update_logical_operator.h"
 #include "sql/optimizer/physical_plan_generator.h"
-#include "sql/expr/sub_expression.h"
 
 #include "sql/stmt/calc_stmt.h"
 #include "sql/stmt/delete_stmt.h"
@@ -257,7 +257,12 @@ RC LogicalPlanGenerator::create_plan(FilterStmt* filter_stmt, unique_ptr<Logical
             if (rc != RC::SUCCESS) {
                 return rc;
             }
-            unique_ptr<Expression> right(static_cast<Expression*>(new SubSelectExpr(std::move(physical_operator))));
+            SubSelectExpr* expr = new SubSelectExpr(std::move(physical_operator));
+            rc = expr->init(filter_unit->comp());
+            if (rc != RC::SUCCESS) {
+                return rc;
+            }
+            unique_ptr<Expression> right(static_cast<Expression*>(expr));
             InComparisonExpr* cmp_expr = new InComparisonExpr(filter_unit->comp(), std::move(left), std::move(right));
 
             cmp_exprs.emplace_back(cmp_expr);
