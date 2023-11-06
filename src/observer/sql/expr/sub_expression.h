@@ -75,6 +75,11 @@ class SubSelectExpr : public Expression {
                 value.set_string(tuple->to_string().c_str());
                 values.push_back(value);
             }
+            if (values.empty()) {
+                Value value;
+                value.set_isNull(true);
+                values.push_back(value);
+            }
         }
         return values;
     }

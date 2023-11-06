@@ -44,18 +44,68 @@ RC InComparisonExpr::try_get_value(Value& value) const {
 }
 
 RC InComparisonExpr::compare_value(const Value& left, std::vector<Value>& right, bool& value) const {
+    RC rc = RC::SUCCESS;
     value = false;
-    if (comp_ == EXISTS) {
-        if (!right.empty()) {
-            value = true;
-            return RC::SUCCESS;
+    if (!(comp_ == IN || comp_ == NOT_IN || comp_ == EXISTS || comp_ == NOT_EXISTS)) {
+        if (right.size() >= 1) {
+            rc = RC::INTERNAL;
+            return rc;
         }
+        Value right_value = right[0];
+        try_to_cast(left.attr_type(), true, right_value);
+        switch (comp_) {
+            case STR_LIKE: {
+                value = wildcard_match(left.get_string(), right_value.get_string());
+                return rc;
+                break;
+            }
+            case STR_NOT_LIKE: {
+                value = !wildcard_match(left.get_string(), right_value.get_string());
+                return rc;
+                break;
+            }
+            default: break;
+        }
+
+        int cmp_result = left.compare(right_value);
+        switch (comp_) {
+            case EQUAL_TO: {
+                value = (0 == cmp_result);
+            } break;
+            case LESS_EQUAL: {
+                value = (cmp_result <= 0);
+            } break;
+            case NOT_EQUAL: {
+                value = (cmp_result != 0);
+            } break;
+            case LESS_THAN: {
+                value = (cmp_result < 0);
+            } break;
+            case GREAT_EQUAL: {
+                value = (cmp_result >= 0);
+            } break;
+            case GREAT_THAN: {
+                value = (cmp_result > 0);
+            } break;
+            default: {
+                LOG_WARN("unsupported comparison. %d", comp_);
+                rc = RC::INTERNAL;
+            } break;
+        }
+        return rc;
+    }
+
+    if (comp_ == EXISTS) {
+        if (!(right.empty() || (right.size() == 1 && right[0].isNull()))) {
+            value = true;   
+        }
+        return RC::SUCCESS;
     }
     else if (comp_ == NOT_EXISTS) {
-        if (right.empty()) {
+        if (right.empty() || (right.size() == 1 && right[0].isNull())) {
             value = true;
-            return RC::SUCCESS;
         }
+        return RC::SUCCESS;
     }
 
     for (Value& val : right) {

@@ -1142,6 +1142,35 @@ condition:
 
         delete $1;
     }
+    | LBRACE select_stmt RBRACE comp_op rel_attr {
+        $$ = new ConditionSqlNode;
+        $$ -> left_is_attr = 1;
+        $$ -> left_attr = *$5;
+        $$ -> right_is_attr = 0;
+        $$ -> right_is_subselect = 2;
+        $$ -> select = &($2 -> selection);
+        $$ -> comp = $4;
+
+        delete $5;
+    }
+    | EXISTSS LBRACE select_stmt RBRACE {
+        $$ = new ConditionSqlNode;
+        $$ -> left_is_attr = 0;
+        $$ -> left_value = Value(0);
+        $$ -> right_is_attr = 0;
+        $$ -> right_is_subselect = 2;
+        $$ -> select = &($3 -> selection);
+        $$ -> comp = EXISTS;
+    }
+    | NOT EXISTSS LBRACE select_stmt RBRACE {
+        $$ = new ConditionSqlNode;
+        $$ -> left_is_attr = 0;
+        $$ -> left_value = Value(0);
+        $$ -> right_is_attr = 0;
+        $$ -> right_is_subselect = 2;
+        $$ -> select = &($4 -> selection);
+        $$ -> comp = NOT_EXISTS;
+    }
     ;
 
 comp_op:
