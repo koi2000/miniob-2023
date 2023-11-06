@@ -1,6 +1,22 @@
 修改为从后往前更新
 =========================================
 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+UPDATE null_table4 SET id=null where num is null;
+UPDATE null_table4 SET num=(SELECT null_table3.num from null_table3 where null_table3.id=9) where id=2;
+- SUCCESS
++ FAILURE
+-- below are some requests executed before(partial) --
+-- init update-select
+CREATE TABLE null_table4(id int not null, num int null, name char(10) null);
+CREATE TABLE null_table3(id int not null, num int null, name char(10) null);
+INSERT INTO null_table4 VALUES (2, 2, 'N2');
+INSERT INTO null_table4 VALUES (6, 6, 'N6');
+INSERT INTO null_table4 VALUES (4, 4, 'N4');
+UPDATE null_table4 SET num=null where id=4;
+...
+-- update-select
+UPDATE null_table4 SET name=null where num is null;
++++++++++++++++++++++++++++++++++++++++++++++++++++++
 select * from ssq_1 where id in (51,20,41,90,10);
 select * from ssq_1 where id in (select id from ssq_2 where id = 41);
 - 10 | 31 | 52.38

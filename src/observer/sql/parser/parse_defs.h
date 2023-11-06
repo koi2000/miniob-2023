@@ -109,7 +109,7 @@ struct ConditionSqlNode
     RelAttrSqlNode right_attr;  ///< right-hand side attribute if right_is_attr = TRUE 右边的属性
     Value right_value;          ///< right-hand side value if right_is_attr = FALSE
 
-    int right_is_subselect;       ///< 记录是不是子查询
+    int right_is_subselect = 0;   ///< 记录是不是子查询
                                   ///< 记录是不是子查询
     std::vector<Value> in_values; ///< 记录右面value的list
     SelectSqlNode* select;         ///< 右面的子查询语句
