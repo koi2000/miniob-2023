@@ -1,6 +1,36 @@
 修改为从后往前更新
 目前update-select和simple-sub-query存在问题
 =========================================
+INSERT INTO big_write_0 VALUES (4237, 2860, 1.20, 'W81U8K3KRL57GIKGXHHPI6MISZ', '2002-12-03');
+INSERT INTO big_write_1 VALUES (2711, 1020, 72.62, 'QLPDBS6BCXAF4WD5KLFBPOZDMIODGUNNS3OXIYPHC0SU5VGSDMIT4QQ3547ZR1CMOGB7MPHEUIY4D2J', '1995-04-22');
+INSERT INTO big_write_1 VALUES (3143, 8464, 97.46, 'BE3VQ45CXF47X1QIDRJHWQ2VP07EUAE0DV0CYS3BM1KR9Y2O4LMBJGG3A33AXY7WWFDF120IPZZMSOQJ8DOW', '2014-03-22');
+INSERT INTO big_write_1 VALUES (5227, 3783, 97.62, 'K5JB2WA3JIJG6JBYAEGFI7IF1AQZU4FUEIB2A0EYR5MX6V18ZMI6LH', '2027-12-13');
+...
+INSERT INTO big_write_0 VALUES (2104, 1650, 59.67, 'U8GMAQUZ76T1KSJV4SOWIFQAK', '2006-04-03');
+  SUCCESS
++ SUCCESS
+-- below are some requests executed before(partial) --
+-- init data: create 2 tables
+CREATE TABLE big_write_0(id int, num int, price float, addr char(100), birthday date);
+CREATE TABLE big_write_1(id int, num int, price float, addr char(100), birthday date);
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+UPDATE null_table4 SET id=(SELECT null_table3.num from null_table3 where null_table3.id=9) where id=3;
+- FAILURE
++ SUCCESS
+-- below are some requests executed before(partial) --
+-- init update-select
+CREATE TABLE null_table4(id int not null, num int null, name char(10) null);
+INSERT INTO null_table4 VALUES (2, 2, 'N2');
+INSERT INTO null_table4 VALUES (5, 5, 'N5');
+INSERT INTO null_table4 VALUES (3, 3, 'N3');
+UPDATE null_table4 SET num=null where id=5;
+...
+-- update-select
+UPDATE null_table4 SET name=null where num is null;
+-- update-select
+UPDATE null_table4 SET id=null where num is null;
+UPDATE null_table4 SET num=(SELECT null_table3.num from null_table3 where null_table3.id=8) where id=5;
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 UPDATE Update_select_t1 SET t_name='C', col2=8 WHERE id=2;
 SELECT * FROM Update_select_t1;
 UPDATE Update_select_t1 SET col1=2, col2=(select Update_select_t2.col2 from Update_select_t2 where Update_select_t2.id=1) WHERE id=3;

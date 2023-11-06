@@ -61,18 +61,35 @@ static bool wildcard_match(std::string s, std::string p) {
     return dp[m][n];
 }
 
-static void try_to_cast(AttrType to_type, bool nullable, Value& value) {
+static RC try_to_cast(AttrType to_type, bool nullable, Value& value) {
+    RC rc = RC::SUCCESS;
     if (to_type == INTS && value.attr_type() == CHARS) {
         int num = 0;
-        std::istringstream ss(value.get_string());
-        ss >> num;
+        try {
+            num = std::stoi(value.get_string());
+        }
+        catch (const std::invalid_argument& e) {
+            rc = RC::INVALID_ARGUMENT;
+        }
+        catch (const std::out_of_range& e) {
+            rc = RC::INVALID_ARGUMENT;
+        }
         value.set_int(num);
+        return rc;
     }
     else if (to_type == FLOATS && value.attr_type() == CHARS) {
         float num = 0;
-        std::istringstream ss(value.get_string());
-        ss >> num;
+        try {
+            num = std::stoi(value.get_string());
+        }
+        catch (const std::invalid_argument& e) {
+            rc = RC::INVALID_ARGUMENT;
+        }
+        catch (const std::out_of_range& e) {
+            rc = RC::INVALID_ARGUMENT;
+        }
         value.set_float(num);
+        return rc;
     }
     else if (to_type == DATES && value.attr_type() == CHARS) {
         int date = 0;
@@ -95,5 +112,6 @@ static void try_to_cast(AttrType to_type, bool nullable, Value& value) {
         float float_val = static_cast<float>(*(int*)value.data());
         value.set_float(float_val);
     }
+    return rc;
 }
 #endif

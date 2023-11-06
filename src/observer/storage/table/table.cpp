@@ -248,9 +248,15 @@ RC Table::update_record(std::vector<std::string> field_names, std::vector<Value>
             const FieldMeta* fieldMeta = table_meta_.field(i);
             if (fieldMeta->name() == field_names[k]) {
                 if (fieldMeta->type() != values[k].attr_type()) {
-                    try_to_cast(fieldMeta->type(), true, values[k]);
+                    rc = try_to_cast(fieldMeta->type(), true, values[k]);
+                    if (rc != RC::SUCCESS) {
+                        return rc;
+                    }
                 }
                 int copy_len = fieldMeta->len();
+                if (!fieldMeta->allow_null() && values[k].isNull()) {
+                    return RC::INVALID_ARGUMENT;
+                }
                 if (values[k].isNull()) {
                     set_mem_null(record_data + fieldMeta->offset(), fieldMeta->type(), fieldMeta->len());
                     break;
