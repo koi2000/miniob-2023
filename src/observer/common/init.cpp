@@ -27,16 +27,12 @@ See the Mulan PSL v2 for more details. */
 #include "global_context.h"
 #include "session/session.h"
 #include "session/session_stage.h"
-#include "sql/executor/execute_stage.h"
-#include "sql/optimizer/optimize_stage.h"
-#include "sql/parser/parse_stage.h"
-#include "sql/parser/resolve_stage.h"
 #include "sql/plan_cache/plan_cache_stage.h"
-#include "sql/query_cache/query_cache_stage.h"
 #include "storage/buffer/disk_buffer_pool.h"
 #include "storage/default/default_handler.h"
 #include "storage/trx/trx.h"
 
+using namespace std;
 using namespace common;
 
 bool *&_get_init()
@@ -48,11 +44,7 @@ bool *&_get_init()
 
 bool get_init() { return *_get_init(); }
 
-void set_init(bool value)
-{
-  *_get_init() = value;
-  return;
-}
+void set_init(bool value) { *_get_init() = value; }
 
 void sig_handler(int sig)
 {
@@ -60,13 +52,11 @@ void sig_handler(int sig)
   //  Add action to shutdown
 
   LOG_INFO("Receive one signal of %d.", sig);
-
-  return;
 }
 
 int init_log(ProcessParam *process_cfg, Ini &properties)
 {
-  const std::string &proc_name = process_cfg->get_process_name();
+  const string &proc_name = process_cfg->get_process_name();
   try {
     // we had better alloc one lock to do so, but simplify the logic
     if (g_log) {
@@ -75,17 +65,18 @@ int init_log(ProcessParam *process_cfg, Ini &properties)
 
     auto log_context_getter = []() { return reinterpret_cast<intptr_t>(Session::current_session()); };
 
-    const std::string                  log_section_name = "LOG";
-    std::map<std::string, std::string> log_section      = properties.get(log_section_name);
+    const string        log_section_name = "LOG";
+    map<string, string> log_section      = properties.get(log_section_name);
 
-    std::string log_file_name;
+    string log_file_name;
 
     // get log file name
-    std::string                                  key = "LOG_FILE_NAME";
-    std::map<std::string, std::string>::iterator it  = log_section.find(key);
+    string key = "LOG_FILE_NAME";
+
+    map<string, string>::iterator it = log_section.find(key);
     if (it == log_section.end()) {
       log_file_name = proc_name + ".log";
-      std::cout << "Not set log file name, use default " << log_file_name << std::endl;
+      cout << "Not set log file name, use default " << log_file_name << endl;
     } else {
       log_file_name = it->second;
     }
@@ -124,8 +115,8 @@ int init_log(ProcessParam *process_cfg, Ini &properties)
     }
 
     return 0;
-  } catch (std::exception &e) {
-    std::cerr << "Failed to init log for " << proc_name << SYS_OUTPUT_FILE_POS << SYS_OUTPUT_ERROR << std::endl;
+  } catch (exception &e) {
+    cerr << "Failed to init log for " << proc_name << SYS_OUTPUT_FILE_POS << SYS_OUTPUT_ERROR << endl;
     return errno;
   }
 
@@ -138,7 +129,6 @@ void cleanup_log()
     delete g_log;
     g_log = nullptr;
   }
-  return;
 }
 
 int prepare_init_seda()
@@ -202,7 +192,7 @@ int init(ProcessParam *process_param)
   if (process_param->is_demon()) {
     rc = daemonize_service(process_param->get_std_out().c_str(), process_param->get_std_err().c_str());
     if (rc != 0) {
-      std::cerr << "Shutdown due to failed to daemon current process!" << std::endl;
+      cerr << "Shutdown due to failed to daemon current process!" << endl;
       return rc;
     }
   }
@@ -215,18 +205,18 @@ int init(ProcessParam *process_param)
   // Read Configuration files
   rc = get_properties()->load(process_param->get_conf());
   if (rc) {
-    std::cerr << "Failed to load configuration files" << std::endl;
+    cerr << "Failed to load configuration files" << endl;
     return rc;
   }
 
   // Init tracer
   rc = init_log(process_param, *get_properties());
   if (rc) {
-    std::cerr << "Failed to init Log" << std::endl;
+    cerr << "Failed to init Log" << endl;
     return rc;
   }
 
-  std::string conf_data;
+  string conf_data;
   get_properties()->to_string(conf_data);
   LOG_INFO("Output configuration \n%s", conf_data.c_str());
 
@@ -273,7 +263,6 @@ void cleanup_util()
   cleanup_log();
 
   set_init(false);
-  return;
 }
 
 void cleanup() { cleanup_util(); }

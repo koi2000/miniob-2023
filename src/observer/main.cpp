@@ -27,6 +27,7 @@ See the Mulan PSL v2 for more details. */
 #include "net/server.h"
 #include "net/server_param.h"
 
+using namespace std;
 using namespace common;
 
 #define NET "NET"
@@ -35,18 +36,18 @@ static Server *g_server = nullptr;
 
 void usage()
 {
-  std::cout << "Useage " << std::endl;
-  std::cout << "-p: server port. if not specified, the item in the config file will be used" << std::endl;
-  std::cout << "-f: path of config file." << std::endl;
-  std::cout << "-s: use unix socket and the argument is socket address" << std::endl;
-  std::cout << "-P: protocol. {plain(default), mysql, cli}." << std::endl;
-  std::cout << "-t: transaction model. {vacuous(default), mvcc}." << std::endl;
-  std::cout << "-n: buffer pool memory size in byte" << std::endl;
+  cout << "Useage " << endl;
+  cout << "-p: server port. if not specified, the item in the config file will be used" << endl;
+  cout << "-f: path of config file." << endl;
+  cout << "-s: use unix socket and the argument is socket address" << endl;
+  cout << "-P: protocol. {plain(default), mysql, cli}." << endl;
+  cout << "-t: transaction model. {vacuous(default), mvcc}." << endl;
+  cout << "-n: buffer pool memory size in byte" << endl;
 }
 
 void parse_parameter(int argc, char **argv)
 {
-  std::string process_name = get_process_name(argv[0]);
+  string process_name = get_process_name(argv[0]);
 
   ProcessParam *process_param = the_process_param();
 
@@ -69,7 +70,7 @@ void parse_parameter(int argc, char **argv)
         usage();
         exit(0);
         return;
-      default: std::cout << "Unknown option: " << static_cast<char>(opt) << ", ignored" << std::endl; break;
+      default: cout << "Unknown option: " << static_cast<char>(opt) << ", ignored" << endl; break;
     }
   }
 }
@@ -159,7 +160,7 @@ int main(int argc, char **argv)
 
   rc = init(the_process_param());
   if (rc != STATUS_SUCCESS) {
-    std::cerr << "Shutdown due to failed to init!" << std::endl;
+    std::cerr << "Shutdown due to failed to init!" << endl;
     cleanup();
     return rc;
   }
