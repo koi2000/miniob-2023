@@ -20,7 +20,7 @@ See the Mulan PSL v2 for more details. */
 
 using namespace std;
 
-void SqlDebug::add_debug_info(const std::string &debug_info) { debug_infos_.push_back(debug_info); }
+void SqlDebug::add_debug_info(const string &debug_info) { debug_infos_.push_back(debug_info); }
 
 void SqlDebug::clear_debug_info() { debug_infos_.clear(); }
 

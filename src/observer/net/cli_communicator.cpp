@@ -26,11 +26,12 @@ See the Mulan PSL v2 for more details. */
 #define MAX_MEM_BUFFER_SIZE 8192 * 50
 #define PORT_DEFAULT 6789
 
+using namespace std;
 using namespace common;
 
 #ifdef USE_READLINE
-const std::string HISTORY_FILE            = std::string(getenv("HOME")) + "/.miniob.history";
-time_t            last_history_write_time = 0;
+const string HISTORY_FILE            = string(getenv("HOME")) + "/.miniob.history";
+time_t       last_history_write_time = 0;
 
 char *my_readline(const char *prompt)
 {
@@ -89,15 +90,14 @@ char *read_command()
 {
   const char *prompt_str    = "miniob > ";
   char       *input_command = nullptr;
-  for (input_command = my_readline(prompt_str); common::is_blank(input_command);
-      input_command  = my_readline(prompt_str)) {
+  for (input_command = my_readline(prompt_str); is_blank(input_command); input_command = my_readline(prompt_str)) {
     free(input_command);
     input_command = nullptr;
   }
   return input_command;
 }
 
-RC CliCommunicator::init(int fd, Session *session, const std::string &addr)
+RC CliCommunicator::init(int fd, Session *session, const string &addr)
 {
   RC rc = PlainCommunicator::init(fd, session, addr);
   if (OB_FAIL(rc)) {
@@ -133,14 +133,15 @@ RC CliCommunicator::read_event(SessionEvent *&event)
   }
 
   event = new SessionEvent(this);
-  event->set_query(std::string(command));
+  event->set_query(string(command));
   free(command);
   return RC::SUCCESS;
 }
 
 RC CliCommunicator::write_result(SessionEvent *event, bool &need_disconnect)
 {
-  RC rc           = PlainCommunicator::write_result(event, need_disconnect);
+  RC rc = PlainCommunicator::write_result(event, need_disconnect);
+
   need_disconnect = false;
   return rc;
 }

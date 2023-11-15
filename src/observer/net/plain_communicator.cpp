@@ -20,6 +20,8 @@ See the Mulan PSL v2 for more details. */
 #include "session/session.h"
 #include "sql/expr/tuple.h"
 #include <chrono>
+
+using namespace std;
 PlainCommunicator::PlainCommunicator()
 {
   send_message_delimiter_.assign(1, '\0');
@@ -88,7 +90,7 @@ RC PlainCommunicator::read_event(SessionEvent *&event)
 
   LOG_INFO("receive command(size=%d): %s", data_len, buf.data());
   event = new SessionEvent(this);
-  event->set_query(std::string(buf.data()));
+  event->set_query(string(buf.data()));
   return rc;
 }
 

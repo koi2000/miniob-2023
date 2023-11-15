@@ -14,7 +14,6 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
-#include <string.h>
 #include <string>
 
 #include "common/seda/stage_event.h"
@@ -40,10 +39,8 @@ public:
   void set_query(const std::string &query) { query_ = query; }
 
   const std::string &query() const { return query_; }
-
-  SqlResult *sql_result() { return &sql_result_; }
-
-  SqlDebug &sql_debug() { return sql_debug_; }
+  SqlResult         *sql_result() { return &sql_result_; }
+  SqlDebug          &sql_debug() { return sql_debug_; }
 
 private:
   Communicator *communicator_ = nullptr;  ///< 与客户端通讯的对象

@@ -67,7 +67,8 @@ RC BufferedWriter::writen(const char *data, int32_t size)
   int32_t write_size = 0;
   while (write_size < size) {
     int32_t tmp_write_size = 0;
-    RC      rc             = write(data + write_size, size - write_size, tmp_write_size);
+
+    RC rc = write(data + write_size, size - write_size, tmp_write_size);
     if (OB_FAIL(rc)) {
       return rc;
     }
@@ -97,7 +98,8 @@ RC BufferedWriter::flush_internal(int32_t size)
     return RC::INVALID_ARGUMENT;
   }
 
-  RC      rc         = RC::SUCCESS;
+  RC rc = RC::SUCCESS;
+
   int32_t write_size = 0;
   while (OB_SUCC(rc) && buffer_.size() > 0 && size > write_size) {
     const char *buf       = nullptr;

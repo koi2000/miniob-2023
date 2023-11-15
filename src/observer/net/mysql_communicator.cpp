@@ -272,7 +272,7 @@ int store_fix_length_string(char *buf, const char *s, int len)
  */
 int store_lenenc_string(char *buf, const char *s)
 {
-  int len = strlen(s);
+  int len = static_cast<int>(strlen(s));
   int pos = store_lenenc_int(buf, len);
   store_fix_length_string(buf + pos, s, len);
   return pos + len;
@@ -348,7 +348,7 @@ struct HandshakeV10 : public BasePacket
 
     char *buf = net_packet.data();
     int   pos = 0;
-    pos += 3;
+    pos += 3; // skip packet length
 
     pos += store_int1(buf + pos, packet_header.sequence_id);
     pos += store_int1(buf + pos, protocol);
@@ -392,13 +392,13 @@ struct OkPacket : public BasePacket
   /**
    * https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_basic_ok_packet.html
    */
-  virtual RC encode(uint32_t capabilities, std::vector<char> &net_packet) const override
+  RC encode(uint32_t capabilities, std::vector<char> &net_packet) const override
   {
     net_packet.resize(100);
     char *buf = net_packet.data();
     int   pos = 0;
 
-    pos += 3;
+    pos += 3; // skip packet length
     pos += store_int1(buf + pos, packet_header.sequence_id);
     pos += store_int1(buf + pos, header);
     pos += store_lenenc_int(buf + pos, affected_rows);
@@ -439,7 +439,7 @@ struct EofPacket : public BasePacket
   EofPacket(int8_t sequence = 0) : BasePacket(sequence) {}
   virtual ~EofPacket() = default;
 
-  virtual RC encode(uint32_t capabilities, std::vector<char> &net_packet) const override
+  RC encode(uint32_t capabilities, std::vector<char> &net_packet) const override
   {
     net_packet.resize(10);
     char *buf = net_packet.data();
@@ -596,7 +596,8 @@ RC MysqlCommunicator::init(int fd, Session *session, const std::string &addr)
 RC MysqlCommunicator::handle_version_comment(bool &need_disconnect)
 {
   SessionEvent session_event(this);
-  RC           rc = create_version_comment_sql_result(session_event.sql_result());
+
+  RC rc = create_version_comment_sql_result(session_event.sql_result());
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to handle version comment. rc=%s", strrc(rc));
     return rc;
@@ -617,7 +618,8 @@ RC MysqlCommunicator::read_event(SessionEvent *&event)
 
   /// 读取一个完整的数据包
   PacketHeader packet_header;
-  int          ret = common::readn(fd_, &packet_header, sizeof(packet_header));
+
+  int ret = common::readn(fd_, &packet_header, sizeof(packet_header));
   if (ret != 0) {
     LOG_WARN("failed to read packet header. length=%d, addr=%s. error=%s", sizeof(packet_header), addr_.c_str(), strerror(errno));
     return RC::IOERR_READ;
@@ -644,7 +646,8 @@ RC MysqlCommunicator::read_event(SessionEvent *&event)
     // send ok packet and return
     OkPacket ok_packet;
     ok_packet.packet_header.sequence_id = sequence_id_;
-    rc                                  = send_packet(ok_packet);
+
+    rc = send_packet(ok_packet);
     if (rc != RC::SUCCESS) {
       LOG_WARN("failed to send ok packet while auth");
     }
@@ -784,7 +787,8 @@ RC MysqlCommunicator::write_result(SessionEvent *event, bool &need_disconnect)
 RC MysqlCommunicator::send_packet(const BasePacket &packet)
 {
   std::vector<char> net_packet;
-  RC                rc = packet.encode(client_capabilities_flag_, net_packet);
+
+  RC rc = packet.encode(client_capabilities_flag_, net_packet);
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to encode ok packet. rc=%s", strrc(rc));
     return rc;
@@ -810,7 +814,8 @@ RC MysqlCommunicator::send_packet(const BasePacket &packet)
  */
 RC MysqlCommunicator::send_column_definition(SqlResult *sql_result, bool &need_disconnect)
 {
-  RC                 rc           = RC::SUCCESS;
+  RC rc = RC::SUCCESS;
+
   const TupleSchema &tuple_schema = sql_result->tuple_schema();
   const int          cell_num     = tuple_schema.cell_num();
 
@@ -930,7 +935,8 @@ RC MysqlCommunicator::send_column_definition(SqlResult *sql_result, bool &need_d
  */
 RC MysqlCommunicator::send_result_rows(SqlResult *sql_result, bool no_column_def, bool &need_disconnect)
 {
-  RC                rc = RC::SUCCESS;
+  RC rc = RC::SUCCESS;
+
   std::vector<char> packet;
   packet.resize(4 * 1024 * 1024);  // TODO warning: length cannot be fix
 

@@ -87,7 +87,8 @@ void Server::recv(int fd, short ev, void *arg)
   Communicator *comm = (Communicator *)arg;
 
   SessionEvent *event = nullptr;
-  RC            rc    = comm->read_event(event);
+
+  RC rc = comm->read_event(event);
   if (rc != RC::SUCCESS) {
     close_connection(comm);
     return;
@@ -143,7 +144,8 @@ void Server::accept(int fd, short ev, void *arg)
   }
 
   Communicator *communicator = instance->communicator_factory_.create(instance->server_param_.protocol);
-  RC            rc           = communicator->init(client_fd, new Session(Session::default_session()), addr_str);
+
+  RC rc = communicator->init(client_fd, new Session(Session::default_session()), addr_str);
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to init communicator. rc=%s", strrc(rc));
     delete communicator;
@@ -305,7 +307,8 @@ int Server::start_unix_socket_server()
 int Server::start_stdin_server()
 {
   Communicator *communicator = communicator_factory_.create(server_param_.protocol);
-  RC            rc           = communicator->init(STDIN_FILENO, new Session(Session::default_session()), "stdin");
+
+  RC rc = communicator->init(STDIN_FILENO, new Session(Session::default_session()), "stdin");
   if (OB_FAIL(rc)) {
     LOG_WARN("failed to init cli communicator. rc=%s", strrc(rc));
     return -1;
@@ -315,7 +318,8 @@ int Server::start_stdin_server()
 
   while (started_) {
     SessionEvent *event = nullptr;
-    rc                  = communicator->read_event(event);
+
+    rc = communicator->read_event(event);
     if (OB_FAIL(rc)) {
       LOG_WARN("failed to read event. rc=%s", strrc(rc));
       return -1;
