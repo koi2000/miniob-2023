@@ -11,16 +11,29 @@ See the Mulan PSL v2 for more details. */
 //
 // Created by Wangyunlai on 2023/05/04
 //
+
+#pragma once
+
 #include <random>
+
+namespace common {
 
 class IntegerGenerator
 {
 public:
   IntegerGenerator(int min, int max) : distrib_(min, max) {}
 
+  IntegerGenerator(const IntegerGenerator &other)       = delete;
+  IntegerGenerator(IntegerGenerator &&)                 = delete;
+  IntegerGenerator &operator=(const IntegerGenerator &) = delete;
+
   int next() { return distrib_(rd_); }
+  int min() const { return distrib_.min(); }
+  int max() const { return distrib_.max(); }
 
 private:
   std::random_device              rd_;
   std::uniform_int_distribution<> distrib_;
 };
+
+}  // namespace common

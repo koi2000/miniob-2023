@@ -1,8 +1,12 @@
+<<<<<<< HEAD
 /* A Bison parser, made by GNU Bison 3.5.1.  */
+=======
+/* A Bison parser, made by GNU Bison 3.8.2.  */
+>>>>>>> 94c39e8... Thread pool (#332)
 
 /* Bison interface for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2020 Free Software Foundation,
+   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2021 Free Software Foundation,
    Inc.
 
    This program is free software: you can redistribute it and/or modify
@@ -16,7 +20,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* As a special exception, you may create a larger work that contains
    part or all of the Bison parser skeleton and distribute that work
@@ -49,6 +53,7 @@ extern int yydebug;
 # define YYTOKENTYPE
   enum yytokentype
   {
+<<<<<<< HEAD
     SEMICOLON = 258,
     CREATE = 259,
     DROP = 260,
@@ -124,6 +129,60 @@ extern int yydebug;
     SSS = 330,
     DATE_STR = 331,
     UMINUS = 332
+=======
+    YYEMPTY = -2,
+    YYEOF = 0,                     /* "end of file"  */
+    YYerror = 256,                 /* error  */
+    YYUNDEF = 257,                 /* "invalid token"  */
+    SEMICOLON = 258,               /* SEMICOLON  */
+    CREATE = 259,                  /* CREATE  */
+    DROP = 260,                    /* DROP  */
+    TABLE = 261,                   /* TABLE  */
+    TABLES = 262,                  /* TABLES  */
+    INDEX = 263,                   /* INDEX  */
+    CALC = 264,                    /* CALC  */
+    SELECT = 265,                  /* SELECT  */
+    DESC = 266,                    /* DESC  */
+    SHOW = 267,                    /* SHOW  */
+    SYNC = 268,                    /* SYNC  */
+    INSERT = 269,                  /* INSERT  */
+    DELETE = 270,                  /* DELETE  */
+    UPDATE = 271,                  /* UPDATE  */
+    LBRACE = 272,                  /* LBRACE  */
+    RBRACE = 273,                  /* RBRACE  */
+    COMMA = 274,                   /* COMMA  */
+    TRX_BEGIN = 275,               /* TRX_BEGIN  */
+    TRX_COMMIT = 276,              /* TRX_COMMIT  */
+    TRX_ROLLBACK = 277,            /* TRX_ROLLBACK  */
+    INT_T = 278,                   /* INT_T  */
+    STRING_T = 279,                /* STRING_T  */
+    FLOAT_T = 280,                 /* FLOAT_T  */
+    HELP = 281,                    /* HELP  */
+    EXIT = 282,                    /* EXIT  */
+    DOT = 283,                     /* DOT  */
+    INTO = 284,                    /* INTO  */
+    VALUES = 285,                  /* VALUES  */
+    FROM = 286,                    /* FROM  */
+    WHERE = 287,                   /* WHERE  */
+    AND = 288,                     /* AND  */
+    SET = 289,                     /* SET  */
+    ON = 290,                      /* ON  */
+    LOAD = 291,                    /* LOAD  */
+    DATA = 292,                    /* DATA  */
+    INFILE = 293,                  /* INFILE  */
+    EXPLAIN = 294,                 /* EXPLAIN  */
+    EQ = 295,                      /* EQ  */
+    LT = 296,                      /* LT  */
+    GT = 297,                      /* GT  */
+    LE = 298,                      /* LE  */
+    GE = 299,                      /* GE  */
+    NE = 300,                      /* NE  */
+    NUMBER = 301,                  /* NUMBER  */
+    FLOAT = 302,                   /* FLOAT  */
+    ID = 303,                      /* ID  */
+    SSS = 304,                     /* SSS  */
+    UMINUS = 305                   /* UMINUS  */
+>>>>>>> 94c39e8... Thread pool (#332)
   };
 #endif
 
@@ -131,7 +190,11 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
+<<<<<<< HEAD
 #line 152 "yacc_sql.y"
+=======
+#line 102 "yacc_sql.y"
+>>>>>>> 94c39e8... Thread pool (#332)
 
   ParsedSqlNode *                   sql_node;
   Value *                           value;
@@ -156,7 +219,11 @@ union YYSTYPE
   float                             floats;
   bool                              boolean;
 
+<<<<<<< HEAD
 #line 160 "yacc_sql.hpp"
+=======
+#line 133 "yacc_sql.hpp"
+>>>>>>> 94c39e8... Thread pool (#332)
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -180,6 +247,8 @@ struct YYLTYPE
 
 
 
+
 int yyparse (const char * sql_string, ParsedSqlResult * sql_result, void * scanner);
+
 
 #endif /* !YY_YY_YACC_SQL_HPP_INCLUDED  */

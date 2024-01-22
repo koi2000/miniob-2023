@@ -9,25 +9,15 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details. */
 
 //
-// Created by Longda on 2021/4/20.
+// Created by Wangyunlai on 2023/01/11.
 //
 
-#ifndef __COMMON_SEDA_METRICS_REPORT_EVENT_H__
-#define __COMMON_SEDA_METRICS_REPORT_EVENT_H__
-
-#include "common/seda/stage_event.h"
+#pragma once
 
 namespace common {
-class MetricsReportEvent : public StageEvent
+class ThreadPool
 {
 public:
-  MetricsReportEvent() {
-
-  };
-
-  ~MetricsReportEvent() {
-
-  };
 };
+
 }  // namespace common
-#endif  //__COMMON_SEDA_METRICS_REPORT_EVENT_H__

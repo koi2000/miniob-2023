@@ -9,7 +9,25 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details. */
 
 //
-// Created by Longda on 2021/4/20.
+// Created by Wangyunlai on 2023/01/15.
 //
 
-#include "metrics_report_event.h"
+#include <pthread.h>
+#include <stdio.h>
+
+namespace common {
+
+int thread_set_name(const char *name)
+{
+  const int namelen = 16;
+  char      buf[namelen];
+  snprintf(buf, namelen, "%s", name);
+
+#ifdef __APPLE__
+  return pthread_setname_np(buf);
+#elif __linux__
+  return pthread_setname_np(pthread_self(), buf);
+#endif
+}
+
+}  // namespace common

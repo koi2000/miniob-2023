@@ -239,6 +239,7 @@ typedef size_t yy_size_t;
 #ifndef YY_STRUCT_YY_BUFFER_STATE
 #define YY_STRUCT_YY_BUFFER_STATE
 struct yy_buffer_state
+<<<<<<< HEAD
 {
   FILE *yy_input_file;
 
@@ -283,6 +284,52 @@ struct yy_buffer_state
   int yy_fill_buffer;
 
   int yy_buffer_status;
+=======
+	{
+	FILE *yy_input_file;
+
+	char *yy_ch_buf;		/* input buffer */
+	char *yy_buf_pos;		/* current position in input buffer */
+
+	/* Size of input buffer in bytes, not including room for EOB
+	 * characters.
+	 */
+	int yy_buf_size;
+
+	/* Number of characters read into yy_ch_buf, not including EOB
+	 * characters.
+	 */
+	int yy_n_chars;
+
+	/* Whether we "own" the buffer - i.e., we know we created it,
+	 * and can realloc() it to grow it, and should free() it to
+	 * delete it.
+	 */
+	int yy_is_our_buffer;
+
+	/* Whether this is an "interactive" input source; if so, and
+	 * if we're using stdio for input, then we want to use getc()
+	 * instead of fread(), to make sure we stop fetching input after
+	 * each newline.
+	 */
+	int yy_is_interactive;
+
+	/* Whether we're considered to be at the beginning of a line.
+	 * If so, '^' rules will be active on the next match, otherwise
+	 * not.
+	 */
+	int yy_at_bol;
+
+    int yy_bs_lineno; /**< The line count. */
+    int yy_bs_column; /**< The column count. */
+
+	/* Whether to try to fill the input buffer when we reach the
+	 * end of it.
+	 */
+	int yy_fill_buffer;
+
+	int yy_buffer_status;
+>>>>>>> 94c39e8... Thread pool (#332)
 
 #define YY_BUFFER_NEW 0
 #define YY_BUFFER_NORMAL 1
@@ -325,9 +372,15 @@ static void yy_load_buffer_state(yyscan_t yyscanner);
 static void yy_init_buffer(YY_BUFFER_STATE b, FILE *file, yyscan_t yyscanner);
 #define YY_FLUSH_BUFFER yy_flush_buffer(YY_CURRENT_BUFFER, yyscanner)
 
+<<<<<<< HEAD
 YY_BUFFER_STATE yy_scan_buffer(char *base, yy_size_t size, yyscan_t yyscanner);
 YY_BUFFER_STATE yy_scan_string(const char *yy_str, yyscan_t yyscanner);
 YY_BUFFER_STATE yy_scan_bytes(const char *bytes, int len, yyscan_t yyscanner);
+=======
+YY_BUFFER_STATE yy_scan_buffer ( char *base, yy_size_t size , yyscan_t yyscanner );
+YY_BUFFER_STATE yy_scan_string ( const char *yy_str , yyscan_t yyscanner );
+YY_BUFFER_STATE yy_scan_bytes ( const char *bytes, int len , yyscan_t yyscanner );
+>>>>>>> 94c39e8... Thread pool (#332)
 
 void *yyalloc(yy_size_t, yyscan_t yyscanner);
 void *yyrealloc(void *, yy_size_t, yyscan_t yyscanner);
@@ -370,6 +423,7 @@ static void yynoreturn yy_fatal_error(const char *msg, yyscan_t yyscanner);
 /* Done after the current pattern has been matched and before the
  * corresponding action - sets up yytext.
  */
+<<<<<<< HEAD
 #define YY_DO_BEFORE_ACTION                 \
   yyg->yytext_ptr   = yy_bp;                \
   yyleng            = (int)(yy_cp - yy_bp); \
@@ -378,6 +432,16 @@ static void yynoreturn yy_fatal_error(const char *msg, yyscan_t yyscanner);
   yyg->yy_c_buf_p   = yy_cp;
 #define YY_NUM_RULES 80
 #define YY_END_OF_BUFFER 81
+=======
+#define YY_DO_BEFORE_ACTION \
+	yyg->yytext_ptr = yy_bp; \
+	yyleng = (int) (yy_cp - yy_bp); \
+	yyg->yy_hold_char = *yy_cp; \
+	*yy_cp = '\0'; \
+	yyg->yy_c_buf_p = yy_cp;
+#define YY_NUM_RULES 57
+#define YY_END_OF_BUFFER 58
+>>>>>>> 94c39e8... Thread pool (#332)
 /* This struct is not used in this scanner,
    but its presence is necessary. */
 struct yy_trans_info
@@ -3157,9 +3221,29 @@ struct yyguts_t
   int yylineno_r;
   int yy_flex_debug_r;
 
+<<<<<<< HEAD
   char *yytext_r;
   int   yy_more_flag;
   int   yy_more_len;
+=======
+    /* The rest are the same as the globals declared in the non-reentrant scanner. */
+    FILE *yyin_r, *yyout_r;
+    size_t yy_buffer_stack_top; /**< index of top of stack. */
+    size_t yy_buffer_stack_max; /**< capacity of stack. */
+    YY_BUFFER_STATE * yy_buffer_stack; /**< Stack as an array. */
+    char yy_hold_char;
+    int yy_n_chars;
+    int yyleng_r;
+    char *yy_c_buf_p;
+    int yy_init;
+    int yy_start;
+    int yy_did_buffer_switch_on_eof;
+    int yy_start_stack_ptr;
+    int yy_start_stack_depth;
+    int *yy_start_stack;
+    yy_state_type yy_last_accepting_state;
+    char* yy_last_accepting_cpos;
+>>>>>>> 94c39e8... Thread pool (#332)
 
   YYSTYPE *yylval_r;
 
@@ -3200,7 +3284,11 @@ FILE *yyget_out(yyscan_t yyscanner);
 
 void yyset_out(FILE *_out_str, yyscan_t yyscanner);
 
+<<<<<<< HEAD
 int yyget_leng(yyscan_t yyscanner);
+=======
+			int yyget_leng ( yyscan_t yyscanner );
+>>>>>>> 94c39e8... Thread pool (#332)
 
 char *yyget_text(yyscan_t yyscanner);
 
@@ -3278,6 +3366,7 @@ static int input(yyscan_t yyscanner);
  * is returned in "result".
  */
 #ifndef YY_INPUT
+<<<<<<< HEAD
 #define YY_INPUT(buf, result, max_size)                                                     \
   if (YY_CURRENT_BUFFER_LVALUE->yy_is_interactive) {                                        \
     int c = '*';                                                                            \
@@ -3300,6 +3389,37 @@ static int input(yyscan_t yyscanner);
       clearerr(yyin);                                                                       \
     }                                                                                       \
   }
+=======
+#define YY_INPUT(buf,result,max_size) \
+	if ( YY_CURRENT_BUFFER_LVALUE->yy_is_interactive ) \
+		{ \
+		int c = '*'; \
+		int n; \
+		for ( n = 0; n < max_size && \
+			     (c = getc( yyin )) != EOF && c != '\n'; ++n ) \
+			buf[n] = (char) c; \
+		if ( c == '\n' ) \
+			buf[n++] = (char) c; \
+		if ( c == EOF && ferror( yyin ) ) \
+			YY_FATAL_ERROR( "input in flex scanner failed" ); \
+		result = n; \
+		} \
+	else \
+		{ \
+		errno=0; \
+		while ( (result = (int) fread(buf, 1, (yy_size_t) max_size, yyin)) == 0 && ferror(yyin)) \
+			{ \
+			if( errno != EINTR) \
+				{ \
+				YY_FATAL_ERROR( "input in flex scanner failed" ); \
+				break; \
+				} \
+			errno=0; \
+			clearerr(yyin); \
+			} \
+		}\
+\
+>>>>>>> 94c39e8... Thread pool (#332)
 
 #endif
 
@@ -3661,9 +3781,20 @@ YY_DECL
           YY_BREAK
         case 55: YY_RULE_SETUP
 #line 133 "lex_sql.l"
+<<<<<<< HEAD
           RETURN_TOKEN(EXISTS);
           YY_BREAK
         case 56: YY_RULE_SETUP
+=======
+case 53:
+YY_RULE_SETUP
+#line 133 "lex_sql.l"
+{ return yytext[0]; }
+	YY_BREAK
+case 54:
+/* rule 54 can match eol */
+YY_RULE_SETUP
+>>>>>>> 94c39e8... Thread pool (#332)
 #line 134 "lex_sql.l"
           RETURN_TOKEN(ASC);
           YY_BREAK
@@ -3899,6 +4030,7 @@ YY_DECL
  */
 static int yy_get_next_buffer(yyscan_t yyscanner)
 {
+<<<<<<< HEAD
   struct yyguts_t *yyg    = (struct yyguts_t *)yyscanner;
   char            *dest   = YY_CURRENT_BUFFER_LVALUE->yy_ch_buf;
   char            *source = yyg->yytext_ptr;
@@ -4013,6 +4145,141 @@ static int yy_get_next_buffer(yyscan_t yyscanner)
   yyg->yytext_ptr = &YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[0];
 
   return ret_val;
+=======
+    struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
+	char *dest = YY_CURRENT_BUFFER_LVALUE->yy_ch_buf;
+	char *source = yyg->yytext_ptr;
+	int number_to_move, i;
+	int ret_val;
+
+	if ( yyg->yy_c_buf_p > &YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[yyg->yy_n_chars + 1] )
+		YY_FATAL_ERROR(
+		"fatal flex scanner internal error--end of buffer missed" );
+
+	if ( YY_CURRENT_BUFFER_LVALUE->yy_fill_buffer == 0 )
+		{ /* Don't try to fill the buffer, so this is an EOF. */
+		if ( yyg->yy_c_buf_p - yyg->yytext_ptr - YY_MORE_ADJ == 1 )
+			{
+			/* We matched a single character, the EOB, so
+			 * treat this as a final EOF.
+			 */
+			return EOB_ACT_END_OF_FILE;
+			}
+
+		else
+			{
+			/* We matched some text prior to the EOB, first
+			 * process it.
+			 */
+			return EOB_ACT_LAST_MATCH;
+			}
+		}
+
+	/* Try to read more data. */
+
+	/* First move last chars to start of buffer. */
+	number_to_move = (int) (yyg->yy_c_buf_p - yyg->yytext_ptr - 1);
+
+	for ( i = 0; i < number_to_move; ++i )
+		*(dest++) = *(source++);
+
+	if ( YY_CURRENT_BUFFER_LVALUE->yy_buffer_status == YY_BUFFER_EOF_PENDING )
+		/* don't do the read, it's not guaranteed to return an EOF,
+		 * just force an EOF
+		 */
+		YY_CURRENT_BUFFER_LVALUE->yy_n_chars = yyg->yy_n_chars = 0;
+
+	else
+		{
+			int num_to_read =
+			YY_CURRENT_BUFFER_LVALUE->yy_buf_size - number_to_move - 1;
+
+		while ( num_to_read <= 0 )
+			{ /* Not enough room in the buffer - grow it. */
+
+			/* just a shorter name for the current buffer */
+			YY_BUFFER_STATE b = YY_CURRENT_BUFFER_LVALUE;
+
+			int yy_c_buf_p_offset =
+				(int) (yyg->yy_c_buf_p - b->yy_ch_buf);
+
+			if ( b->yy_is_our_buffer )
+				{
+				int new_size = b->yy_buf_size * 2;
+
+				if ( new_size <= 0 )
+					b->yy_buf_size += b->yy_buf_size / 8;
+				else
+					b->yy_buf_size *= 2;
+
+				b->yy_ch_buf = (char *)
+					/* Include room in for 2 EOB chars. */
+					yyrealloc( (void *) b->yy_ch_buf,
+							 (yy_size_t) (b->yy_buf_size + 2) , yyscanner );
+				}
+			else
+				/* Can't grow it, we don't own it. */
+				b->yy_ch_buf = NULL;
+
+			if ( ! b->yy_ch_buf )
+				YY_FATAL_ERROR(
+				"fatal error - scanner input buffer overflow" );
+
+			yyg->yy_c_buf_p = &b->yy_ch_buf[yy_c_buf_p_offset];
+
+			num_to_read = YY_CURRENT_BUFFER_LVALUE->yy_buf_size -
+						number_to_move - 1;
+
+			}
+
+		if ( num_to_read > YY_READ_BUF_SIZE )
+			num_to_read = YY_READ_BUF_SIZE;
+
+		/* Read in more data. */
+		YY_INPUT( (&YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[number_to_move]),
+			yyg->yy_n_chars, num_to_read );
+
+		YY_CURRENT_BUFFER_LVALUE->yy_n_chars = yyg->yy_n_chars;
+		}
+
+	if ( yyg->yy_n_chars == 0 )
+		{
+		if ( number_to_move == YY_MORE_ADJ )
+			{
+			ret_val = EOB_ACT_END_OF_FILE;
+			yyrestart( yyin  , yyscanner);
+			}
+
+		else
+			{
+			ret_val = EOB_ACT_LAST_MATCH;
+			YY_CURRENT_BUFFER_LVALUE->yy_buffer_status =
+				YY_BUFFER_EOF_PENDING;
+			}
+		}
+
+	else
+		ret_val = EOB_ACT_CONTINUE_SCAN;
+
+	if ((yyg->yy_n_chars + number_to_move) > YY_CURRENT_BUFFER_LVALUE->yy_buf_size) {
+		/* Extend the array by 50%, plus the number we really need. */
+		int new_size = yyg->yy_n_chars + number_to_move + (yyg->yy_n_chars >> 1);
+		YY_CURRENT_BUFFER_LVALUE->yy_ch_buf = (char *) yyrealloc(
+			(void *) YY_CURRENT_BUFFER_LVALUE->yy_ch_buf, (yy_size_t) new_size , yyscanner );
+		if ( ! YY_CURRENT_BUFFER_LVALUE->yy_ch_buf )
+			YY_FATAL_ERROR( "out of dynamic memory in yy_get_next_buffer()" );
+		/* "- 2" to take care of EOB's */
+		YY_CURRENT_BUFFER_LVALUE->yy_buf_size = (int) (new_size - 2);
+	}
+
+	yyg->yy_n_chars += number_to_move;
+	YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[yyg->yy_n_chars] = YY_END_OF_BUFFER_CHAR;
+	YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[yyg->yy_n_chars + 1] = YY_END_OF_BUFFER_CHAR;
+
+	yyg->yytext_ptr = &YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[0];
+
+	return ret_val;
+>>>>>>> 94c39e8... Thread pool (#332)
 }
 
 /* yy_get_previous_state - get the state just before the EOB char was reached */
@@ -4082,6 +4349,7 @@ static int input(yyscan_t yyscanner)
 #endif
 
 {
+<<<<<<< HEAD
   int              c;
   struct yyguts_t *yyg = (struct yyguts_t *)yyscanner;
 
@@ -4123,6 +4391,53 @@ static int input(yyscan_t yyscanner)
 
           if (!yyg->yy_did_buffer_switch_on_eof)
             YY_NEW_FILE;
+=======
+	int c;
+    struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
+
+	*yyg->yy_c_buf_p = yyg->yy_hold_char;
+
+	if ( *yyg->yy_c_buf_p == YY_END_OF_BUFFER_CHAR )
+		{
+		/* yy_c_buf_p now points to the character we want to return.
+		 * If this occurs *before* the EOB characters, then it's a
+		 * valid NUL; if not, then we've hit the end of the buffer.
+		 */
+		if ( yyg->yy_c_buf_p < &YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[yyg->yy_n_chars] )
+			/* This was really a NUL. */
+			*yyg->yy_c_buf_p = '\0';
+
+		else
+			{ /* need more input */
+			int offset = (int) (yyg->yy_c_buf_p - yyg->yytext_ptr);
+			++yyg->yy_c_buf_p;
+
+			switch ( yy_get_next_buffer( yyscanner ) )
+				{
+				case EOB_ACT_LAST_MATCH:
+					/* This happens because yy_g_n_b()
+					 * sees that we've accumulated a
+					 * token and flags that we need to
+					 * try matching the token before
+					 * proceeding.  But for input(),
+					 * there's no matching to consider.
+					 * So convert the EOB_ACT_LAST_MATCH
+					 * to EOB_ACT_END_OF_FILE.
+					 */
+
+					/* Reset buffer status. */
+					yyrestart( yyin , yyscanner);
+
+					/*FALLTHROUGH*/
+
+				case EOB_ACT_END_OF_FILE:
+					{
+					if ( yywrap( yyscanner ) )
+						return 0;
+
+					if ( ! yyg->yy_did_buffer_switch_on_eof )
+						YY_NEW_FILE;
+>>>>>>> 94c39e8... Thread pool (#332)
 #ifdef __cplusplus
           return yyinput(yyscanner);
 #else
@@ -4463,6 +4778,7 @@ YY_BUFFER_STATE yy_scan_string(const char *yystr, yyscan_t yyscanner)
  * @param yyscanner The scanner object.
  * @return the newly allocated buffer state object.
  */
+<<<<<<< HEAD
 YY_BUFFER_STATE yy_scan_bytes(const char *yybytes, int _yybytes_len, yyscan_t yyscanner)
 {
   YY_BUFFER_STATE b;
@@ -4491,6 +4807,36 @@ YY_BUFFER_STATE yy_scan_bytes(const char *yybytes, int _yybytes_len, yyscan_t yy
   b->yy_is_our_buffer = 1;
 
   return b;
+=======
+YY_BUFFER_STATE yy_scan_bytes  (const char * yybytes, int  _yybytes_len , yyscan_t yyscanner)
+{
+	YY_BUFFER_STATE b;
+	char *buf;
+	yy_size_t n;
+	int i;
+    
+	/* Get memory for full buffer, including space for trailing EOB's. */
+	n = (yy_size_t) (_yybytes_len + 2);
+	buf = (char *) yyalloc( n , yyscanner );
+	if ( ! buf )
+		YY_FATAL_ERROR( "out of dynamic memory in yy_scan_bytes()" );
+
+	for ( i = 0; i < _yybytes_len; ++i )
+		buf[i] = yybytes[i];
+
+	buf[_yybytes_len] = buf[_yybytes_len+1] = YY_END_OF_BUFFER_CHAR;
+
+	b = yy_scan_buffer( buf, n , yyscanner);
+	if ( ! b )
+		YY_FATAL_ERROR( "bad buffer in yy_scan_bytes()" );
+
+	/* It's okay to grow etc. this buffer, and we should throw it
+	 * away when we're done.
+	 */
+	b->yy_is_our_buffer = 1;
+
+	return b;
+>>>>>>> 94c39e8... Thread pool (#332)
 }
 
 #ifndef YY_EXIT_FAILURE
@@ -4508,6 +4854,7 @@ static void yynoreturn yy_fatal_error(const char *msg, yyscan_t yyscanner)
 /* Redefine yyless() so it works in section 3 code. */
 
 #undef yyless
+<<<<<<< HEAD
 #define yyless(n)                                  \
   do {                                             \
     /* Undo effects of setting up yytext. */       \
@@ -4519,6 +4866,21 @@ static void yynoreturn yy_fatal_error(const char *msg, yyscan_t yyscanner)
     *yyg->yy_c_buf_p  = '\0';                      \
     yyleng            = yyless_macro_arg;          \
   } while (0)
+=======
+#define yyless(n) \
+	do \
+		{ \
+		/* Undo effects of setting up yytext. */ \
+        int yyless_macro_arg = (n); \
+        YY_LESS_LINENO(yyless_macro_arg);\
+		yytext[yyleng] = yyg->yy_hold_char; \
+		yyg->yy_c_buf_p = yytext + yyless_macro_arg; \
+		yyg->yy_hold_char = *yyg->yy_c_buf_p; \
+		*yyg->yy_c_buf_p = '\0'; \
+		yyleng = yyless_macro_arg; \
+		} \
+	while ( 0 )
+>>>>>>> 94c39e8... Thread pool (#332)
 
 /* Accessor  methods (get/set functions) to struct members. */
 
@@ -4578,7 +4940,11 @@ FILE *yyget_out(yyscan_t yyscanner)
 /** Get the length of the current token.
  * @param yyscanner The scanner object.
  */
+<<<<<<< HEAD
 int yyget_leng(yyscan_t yyscanner)
+=======
+int yyget_leng  (yyscan_t yyscanner)
+>>>>>>> 94c39e8... Thread pool (#332)
 {
   struct yyguts_t *yyg = (struct yyguts_t *)yyscanner;
   return yyleng;

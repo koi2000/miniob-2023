@@ -194,6 +194,7 @@ typedef size_t yy_size_t;
 #ifndef YY_STRUCT_YY_BUFFER_STATE
 #define YY_STRUCT_YY_BUFFER_STATE
 struct yy_buffer_state
+<<<<<<< HEAD
 {
   FILE *yy_input_file;
 
@@ -239,6 +240,54 @@ struct yy_buffer_state
 
   int yy_buffer_status;
 };
+=======
+	{
+	FILE *yy_input_file;
+
+	char *yy_ch_buf;		/* input buffer */
+	char *yy_buf_pos;		/* current position in input buffer */
+
+	/* Size of input buffer in bytes, not including room for EOB
+	 * characters.
+	 */
+	int yy_buf_size;
+
+	/* Number of characters read into yy_ch_buf, not including EOB
+	 * characters.
+	 */
+	int yy_n_chars;
+
+	/* Whether we "own" the buffer - i.e., we know we created it,
+	 * and can realloc() it to grow it, and should free() it to
+	 * delete it.
+	 */
+	int yy_is_our_buffer;
+
+	/* Whether this is an "interactive" input source; if so, and
+	 * if we're using stdio for input, then we want to use getc()
+	 * instead of fread(), to make sure we stop fetching input after
+	 * each newline.
+	 */
+	int yy_is_interactive;
+
+	/* Whether we're considered to be at the beginning of a line.
+	 * If so, '^' rules will be active on the next match, otherwise
+	 * not.
+	 */
+	int yy_at_bol;
+
+    int yy_bs_lineno; /**< The line count. */
+    int yy_bs_column; /**< The column count. */
+
+	/* Whether to try to fill the input buffer when we reach the
+	 * end of it.
+	 */
+	int yy_fill_buffer;
+
+	int yy_buffer_status;
+
+	};
+>>>>>>> 94c39e8... Thread pool (#332)
 #endif /* !YY_STRUCT_YY_BUFFER_STATE */
 
 void            yyrestart(FILE *input_file, yyscan_t yyscanner);
@@ -249,9 +298,15 @@ void            yy_flush_buffer(YY_BUFFER_STATE b, yyscan_t yyscanner);
 void            yypush_buffer_state(YY_BUFFER_STATE new_buffer, yyscan_t yyscanner);
 void            yypop_buffer_state(yyscan_t yyscanner);
 
+<<<<<<< HEAD
 YY_BUFFER_STATE yy_scan_buffer(char *base, yy_size_t size, yyscan_t yyscanner);
 YY_BUFFER_STATE yy_scan_string(const char *yy_str, yyscan_t yyscanner);
 YY_BUFFER_STATE yy_scan_bytes(const char *bytes, int len, yyscan_t yyscanner);
+=======
+YY_BUFFER_STATE yy_scan_buffer ( char *base, yy_size_t size , yyscan_t yyscanner );
+YY_BUFFER_STATE yy_scan_string ( const char *yy_str , yyscan_t yyscanner );
+YY_BUFFER_STATE yy_scan_bytes ( const char *bytes, int len , yyscan_t yyscanner );
+>>>>>>> 94c39e8... Thread pool (#332)
 
 void *yyalloc(yy_size_t, yyscan_t yyscanner);
 void *yyrealloc(void *, yy_size_t, yyscan_t yyscanner);
@@ -307,7 +362,11 @@ FILE *yyget_out(yyscan_t yyscanner);
 
 void yyset_out(FILE *_out_str, yyscan_t yyscanner);
 
+<<<<<<< HEAD
 int yyget_leng(yyscan_t yyscanner);
+=======
+			int yyget_leng ( yyscan_t yyscanner );
+>>>>>>> 94c39e8... Thread pool (#332)
 
 char *yyget_text(yyscan_t yyscanner);
 
