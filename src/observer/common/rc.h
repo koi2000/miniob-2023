@@ -76,8 +76,9 @@ See the Mulan PSL v2 for more details. */
   DEFINE_RC(LOGBUF_FULL)                 \
   DEFINE_RC(DATE_INVALID)                \
   DEFINE_RC(RECORD_RECORD_NOT_EXIST)     \
-  DEFINE_RC(DELETE_FILE_ERROR)
-
+  DEFINE_RC(DELETE_FILE_ERROR)           \
+  DEFINE_RC(DBLWR_RECOVER_ERRO)
+  
 enum class RC
 {
 #define DEFINE_RC(name) name,
