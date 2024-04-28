@@ -22,8 +22,8 @@ See the Mulan PSL v2 for more details. */
  * @ingroup LogicalOperator
  */
 class PredicateLogicalOperator : public LogicalOperator {
-public:
-    PredicateLogicalOperator( std::unique_ptr< Expression > expression );
+  public:
+    PredicateLogicalOperator(std::unique_ptr<Expression> expression);
     virtual ~PredicateLogicalOperator() = default;
 
     LogicalOperatorType type() const override {

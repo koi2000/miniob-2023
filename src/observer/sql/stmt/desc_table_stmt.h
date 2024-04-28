@@ -27,8 +27,8 @@ class Db;
  * @details 虽然解析成了stmt，但是与原始的SQL解析后的数据也差不多
  */
 class DescTableStmt : public Stmt {
-public:
-    DescTableStmt( const std::string& table_name ) : table_name_( table_name ) {}
+  public:
+    DescTableStmt(const std::string& table_name) : table_name_(table_name) {}
     virtual ~DescTableStmt() = default;
 
     StmtType type() const override {
@@ -39,8 +39,8 @@ public:
         return table_name_;
     }
 
-    static RC create( Db* db, const DescTableSqlNode& desc_table, Stmt*& stmt );
+    static RC create(Db* db, const DescTableSqlNode& desc_table, Stmt*& stmt);
 
-private:
+  private:
     std::string table_name_;
 };

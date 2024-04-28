@@ -25,8 +25,8 @@ class InsertStmt;
  * @ingroup PhysicalOperator
  */
 class InsertPhysicalOperator : public PhysicalOperator {
-public:
-    InsertPhysicalOperator( Table* table, std::vector< Value >&& values );
+  public:
+    InsertPhysicalOperator(Table* table, std::vector<Value>&& values);
 
     virtual ~InsertPhysicalOperator() = default;
 
@@ -34,7 +34,7 @@ public:
         return PhysicalOperatorType::INSERT;
     }
 
-    RC open( Trx* trx ) override;
+    RC open(Trx* trx) override;
     RC next() override;
     RC close() override;
 
@@ -42,7 +42,7 @@ public:
         return nullptr;
     }
 
-private:
-    Table*               table_ = nullptr;
-    std::vector< Value > values_;
+  private:
+    Table* table_ = nullptr;
+    std::vector<Value> values_;
 };

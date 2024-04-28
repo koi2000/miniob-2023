@@ -24,7 +24,7 @@ See the Mulan PSL v2 for more details. */
  * @ingroup Statement
  */
 class ExitStmt : public Stmt {
-public:
+  public:
     ExitStmt() {}
     virtual ~ExitStmt() = default;
 
@@ -32,7 +32,7 @@ public:
         return StmtType::EXIT;
     }
 
-    static RC create( Stmt*& stmt ) {
+    static RC create(Stmt*& stmt) {
         stmt = new ExitStmt();
         return RC::SUCCESS;
     }

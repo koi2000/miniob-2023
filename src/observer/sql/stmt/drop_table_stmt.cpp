@@ -15,10 +15,10 @@ See the Mulan PSL v2 for more details. */
 #include "sql/stmt/drop_table_stmt.h"
 #include "storage/db/db.h"
 
-RC DropTableStmt::create( Db* db, const DropTableSqlNode& desc_table, Stmt*& stmt ) {
-    if ( db->find_table( desc_table.relation_name.c_str() ) == nullptr ) {
+RC DropTableStmt::create(Db* db, const DropTableSqlNode& desc_table, Stmt*& stmt) {
+    if (db->find_table(desc_table.relation_name.c_str()) == nullptr) {
         return RC::SCHEMA_TABLE_NOT_EXIST;
     }
-    stmt = new DropTableStmt( desc_table.relation_name );
+    stmt = new DropTableStmt(desc_table.relation_name);
     return RC::SUCCESS;
 }

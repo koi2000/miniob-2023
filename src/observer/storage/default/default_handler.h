@@ -21,12 +21,12 @@ See the Mulan PSL v2 for more details. */
 class Trx;
 
 class DefaultHandler {
-public:
+  public:
     DefaultHandler();
 
     virtual ~DefaultHandler() noexcept;
 
-    RC   init( const char* base_dir );
+    RC init(const char* base_dir);
     void destroy();
 
     /**
@@ -37,7 +37,7 @@ public:
      * @param dbname
      * @return
      */
-    RC create_db( const char* dbname );
+    RC create_db(const char* dbname);
 
     /**
      * 删除一个数据库，dbName为要删除的数据库对应文件夹的路径名。
@@ -45,21 +45,21 @@ public:
      * @param dbname
      * @return
      */
-    RC drop_db( const char* dbname );
+    RC drop_db(const char* dbname);
 
     /**
      * 改变系统的当前数据库为dbName对应的文件夹中的数据库。接口要求同dropDB
      * @param dbname
      * @return
      */
-    RC open_db( const char* dbname );
+    RC open_db(const char* dbname);
 
     /**
      * 关闭当前数据库。
      * 该操作将关闭当前数据库中打开的所有文件，关闭文件操作将自动使所有相关的缓冲区页面更新到磁盘
      * @return
      */
-    RC close_db( const char* dbname );
+    RC close_db(const char* dbname);
 
     /**
      * 执行一条除SELECT之外的SQL语句，如果执行成功，返回SUCCESS，否则返回错误码。
@@ -67,7 +67,7 @@ public:
      * @param sql
      * @return
      */
-    RC execute( const char* sql );
+    RC execute(const char* sql);
 
     /**
      * 创建一个名为relName的表。
@@ -80,27 +80,27 @@ public:
      * @param attributes
      * @return
      */
-    RC create_table( const char* dbname, const char* relation_name, int attribute_count, const AttrInfoSqlNode* attributes );
+    RC create_table(const char* dbname, const char* relation_name, int attribute_count, const AttrInfoSqlNode* attributes);
 
     /**
      * 销毁名为relName的表以及在该表上建立的所有索引
      * @param relName
      * @return
      */
-    RC drop_table( const char* dbname, const char* relation_name );
+    RC drop_table(const char* dbname, const char* relation_name);
 
-public:
-    Db*    find_db( const char* dbname ) const;
-    Table* find_table( const char* dbname, const char* table_name ) const;
+  public:
+    Db* find_db(const char* dbname) const;
+    Table* find_table(const char* dbname, const char* table_name) const;
 
     RC sync();
 
-public:
-    static void            set_default( DefaultHandler* handler );
+  public:
+    static void set_default(DefaultHandler* handler);
     static DefaultHandler& get_default();
 
-private:
-    std::string                  base_dir_;
-    std::string                  db_dir_;
-    std::map< std::string, Db* > opened_dbs_;
+  private:
+    std::string base_dir_;
+    std::string db_dir_;
+    std::map<std::string, Db*> opened_dbs_;
 };  // class Handler

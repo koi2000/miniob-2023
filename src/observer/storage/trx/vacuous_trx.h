@@ -20,28 +20,28 @@ See the Mulan PSL v2 for more details. */
  * @brief Vacuous(真空的)，顾名思义就是没有实现事务功能
  */
 class VacuousTrxKit : public TrxKit {
-public:
-    VacuousTrxKit()          = default;
+  public:
+    VacuousTrxKit() = default;
     virtual ~VacuousTrxKit() = default;
 
-    RC                              init() override;
-    const std::vector< FieldMeta >* trx_fields() const override;
-    Trx*                            create_trx( CLogManager* log_manager ) override;
-    Trx*                            create_trx( int32_t trx_id ) override;
-    Trx*                            find_trx( int32_t trx_id ) override;
-    void                            all_trxes( std::vector< Trx* >& trxes ) override;
+    RC init() override;
+    const std::vector<FieldMeta>* trx_fields() const override;
+    Trx* create_trx(CLogManager* log_manager) override;
+    Trx* create_trx(int32_t trx_id) override;
+    Trx* find_trx(int32_t trx_id) override;
+    void all_trxes(std::vector<Trx*>& trxes) override;
 
-    void destroy_trx( Trx* trx ) override;
+    void destroy_trx(Trx* trx) override;
 };
 
 class VacuousTrx : public Trx {
-public:
-    VacuousTrx()          = default;
+  public:
+    VacuousTrx() = default;
     virtual ~VacuousTrx() = default;
 
-    RC insert_record( Table* table, Record& record ) override;
-    RC delete_record( Table* table, Record& record ) override;
-    RC visit_record( Table* table, Record& record, bool readonly ) override;
+    RC insert_record(Table* table, Record& record) override;
+    RC delete_record(Table* table, Record& record) override;
+    RC visit_record(Table* table, Record& record, bool readonly) override;
     RC start_if_need() override;
     RC commit() override;
     RC rollback() override;

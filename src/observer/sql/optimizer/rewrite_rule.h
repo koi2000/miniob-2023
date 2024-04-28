@@ -26,10 +26,10 @@ class Expression;
  * @ingroup Rewriter
  */
 class RewriteRule {
-public:
+  public:
     virtual ~RewriteRule() = default;
 
-    virtual RC rewrite( std::unique_ptr< LogicalOperator >& oper, bool& change_made ) = 0;
+    virtual RC rewrite(std::unique_ptr<LogicalOperator>& oper, bool& change_made) = 0;
 };
 
 /**
@@ -37,8 +37,8 @@ public:
  * @ingroup Rewriter
  */
 class ExpressionRewriteRule {
-public:
+  public:
     virtual ~ExpressionRewriteRule() = default;
 
-    virtual RC rewrite( std::unique_ptr< Expression >& expr, bool& change_made ) = 0;
+    virtual RC rewrite(std::unique_ptr<Expression>& expr, bool& change_made) = 0;
 };

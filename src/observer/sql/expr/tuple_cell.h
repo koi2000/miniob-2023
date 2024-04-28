@@ -19,9 +19,9 @@ See the Mulan PSL v2 for more details. */
 #include <iostream>
 
 class TupleCellSpec {
-public:
-    TupleCellSpec( const char* table_name, const char* field_name, const char* alias = nullptr );
-    TupleCellSpec( const char* alias );
+  public:
+    TupleCellSpec(const char* table_name, const char* field_name, const char* alias = nullptr);
+    TupleCellSpec(const char* alias);
 
     const char* table_name() const {
         return table_name_.c_str();
@@ -33,7 +33,7 @@ public:
         return alias_.c_str();
     }
 
-private:
+  private:
     std::string table_name_;
     std::string field_name_;
     std::string alias_;

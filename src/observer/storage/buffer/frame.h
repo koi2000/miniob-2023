@@ -31,18 +31,18 @@ See the Mulan PSL v2 for more details. */
  * @ingroup BufferPool
  */
 class FrameId {
-public:
-    FrameId( int file_desc, PageNum page_num );
-    bool    equal_to( const FrameId& other ) const;
-    bool    operator==( const FrameId& other ) const;
-    size_t  hash() const;
-    int     file_desc() const;
+  public:
+    FrameId(int file_desc, PageNum page_num);
+    bool equal_to(const FrameId& other) const;
+    bool operator==(const FrameId& other) const;
+    size_t hash() const;
+    int file_desc() const;
     PageNum page_num() const;
 
-    friend std::string to_string( const FrameId& frame_id );
+    friend std::string to_string(const FrameId& frame_id);
 
-private:
-    int     file_desc_;
+  private:
+    int file_desc_;
     PageNum page_num_;
 };
 
@@ -59,7 +59,7 @@ private:
  * 当页面不再使用时，pin count会减少。当pin count为0时，页面可以被淘汰。
  */
 class Frame {
-public:
+  public:
     ~Frame() {
         // LOG_DEBUG("deallocate frame. this=%p, lbt=%s", this, common::lbt());
     }
@@ -73,13 +73,13 @@ public:
     void reset() {}
 
     void clear_page() {
-        memset( &page_, 0, sizeof( page_ ) );
+        memset(&page_, 0, sizeof(page_));
     }
 
     int file_desc() const {
         return file_desc_;
     }
-    void set_file_desc( int fd ) {
+    void set_file_desc(int fd) {
         file_desc_ = fd;
     }
     Page& page() {
@@ -88,16 +88,16 @@ public:
     PageNum page_num() const {
         return page_.page_num;
     }
-    void set_page_num( PageNum page_num ) {
+    void set_page_num(PageNum page_num) {
         page_.page_num = page_num;
     }
     FrameId frame_id() const {
-        return FrameId( file_desc_, page_.page_num );
+        return FrameId(file_desc_, page_.page_num);
     }
     LSN lsn() const {
         return page_.lsn;
     }
-    void set_lsn( LSN lsn ) {
+    void set_lsn(LSN lsn) {
         page_.lsn = lsn;
     }
 
@@ -142,36 +142,36 @@ public:
     }
 
     void write_latch();
-    void write_latch( intptr_t xid );
+    void write_latch(intptr_t xid);
 
     void write_unlatch();
-    void write_unlatch( intptr_t xid );
+    void write_unlatch(intptr_t xid);
 
     void read_latch();
-    void read_latch( intptr_t xid );
+    void read_latch(intptr_t xid);
     bool try_read_latch();
 
     void read_unlatch();
-    void read_unlatch( intptr_t xid );
+    void read_unlatch(intptr_t xid);
 
-    friend std::string to_string( const Frame& frame );
+    friend std::string to_string(const Frame& frame);
 
-private:
+  private:
     friend class BufferPool;
 
-    bool               dirty_ = false;
-    std::atomic< int > pin_count_{ 0 };
-    unsigned long      acc_time_  = 0;
-    int                file_desc_ = -1;
-    Page               page_;
+    bool dirty_ = false;
+    std::atomic<int> pin_count_{0};
+    unsigned long acc_time_ = 0;
+    int file_desc_ = -1;
+    Page page_;
 
     /// 在非并发编译时，加锁解锁动作将什么都不做
     common::RecursiveSharedMutex lock_;
 
     /// 使用一些手段来做测试，提前检测出头疼的死锁问题
     /// 如果编译时没有增加调试选项，这些代码什么都不做
-    common::DebugMutex                  debug_lock_;
-    intptr_t                            write_locker_          = 0;
-    int                                 write_recursive_count_ = 0;
-    std::unordered_map< intptr_t, int > read_lockers_;
+    common::DebugMutex debug_lock_;
+    intptr_t write_locker_ = 0;
+    int write_recursive_count_ = 0;
+    std::unordered_map<intptr_t, int> read_lockers_;
 };

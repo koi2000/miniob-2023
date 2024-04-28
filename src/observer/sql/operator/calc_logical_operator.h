@@ -24,11 +24,11 @@ See the Mulan PSL v2 for more details. */
  * @details 可以看OptimizeStage中相关的代码
  */
 class CalcLogicalOperator : public LogicalOperator {
-public:
-    CalcLogicalOperator( std::vector< std::unique_ptr< Expression > >&& expressions )
+  public:
+    CalcLogicalOperator(std::vector<std::unique_ptr<Expression>>&& expressions)
 
     {
-        expressions_.swap( expressions );
+        expressions_.swap(expressions);
     }
     virtual ~CalcLogicalOperator() = default;
 

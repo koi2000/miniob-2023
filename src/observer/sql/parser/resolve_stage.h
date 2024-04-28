@@ -23,6 +23,6 @@ class SQLStageEvent;
  * @ingroup SQLStage
  */
 class ResolveStage {
-public:
-    RC handle_request( SQLStageEvent* sql_event );
+  public:
+    RC handle_request(SQLStageEvent* sql_event);
 };

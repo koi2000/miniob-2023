@@ -62,15 +62,15 @@ enum CompOp {
  * 这个结构中记录的仅仅支持字段和值。
  */
 struct ConditionSqlNode {
-    int left_is_attr;              ///< TRUE if left-hand side is an attribute
-                                   ///< 1时，操作符左边是属性名，0时，是属性值
-    Value          left_value;     ///< left-hand side value if left_is_attr = FALSE
-    RelAttrSqlNode left_attr;      ///< left-hand side attribute
-    CompOp         comp;           ///< comparison operator
-    int            right_is_attr;  ///< TRUE if right-hand side is an attribute
-                                   ///< 1时，操作符右边是属性名，0时，是属性值
-    RelAttrSqlNode right_attr;     ///< right-hand side attribute if right_is_attr = TRUE 右边的属性
-    Value          right_value;    ///< right-hand side value if right_is_attr = FALSE
+    int left_is_attr;           ///< TRUE if left-hand side is an attribute
+                                ///< 1时，操作符左边是属性名，0时，是属性值
+    Value left_value;           ///< left-hand side value if left_is_attr = FALSE
+    RelAttrSqlNode left_attr;   ///< left-hand side attribute
+    CompOp comp;                ///< comparison operator
+    int right_is_attr;          ///< TRUE if right-hand side is an attribute
+                                ///< 1时，操作符右边是属性名，0时，是属性值
+    RelAttrSqlNode right_attr;  ///< right-hand side attribute if right_is_attr = TRUE 右边的属性
+    Value right_value;          ///< right-hand side value if right_is_attr = FALSE
 };
 
 /**
@@ -85,9 +85,9 @@ struct ConditionSqlNode {
  */
 
 struct SelectSqlNode {
-    std::vector< RelAttrSqlNode >   attributes;  ///< attributes in select clause
-    std::vector< std::string >      relations;   ///< 查询的表
-    std::vector< ConditionSqlNode > conditions;  ///< 查询条件，使用AND串联起来多个条件
+    std::vector<RelAttrSqlNode> attributes;    ///< attributes in select clause
+    std::vector<std::string> relations;        ///< 查询的表
+    std::vector<ConditionSqlNode> conditions;  ///< 查询条件，使用AND串联起来多个条件
 };
 
 /**
@@ -95,7 +95,7 @@ struct SelectSqlNode {
  * @ingroup SQLParser
  */
 struct CalcSqlNode {
-    std::vector< Expression* > expressions;  ///< calc clause
+    std::vector<Expression*> expressions;  ///< calc clause
 
     ~CalcSqlNode();
 };
@@ -106,8 +106,8 @@ struct CalcSqlNode {
  * @details 于Selects类似，也做了很多简化
  */
 struct InsertSqlNode {
-    std::string          relation_name;  ///< Relation to insert into
-    std::vector< Value > values;         ///< 要插入的值
+    std::string relation_name;  ///< Relation to insert into
+    std::vector<Value> values;  ///< 要插入的值
 };
 
 /**
@@ -115,8 +115,8 @@ struct InsertSqlNode {
  * @ingroup SQLParser
  */
 struct DeleteSqlNode {
-    std::string                     relation_name;  ///< Relation to delete from
-    std::vector< ConditionSqlNode > conditions;
+    std::string relation_name;  ///< Relation to delete from
+    std::vector<ConditionSqlNode> conditions;
 };
 
 /**
@@ -124,10 +124,10 @@ struct DeleteSqlNode {
  * @ingroup SQLParser
  */
 struct UpdateSqlNode {
-    std::string                     relation_name;   ///< Relation to update
-    std::string                     attribute_name;  ///< 更新的字段，仅支持一个字段
-    Value                           value;           ///< 更新的值，仅支持一个字段
-    std::vector< ConditionSqlNode > conditions;
+    std::string relation_name;   ///< Relation to update
+    std::string attribute_name;  ///< 更新的字段，仅支持一个字段
+    Value value;                 ///< 更新的值，仅支持一个字段
+    std::vector<ConditionSqlNode> conditions;
 };
 
 /**
@@ -138,9 +138,9 @@ struct UpdateSqlNode {
  * Attr -> Attribute
  */
 struct AttrInfoSqlNode {
-    AttrType    type;    ///< Type of attribute
-    std::string name;    ///< Attribute name
-    size_t      length;  ///< Length of attribute
+    AttrType type;     ///< Type of attribute
+    std::string name;  ///< Attribute name
+    size_t length;     ///< Length of attribute
 };
 
 /**
@@ -149,8 +149,8 @@ struct AttrInfoSqlNode {
  * @details 这里也做了很多简化。
  */
 struct CreateTableSqlNode {
-    std::string                    relation_name;  ///< Relation name
-    std::vector< AttrInfoSqlNode > attr_infos;     ///< attributes
+    std::string relation_name;                ///< Relation name
+    std::vector<AttrInfoSqlNode> attr_infos;  ///< attributes
 };
 
 /**
@@ -208,7 +208,7 @@ struct LoadDataSqlNode {
  */
 struct SetVariableSqlNode {
     std::string name;
-    Value       value;
+    Value value;
 };
 
 class ParsedSqlNode;
@@ -221,7 +221,7 @@ class ParsedSqlNode;
  * 可能改成SqlCommand更合适。
  */
 struct ExplainSqlNode {
-    std::unique_ptr< ParsedSqlNode > sql_node;
+    std::unique_ptr<ParsedSqlNode> sql_node;
 };
 
 /**
@@ -231,8 +231,8 @@ struct ExplainSqlNode {
  */
 struct ErrorSqlNode {
     std::string error_msg;
-    int         line;
-    int         column;
+    int line;
+    int column;
 };
 
 /**
@@ -268,26 +268,26 @@ enum SqlCommandFlag {
  * @ingroup SQLParser
  */
 class ParsedSqlNode {
-public:
+  public:
     enum SqlCommandFlag flag;
-    ErrorSqlNode        error;
-    CalcSqlNode         calc;
-    SelectSqlNode       selection;
-    InsertSqlNode       insertion;
-    DeleteSqlNode       deletion;
-    UpdateSqlNode       update;
-    CreateTableSqlNode  create_table;
-    DropTableSqlNode    drop_table;
-    CreateIndexSqlNode  create_index;
-    DropIndexSqlNode    drop_index;
-    DescTableSqlNode    desc_table;
-    LoadDataSqlNode     load_data;
-    ExplainSqlNode      explain;
-    SetVariableSqlNode  set_variable;
+    ErrorSqlNode error;
+    CalcSqlNode calc;
+    SelectSqlNode selection;
+    InsertSqlNode insertion;
+    DeleteSqlNode deletion;
+    UpdateSqlNode update;
+    CreateTableSqlNode create_table;
+    DropTableSqlNode drop_table;
+    CreateIndexSqlNode create_index;
+    DropIndexSqlNode drop_index;
+    DescTableSqlNode desc_table;
+    LoadDataSqlNode load_data;
+    ExplainSqlNode explain;
+    SetVariableSqlNode set_variable;
 
-public:
+  public:
     ParsedSqlNode();
-    explicit ParsedSqlNode( SqlCommandFlag flag );
+    explicit ParsedSqlNode(SqlCommandFlag flag);
 };
 
 /**
@@ -295,12 +295,12 @@ public:
  * @ingroup SQLParser
  */
 class ParsedSqlResult {
-public:
-    void                                             add_sql_node( std::unique_ptr< ParsedSqlNode > sql_node );
-    std::vector< std::unique_ptr< ParsedSqlNode > >& sql_nodes() {
+  public:
+    void add_sql_node(std::unique_ptr<ParsedSqlNode> sql_node);
+    std::vector<std::unique_ptr<ParsedSqlNode>>& sql_nodes() {
         return sql_nodes_;
     }
 
-private:
-    std::vector< std::unique_ptr< ParsedSqlNode > > sql_nodes_;  ///< 这里记录SQL命令。虽然看起来支持多个，但是当前仅处理一个
+  private:
+    std::vector<std::unique_ptr<ParsedSqlNode>> sql_nodes_;  ///< 这里记录SQL命令。虽然看起来支持多个，但是当前仅处理一个
 };

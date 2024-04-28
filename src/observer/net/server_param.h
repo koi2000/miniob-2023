@@ -22,13 +22,13 @@ See the Mulan PSL v2 for more details. */
  * @ingroup Communicator
  */
 class ServerParam {
-public:
+  public:
     ServerParam();
 
-    ServerParam( const ServerParam& other ) = default;
-    ~ServerParam()                          = default;
+    ServerParam(const ServerParam& other) = default;
+    ~ServerParam() = default;
 
-public:
+  public:
     // accpet client's address, default is INADDR_ANY, means accept every address
     long listen_addr;
 

@@ -24,8 +24,8 @@ See the Mulan PSL v2 for more details. */
  * @ingroup Statement
  */
 class SetVariableStmt : public Stmt {
-public:
-    SetVariableStmt( const SetVariableSqlNode& set_variable ) : set_variable_( set_variable ) {}
+  public:
+    SetVariableStmt(const SetVariableSqlNode& set_variable) : set_variable_(set_variable) {}
     virtual ~SetVariableStmt() = default;
 
     StmtType type() const override {
@@ -39,12 +39,12 @@ public:
         return set_variable_.value;
     }
 
-    static RC create( const SetVariableSqlNode& set_variable, Stmt*& stmt ) {
+    static RC create(const SetVariableSqlNode& set_variable, Stmt*& stmt) {
         /// 可以校验是否存在某个变量，但是这里忽略
-        stmt = new SetVariableStmt( set_variable );
+        stmt = new SetVariableStmt(set_variable);
         return RC::SUCCESS;
     }
 
-private:
+  private:
     SetVariableSqlNode set_variable_;
 };

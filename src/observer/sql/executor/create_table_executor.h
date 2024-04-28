@@ -23,9 +23,9 @@ class SQLStageEvent;
  * @ingroup Executor
  */
 class CreateTableExecutor {
-public:
-    CreateTableExecutor()          = default;
+  public:
+    CreateTableExecutor() = default;
     virtual ~CreateTableExecutor() = default;
 
-    RC execute( SQLStageEvent* sql_event );
+    RC execute(SQLStageEvent* sql_event);
 };

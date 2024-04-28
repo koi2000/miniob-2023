@@ -36,7 +36,7 @@ struct RID {
     SlotNum slot_num;  // record's slot number
 
     RID() = default;
-    RID( const PageNum _page_num, const SlotNum _slot_num ) : page_num( _page_num ), slot_num( _slot_num ) {}
+    RID(const PageNum _page_num, const SlotNum _slot_num) : page_num(_page_num), slot_num(_slot_num) {}
 
     const std::string to_string() const {
         std::stringstream ss;
@@ -44,20 +44,19 @@ struct RID {
         return ss.str();
     }
 
-    bool operator==( const RID& other ) const {
+    bool operator==(const RID& other) const {
         return page_num == other.page_num && slot_num == other.slot_num;
     }
 
-    bool operator!=( const RID& other ) const {
-        return !( *this == other );
+    bool operator!=(const RID& other) const {
+        return !(*this == other);
     }
 
-    static int compare( const RID* rid1, const RID* rid2 ) {
+    static int compare(const RID* rid1, const RID* rid2) {
         int page_diff = rid1->page_num - rid2->page_num;
-        if ( page_diff != 0 ) {
+        if (page_diff != 0) {
             return page_diff;
-        }
-        else {
+        } else {
             return rid1->slot_num - rid2->slot_num;
         }
     }
@@ -68,7 +67,7 @@ struct RID {
      * 不合法的. 这里在bplus tree中查找时会用到。
      */
     static RID* min() {
-        static RID rid{ 0, 0 };
+        static RID rid{0, 0};
         return &rid;
     }
 
@@ -77,7 +76,7 @@ struct RID {
      * 我们假设page num和slot num都不会使用对应数值类型的最大值
      */
     static RID* max() {
-        static RID rid{ std::numeric_limits< PageNum >::max(), std::numeric_limits< SlotNum >::max() };
+        static RID rid{std::numeric_limits<PageNum>::max(), std::numeric_limits<SlotNum>::max()};
         return &rid;
     }
 };
@@ -89,49 +88,49 @@ struct RID {
  * 为了方便，也提供了复制内存的方法。可以参考set_data_owner
  */
 class Record {
-public:
+  public:
     Record() = default;
     ~Record() {
-        if ( owner_ && data_ != nullptr ) {
-            free( data_ );
+        if (owner_ && data_ != nullptr) {
+            free(data_);
             data_ = nullptr;
         }
     }
 
-    Record( const Record& other ) {
-        rid_   = other.rid_;
-        data_  = other.data_;
-        len_   = other.len_;
+    Record(const Record& other) {
+        rid_ = other.rid_;
+        data_ = other.data_;
+        len_ = other.len_;
         owner_ = other.owner_;
 
-        if ( other.owner_ ) {
-            char* tmp = ( char* )malloc( other.len_ );
-            ASSERT( nullptr != tmp, "failed to allocate memory. size=%d", other.len_ );
-            memcpy( tmp, other.data_, other.len_ );
+        if (other.owner_) {
+            char* tmp = (char*)malloc(other.len_);
+            ASSERT(nullptr != tmp, "failed to allocate memory. size=%d", other.len_);
+            memcpy(tmp, other.data_, other.len_);
             data_ = tmp;
         }
     }
 
-    Record& operator=( const Record& other ) {
-        if ( this == &other ) {
+    Record& operator=(const Record& other) {
+        if (this == &other) {
             return *this;
         }
 
         this->~Record();
-        new ( this ) Record( other );
+        new (this) Record(other);
         return *this;
     }
 
-    void set_data( char* data, int len = 0 ) {
+    void set_data(char* data, int len = 0) {
         this->data_ = data;
-        this->len_  = len;
+        this->len_ = len;
     }
-    void set_data_owner( char* data, int len ) {
-        ASSERT( len != 0, "the len of data should not be 0" );
+    void set_data_owner(char* data, int len) {
+        ASSERT(len != 0, "the len of data should not be 0");
         this->~Record();
 
-        this->data_  = data;
-        this->len_   = len;
+        this->data_ = data;
+        this->len_ = len;
         this->owner_ = true;
     }
 
@@ -145,10 +144,10 @@ public:
         return this->len_;
     }
 
-    void set_rid( const RID& rid ) {
+    void set_rid(const RID& rid) {
         this->rid_ = rid;
     }
-    void set_rid( const PageNum page_num, const SlotNum slot_num ) {
+    void set_rid(const PageNum page_num, const SlotNum slot_num) {
         this->rid_.page_num = page_num;
         this->rid_.slot_num = slot_num;
     }
@@ -159,10 +158,10 @@ public:
         return rid_;
     }
 
-private:
+  private:
     RID rid_;
 
-    char* data_  = nullptr;
-    int   len_   = 0;      /// 如果不是record自己来管理内存，这个字段可能是无效的
-    bool  owner_ = false;  /// 表示当前是否由record来管理内存
+    char* data_ = nullptr;
+    int len_ = 0;         /// 如果不是record自己来管理内存，这个字段可能是无效的
+    bool owner_ = false;  /// 表示当前是否由record来管理内存
 };

@@ -24,10 +24,10 @@ class SQLStageEvent;
  * @details 当前什么都没做
  */
 class QueryCacheStage {
-public:
-    QueryCacheStage()          = default;
+  public:
+    QueryCacheStage() = default;
     virtual ~QueryCacheStage() = default;
 
-public:
-    RC handle_request( SQLStageEvent* sql_event );
+  public:
+    RC handle_request(SQLStageEvent* sql_event);
 };

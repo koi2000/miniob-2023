@@ -26,11 +26,11 @@ class LogicalOperator;
  * 进而直接将表达式改成结果，这样就可以减少运行时的计算量。
  */
 class ComparisonSimplificationRule : public ExpressionRewriteRule {
-public:
-    ComparisonSimplificationRule()          = default;
+  public:
+    ComparisonSimplificationRule() = default;
     virtual ~ComparisonSimplificationRule() = default;
 
-    RC rewrite( std::unique_ptr< Expression >& expr, bool& change_made ) override;
+    RC rewrite(std::unique_ptr<Expression>& expr, bool& change_made) override;
 
-private:
+  private:
 };

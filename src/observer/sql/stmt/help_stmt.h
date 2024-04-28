@@ -24,7 +24,7 @@ See the Mulan PSL v2 for more details. */
  * @ingroup Statement
  */
 class HelpStmt : public Stmt {
-public:
+  public:
     HelpStmt() {}
     virtual ~HelpStmt() = default;
 
@@ -32,7 +32,7 @@ public:
         return StmtType::HELP;
     }
 
-    static RC create( Stmt*& stmt ) {
+    static RC create(Stmt*& stmt) {
         stmt = new HelpStmt();
         return RC::SUCCESS;
     }

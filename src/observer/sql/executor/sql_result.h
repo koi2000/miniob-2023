@@ -30,19 +30,19 @@ class Session;
  * 如果出现了一些错误，也可以通过return_code和state_string来获取信息。
  */
 class SqlResult {
-public:
-    SqlResult( Session* session );
+  public:
+    SqlResult(Session* session);
     ~SqlResult() {}
 
-    void set_tuple_schema( const TupleSchema& schema );
-    void set_return_code( RC rc ) {
+    void set_tuple_schema(const TupleSchema& schema);
+    void set_return_code(RC rc) {
         return_code_ = rc;
     }
-    void set_state_string( const std::string& state_string ) {
+    void set_state_string(const std::string& state_string) {
         state_string_ = state_string;
     }
 
-    void set_operator( std::unique_ptr< PhysicalOperator > oper );
+    void set_operator(std::unique_ptr<PhysicalOperator> oper);
 
     bool has_operator() const {
         return operator_ != nullptr;
@@ -59,12 +59,12 @@ public:
 
     RC open();
     RC close();
-    RC next_tuple( Tuple*& tuple );
+    RC next_tuple(Tuple*& tuple);
 
-private:
-    Session*                            session_ = nullptr;  ///< 当前所属会话
-    std::unique_ptr< PhysicalOperator > operator_;           ///< 执行计划
-    TupleSchema                         tuple_schema_;       ///< 返回的表头信息。可能有也可能没有
-    RC                                  return_code_ = RC::SUCCESS;
-    std::string                         state_string_;
+  private:
+    Session* session_ = nullptr;                  ///< 当前所属会话
+    std::unique_ptr<PhysicalOperator> operator_;  ///< 执行计划
+    TupleSchema tuple_schema_;                    ///< 返回的表头信息。可能有也可能没有
+    RC return_code_ = RC::SUCCESS;
+    std::string state_string_;
 };

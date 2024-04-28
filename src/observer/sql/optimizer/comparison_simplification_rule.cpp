@@ -16,18 +16,18 @@ See the Mulan PSL v2 for more details. */
 #include "common/log/log.h"
 #include "sql/expr/expression.h"
 
-RC ComparisonSimplificationRule::rewrite( std::unique_ptr< Expression >& expr, bool& change_made ) {
-    RC rc       = RC::SUCCESS;
+RC ComparisonSimplificationRule::rewrite(std::unique_ptr<Expression>& expr, bool& change_made) {
+    RC rc = RC::SUCCESS;
     change_made = false;
-    if ( expr->type() == ExprType::COMPARISON ) {
-        ComparisonExpr* cmp_expr = static_cast< ComparisonExpr* >( expr.get() );
-        Value           value;
-        RC              sub_rc = cmp_expr->try_get_value( value );
-        if ( sub_rc == RC::SUCCESS ) {
-            std::unique_ptr< Expression > new_expr( new ValueExpr( value ) );
-            expr.swap( new_expr );
+    if (expr->type() == ExprType::COMPARISON) {
+        ComparisonExpr* cmp_expr = static_cast<ComparisonExpr*>(expr.get());
+        Value value;
+        RC sub_rc = cmp_expr->try_get_value(value);
+        if (sub_rc == RC::SUCCESS) {
+            std::unique_ptr<Expression> new_expr(new ValueExpr(value));
+            expr.swap(new_expr);
             change_made = true;
-            LOG_TRACE( "comparison expression is simplified" );
+            LOG_TRACE("comparison expression is simplified");
         }
     }
     return rc;

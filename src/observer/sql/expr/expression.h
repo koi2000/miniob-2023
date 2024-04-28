@@ -56,20 +56,20 @@ enum class ExprType {
  * 值，比如ValueExpr。
  */
 class Expression {
-public:
-    Expression()          = default;
+  public:
+    Expression() = default;
     virtual ~Expression() = default;
 
     /**
      * @brief 根据具体的tuple，来计算当前表达式的值。tuple有可能是一个具体某个表的行数据
      */
-    virtual RC get_value( const Tuple& tuple, Value& value ) const = 0;
+    virtual RC get_value(const Tuple& tuple, Value& value) const = 0;
 
     /**
      * @brief 在没有实际运行的情况下，也就是无法获取tuple的情况下，尝试获取表达式的值
      * @details 有些表达式的值是固定的，比如ValueExpr，这种情况下可以直接获取值
      */
-    virtual RC try_get_value( Value& value ) const {
+    virtual RC try_get_value(Value& value) const {
         return RC::UNIMPLENMENT;
     }
 
@@ -91,11 +91,11 @@ public:
     virtual std::string name() const {
         return name_;
     }
-    virtual void set_name( std::string name ) {
+    virtual void set_name(std::string name) {
         name_ = name;
     }
 
-private:
+  private:
     std::string name_;
 };
 
@@ -104,10 +104,10 @@ private:
  * @ingroup Expression
  */
 class FieldExpr : public Expression {
-public:
+  public:
     FieldExpr() = default;
-    FieldExpr( const Table* table, const FieldMeta* field ) : field_( table, field ) {}
-    FieldExpr( const Field& field ) : field_( field ) {}
+    FieldExpr(const Table* table, const FieldMeta* field) : field_(table, field) {}
+    FieldExpr(const Field& field) : field_(field) {}
 
     virtual ~FieldExpr() = default;
 
@@ -134,9 +134,9 @@ public:
         return field_.field_name();
     }
 
-    RC get_value( const Tuple& tuple, Value& value ) const override;
+    RC get_value(const Tuple& tuple, Value& value) const override;
 
-private:
+  private:
     Field field_;
 };
 
@@ -145,14 +145,14 @@ private:
  * @ingroup Expression
  */
 class ValueExpr : public Expression {
-public:
+  public:
     ValueExpr() = default;
-    explicit ValueExpr( const Value& value ) : value_( value ) {}
+    explicit ValueExpr(const Value& value) : value_(value) {}
 
     virtual ~ValueExpr() = default;
 
-    RC get_value( const Tuple& tuple, Value& value ) const override;
-    RC try_get_value( Value& value ) const override {
+    RC get_value(const Tuple& tuple, Value& value) const override;
+    RC try_get_value(Value& value) const override {
         value = value_;
         return RC::SUCCESS;
     }
@@ -165,7 +165,7 @@ public:
         return value_.attr_type();
     }
 
-    void get_value( Value& value ) const {
+    void get_value(Value& value) const {
         value = value_;
     }
 
@@ -173,7 +173,7 @@ public:
         return value_;
     }
 
-private:
+  private:
     Value value_;
 };
 
@@ -182,31 +182,31 @@ private:
  * @ingroup Expression
  */
 class CastExpr : public Expression {
-public:
-    CastExpr( std::unique_ptr< Expression > child, AttrType cast_type );
+  public:
+    CastExpr(std::unique_ptr<Expression> child, AttrType cast_type);
     virtual ~CastExpr();
 
     ExprType type() const override {
         return ExprType::CAST;
     }
-    RC get_value( const Tuple& tuple, Value& value ) const override;
+    RC get_value(const Tuple& tuple, Value& value) const override;
 
-    RC try_get_value( Value& value ) const override;
+    RC try_get_value(Value& value) const override;
 
     AttrType value_type() const override {
         return cast_type_;
     }
 
-    std::unique_ptr< Expression >& child() {
+    std::unique_ptr<Expression>& child() {
         return child_;
     }
 
-private:
-    RC cast( const Value& value, Value& cast_value ) const;
+  private:
+    RC cast(const Value& value, Value& cast_value) const;
 
-private:
-    std::unique_ptr< Expression > child_;      ///< 从这个表达式转换
-    AttrType                      cast_type_;  ///< 想要转换成这个类型
+  private:
+    std::unique_ptr<Expression> child_;  ///< 从这个表达式转换
+    AttrType cast_type_;                 ///< 想要转换成这个类型
 };
 
 /**
@@ -214,15 +214,15 @@ private:
  * @ingroup Expression
  */
 class ComparisonExpr : public Expression {
-public:
-    ComparisonExpr( CompOp comp, std::unique_ptr< Expression > left, std::unique_ptr< Expression > right );
+  public:
+    ComparisonExpr(CompOp comp, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right);
     virtual ~ComparisonExpr();
 
     ExprType type() const override {
         return ExprType::COMPARISON;
     }
 
-    RC get_value( const Tuple& tuple, Value& value ) const override;
+    RC get_value(const Tuple& tuple, Value& value) const override;
 
     AttrType value_type() const override {
         return BOOLEANS;
@@ -232,10 +232,10 @@ public:
         return comp_;
     }
 
-    std::unique_ptr< Expression >& left() {
+    std::unique_ptr<Expression>& left() {
         return left_;
     }
-    std::unique_ptr< Expression >& right() {
+    std::unique_ptr<Expression>& right() {
         return right_;
     }
 
@@ -243,18 +243,18 @@ public:
      * 尝试在没有tuple的情况下获取当前表达式的值
      * 在优化的时候，可能会使用到
      */
-    RC try_get_value( Value& value ) const override;
+    RC try_get_value(Value& value) const override;
 
     /**
      * compare the two tuple cells
      * @param value the result of comparison
      */
-    RC compare_value( const Value& left, const Value& right, bool& value ) const;
+    RC compare_value(const Value& left, const Value& right, bool& value) const;
 
-private:
-    CompOp                        comp_;
-    std::unique_ptr< Expression > left_;
-    std::unique_ptr< Expression > right_;
+  private:
+    CompOp comp_;
+    std::unique_ptr<Expression> left_;
+    std::unique_ptr<Expression> right_;
 };
 
 /**
@@ -264,14 +264,14 @@ private:
  * 当前miniob仅有AND操作
  */
 class ConjunctionExpr : public Expression {
-public:
+  public:
     enum class Type {
         AND,
         OR,
     };
 
-public:
-    ConjunctionExpr( Type type, std::vector< std::unique_ptr< Expression > >& children );
+  public:
+    ConjunctionExpr(Type type, std::vector<std::unique_ptr<Expression>>& children);
     virtual ~ConjunctionExpr() = default;
 
     ExprType type() const override {
@@ -282,19 +282,19 @@ public:
         return BOOLEANS;
     }
 
-    RC get_value( const Tuple& tuple, Value& value ) const override;
+    RC get_value(const Tuple& tuple, Value& value) const override;
 
     Type conjunction_type() const {
         return conjunction_type_;
     }
 
-    std::vector< std::unique_ptr< Expression > >& children() {
+    std::vector<std::unique_ptr<Expression>>& children() {
         return children_;
     }
 
-private:
-    Type                                         conjunction_type_;
-    std::vector< std::unique_ptr< Expression > > children_;
+  private:
+    Type conjunction_type_;
+    std::vector<std::unique_ptr<Expression>> children_;
 };
 
 /**
@@ -302,7 +302,7 @@ private:
  * @ingroup Expression
  */
 class ArithmeticExpr : public Expression {
-public:
+  public:
     enum class Type {
         ADD,
         SUB,
@@ -311,9 +311,9 @@ public:
         NEGATIVE,
     };
 
-public:
-    ArithmeticExpr( Type type, Expression* left, Expression* right );
-    ArithmeticExpr( Type type, std::unique_ptr< Expression > left, std::unique_ptr< Expression > right );
+  public:
+    ArithmeticExpr(Type type, Expression* left, Expression* right);
+    ArithmeticExpr(Type type, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right);
     virtual ~ArithmeticExpr() = default;
 
     ExprType type() const override {
@@ -322,25 +322,25 @@ public:
 
     AttrType value_type() const override;
 
-    RC get_value( const Tuple& tuple, Value& value ) const override;
-    RC try_get_value( Value& value ) const override;
+    RC get_value(const Tuple& tuple, Value& value) const override;
+    RC try_get_value(Value& value) const override;
 
     Type arithmetic_type() const {
         return arithmetic_type_;
     }
 
-    std::unique_ptr< Expression >& left() {
+    std::unique_ptr<Expression>& left() {
         return left_;
     }
-    std::unique_ptr< Expression >& right() {
+    std::unique_ptr<Expression>& right() {
         return right_;
     }
 
-private:
-    RC calc_value( const Value& left_value, const Value& right_value, Value& value ) const;
+  private:
+    RC calc_value(const Value& left_value, const Value& right_value, Value& value) const;
 
-private:
-    Type                          arithmetic_type_;
-    std::unique_ptr< Expression > left_;
-    std::unique_ptr< Expression > right_;
+  private:
+    Type arithmetic_type_;
+    std::unique_ptr<Expression> left_;
+    std::unique_ptr<Expression> right_;
 };

@@ -25,8 +25,8 @@ class FilterStmt;
  * @ingroup PhysicalOperator
  */
 class PredicatePhysicalOperator : public PhysicalOperator {
-public:
-    PredicatePhysicalOperator( std::unique_ptr< Expression > expr );
+  public:
+    PredicatePhysicalOperator(std::unique_ptr<Expression> expr);
 
     virtual ~PredicatePhysicalOperator() = default;
 
@@ -34,12 +34,12 @@ public:
         return PhysicalOperatorType::PREDICATE;
     }
 
-    RC open( Trx* trx ) override;
+    RC open(Trx* trx) override;
     RC next() override;
     RC close() override;
 
     Tuple* current_tuple() override;
 
-private:
-    std::unique_ptr< Expression > expression_;
+  private:
+    std::unique_ptr<Expression> expression_;
 };

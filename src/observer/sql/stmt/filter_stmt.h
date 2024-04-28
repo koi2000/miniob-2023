@@ -26,27 +26,27 @@ class Table;
 class FieldMeta;
 
 struct FilterObj {
-    bool  is_attr;
+    bool is_attr;
     Field field;
     Value value;
 
-    void init_attr( const Field& field ) {
-        is_attr     = true;
+    void init_attr(const Field& field) {
+        is_attr = true;
         this->field = field;
     }
 
-    void init_value( const Value& value ) {
-        is_attr     = false;
+    void init_value(const Value& value) {
+        is_attr = false;
         this->value = value;
     }
 };
 
 class FilterUnit {
-public:
+  public:
     FilterUnit() = default;
     ~FilterUnit() {}
 
-    void set_comp( CompOp comp ) {
+    void set_comp(CompOp comp) {
         comp_ = comp;
     }
 
@@ -54,10 +54,10 @@ public:
         return comp_;
     }
 
-    void set_left( const FilterObj& obj ) {
+    void set_left(const FilterObj& obj) {
         left_ = obj;
     }
-    void set_right( const FilterObj& obj ) {
+    void set_right(const FilterObj& obj) {
         right_ = obj;
     }
 
@@ -68,8 +68,8 @@ public:
         return right_;
     }
 
-private:
-    CompOp    comp_ = NO_OP;
+  private:
+    CompOp comp_ = NO_OP;
     FilterObj left_;
     FilterObj right_;
 };
@@ -79,20 +79,20 @@ private:
  * @ingroup Statement
  */
 class FilterStmt {
-public:
+  public:
     FilterStmt() = default;
     virtual ~FilterStmt();
 
-public:
-    const std::vector< FilterUnit* >& filter_units() const {
+  public:
+    const std::vector<FilterUnit*>& filter_units() const {
         return filter_units_;
     }
 
-public:
-    static RC create( Db* db, Table* default_table, std::unordered_map< std::string, Table* >* tables, const ConditionSqlNode* conditions, int condition_num, FilterStmt*& stmt );
+  public:
+    static RC create(Db* db, Table* default_table, std::unordered_map<std::string, Table*>* tables, const ConditionSqlNode* conditions, int condition_num, FilterStmt*& stmt);
 
-    static RC create_filter_unit( Db* db, Table* default_table, std::unordered_map< std::string, Table* >* tables, const ConditionSqlNode& condition, FilterUnit*& filter_unit );
+    static RC create_filter_unit(Db* db, Table* default_table, std::unordered_map<std::string, Table*>* tables, const ConditionSqlNode& condition, FilterUnit*& filter_unit);
 
-private:
-    std::vector< FilterUnit* > filter_units_;  // 默认当前都是AND关系
+  private:
+    std::vector<FilterUnit*> filter_units_;  // 默认当前都是AND关系
 };

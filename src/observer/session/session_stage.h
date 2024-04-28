@@ -38,27 +38,27 @@ See the Mulan PSL v2 for more details. */
  * @ingroup SQLStage
  */
 class SessionStage : public common::Stage {
-public:
+  public:
     virtual ~SessionStage();
-    static Stage* make_stage( const std::string& tag );
+    static Stage* make_stage(const std::string& tag);
 
-protected:
+  protected:
     // common function
-    SessionStage( const char* tag );
+    SessionStage(const char* tag);
     bool set_properties() override;
 
     bool initialize() override;
     void cleanup() override;
-    void handle_event( common::StageEvent* event ) override;
+    void handle_event(common::StageEvent* event) override;
 
-protected:
-    void handle_request( common::StageEvent* event );
-    RC   handle_sql( SQLStageEvent* sql_event );
+  protected:
+    void handle_request(common::StageEvent* event);
+    RC handle_sql(SQLStageEvent* sql_event);
 
-private:
+  private:
     QueryCacheStage query_cache_stage_;
-    ParseStage      parse_stage_;
-    ResolveStage    resolve_stage_;
-    OptimizeStage   optimize_stage_;
-    ExecuteStage    execute_stage_;
+    ParseStage parse_stage_;
+    ResolveStage resolve_stage_;
+    OptimizeStage optimize_stage_;
+    ExecuteStage execute_stage_;
 };

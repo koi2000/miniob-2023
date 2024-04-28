@@ -24,14 +24,14 @@ class Table;
  * @ingroup Statement
  */
 class UpdateStmt : public Stmt {
-public:
+  public:
     UpdateStmt() = default;
-    UpdateStmt( Table* table, Value* values, int value_amount );
+    UpdateStmt(Table* table, Value* values, int value_amount);
 
-public:
-    static RC create( Db* db, const UpdateSqlNode& update_sql, Stmt*& stmt );
+  public:
+    static RC create(Db* db, const UpdateSqlNode& update_sql, Stmt*& stmt);
 
-public:
+  public:
     Table* table() const {
         return table_;
     }
@@ -42,8 +42,8 @@ public:
         return value_amount_;
     }
 
-private:
-    Table* table_        = nullptr;
-    Value* values_       = nullptr;
-    int    value_amount_ = 0;
+  private:
+    Table* table_ = nullptr;
+    Value* values_ = nullptr;
+    int value_amount_ = 0;
 };

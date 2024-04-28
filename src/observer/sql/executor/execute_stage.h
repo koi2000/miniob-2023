@@ -28,7 +28,7 @@ class SelectStmt;
  * 整体上分为两类，带执行计划的，或者 CommandExecutor 可以直接执行的。
  */
 class ExecuteStage {
-public:
-    RC handle_request( SQLStageEvent* event );
-    RC handle_request_with_physical_operator( SQLStageEvent* sql_event );
+  public:
+    RC handle_request(SQLStageEvent* event);
+    RC handle_request_with_physical_operator(SQLStageEvent* sql_event);
 };

@@ -23,9 +23,9 @@ See the Mulan PSL v2 for more details. */
  * @note 在执行close时，描述符fd并不会被关闭
  */
 class BufferedWriter {
-public:
-    BufferedWriter( int fd );
-    BufferedWriter( int fd, int32_t size );
+  public:
+    BufferedWriter(int fd);
+    BufferedWriter(int fd, int32_t size);
     ~BufferedWriter();
 
     /**
@@ -40,7 +40,7 @@ public:
      * @param size 要写入的数据大小
      * @param write_size 实际写入的数据大小
      */
-    RC write( const char* data, int32_t size, int32_t& write_size );
+    RC write(const char* data, int32_t size, int32_t& write_size);
 
     /**
      * @brief 写数据到文件/socket，全部写入成功返回成功
@@ -48,7 +48,7 @@ public:
      * @param data 要写入的数据
      * @param size 要写入的数据大小
      */
-    RC writen( const char* data, int32_t size );
+    RC writen(const char* data, int32_t size);
 
     /**
      * @brief 刷新缓存
@@ -56,16 +56,16 @@ public:
      */
     RC flush();
 
-private:
+  private:
     /**
      * @brief 刷新缓存
      * @details 期望缓存可以刷新size大小的数据，实际刷新的数据量可能小于size也可能大于size。
      * 通常是在缓存满的时候，希望刷新掉一部分数据，然后继续写入。
      * @param size 期望刷新的数据大小
      */
-    RC flush_internal( int32_t size );
+    RC flush_internal(int32_t size);
 
-private:
-    int        fd_ = -1;
+  private:
+    int fd_ = -1;
     RingBuffer buffer_;
 };

@@ -34,7 +34,7 @@ class Trx;
  *
  */
 class Table {
-public:
+  public:
     Table() = default;
     ~Table();
 
@@ -46,19 +46,19 @@ public:
      * @param attribute_count 字段个数
      * @param attributes 字段
      */
-    RC create( int32_t table_id, const char* path, const char* name, const char* base_dir, int attribute_count, const AttrInfoSqlNode attributes[] );
+    RC create(int32_t table_id, const char* path, const char* name, const char* base_dir, int attribute_count, const AttrInfoSqlNode attributes[]);
 
     /*
 
     */
-    RC drop( const char* path );
+    RC drop(const char* path);
 
     /**
      * 打开一个表
      * @param meta_file 保存表元数据的文件完整路径
      * @param base_dir 表所在的文件夹，表记录数据文件、索引数据文件存放位置
      */
-    RC open( const char* meta_file, const char* base_dir );
+    RC open(const char* meta_file, const char* base_dir);
 
     /**
      * @brief 根据给定的字段生成一个记录/行
@@ -67,30 +67,30 @@ public:
      * @param values    每个字段的值
      * @param record    生成的记录数据
      */
-    RC make_record( int value_num, const Value* values, Record& record );
+    RC make_record(int value_num, const Value* values, Record& record);
 
     /**
      * @brief 在当前的表中插入一条记录
      * @details 在表文件和索引中插入关联数据。这里只管在表中插入数据，不关心事务相关操作。
      * @param record[in/out] 传入的数据包含具体的数据，插入成功会通过此字段返回RID
      */
-    RC insert_record( Record& record );
-    RC delete_record( const Record& record );
-    RC visit_record( const RID& rid, bool readonly, std::function< void( Record& ) > visitor );
-    RC get_record( const RID& rid, Record& record );
+    RC insert_record(Record& record);
+    RC delete_record(const Record& record);
+    RC visit_record(const RID& rid, bool readonly, std::function<void(Record&)> visitor);
+    RC get_record(const RID& rid, Record& record);
 
-    RC recover_insert_record( Record& record );
+    RC recover_insert_record(Record& record);
 
     // TODO refactor
-    RC create_index( Trx* trx, const FieldMeta* field_meta, const char* index_name );
+    RC create_index(Trx* trx, const FieldMeta* field_meta, const char* index_name);
 
-    RC get_record_scanner( RecordFileScanner& scanner, Trx* trx, bool readonly );
+    RC get_record_scanner(RecordFileScanner& scanner, Trx* trx, bool readonly);
 
     RecordFileHandler* record_handler() const {
         return record_handler_;
     }
 
-public:
+  public:
     int32_t table_id() const {
         return table_meta_.table_id();
     }
@@ -100,21 +100,21 @@ public:
 
     RC sync();
 
-private:
-    RC insert_entry_of_indexes( const char* record, const RID& rid );
-    RC delete_entry_of_indexes( const char* record, const RID& rid, bool error_on_not_exists );
+  private:
+    RC insert_entry_of_indexes(const char* record, const RID& rid);
+    RC delete_entry_of_indexes(const char* record, const RID& rid, bool error_on_not_exists);
 
-private:
-    RC init_record_handler( const char* base_dir );
+  private:
+    RC init_record_handler(const char* base_dir);
 
-public:
-    Index* find_index( const char* index_name ) const;
-    Index* find_index_by_field( const char* field_name ) const;
+  public:
+    Index* find_index(const char* index_name) const;
+    Index* find_index_by_field(const char* field_name) const;
 
-private:
-    std::string           base_dir_;
-    TableMeta             table_meta_;
-    DiskBufferPool*       data_buffer_pool_ = nullptr;  /// 数据文件关联的buffer pool
-    RecordFileHandler*    record_handler_   = nullptr;  /// 记录操作
-    std::vector< Index* > indexes_;
+  private:
+    std::string base_dir_;
+    TableMeta table_meta_;
+    DiskBufferPool* data_buffer_pool_ = nullptr;   /// 数据文件关联的buffer pool
+    RecordFileHandler* record_handler_ = nullptr;  /// 记录操作
+    std::vector<Index*> indexes_;
 };

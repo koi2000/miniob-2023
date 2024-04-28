@@ -22,16 +22,16 @@ See the Mulan PSL v2 for more details. */
 #include "storage/db/db.h"
 #include "storage/table/table.h"
 
-RC DropTableExecutor::execute( SQLStageEvent* sql_event ) {
-    RC       rc      = RC::SUCCESS;
-    Stmt*    stmt    = sql_event->stmt();
+RC DropTableExecutor::execute(SQLStageEvent* sql_event) {
+    RC rc = RC::SUCCESS;
+    Stmt* stmt = sql_event->stmt();
     Session* session = sql_event->session_event()->session();
 
-    ASSERT( stmt->type() == StmtType::DESC_TABLE, "drop table executor can not run this command: %d", static_cast< int >( stmt->type() ) );
+    ASSERT(stmt->type() == StmtType::DESC_TABLE, "drop table executor can not run this command: %d", static_cast<int>(stmt->type()));
 
-    DropTableStmt* desc_table_stmt = static_cast< DropTableStmt* >( stmt );
+    DropTableStmt* desc_table_stmt = static_cast<DropTableStmt*>(stmt);
 
     const char* table_name = desc_table_stmt->table_name().c_str();
-    rc                     = session->get_current_db()->drop_table( table_name );
+    rc = session->get_current_db()->drop_table(table_name);
     return rc;
 }

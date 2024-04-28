@@ -18,16 +18,16 @@ class Trx;
 class Session;
 
 class ThreadData {
-public:
+  public:
     static ThreadData* current() {
         return thread_data_;
     }
-    static void setup( ThreadData* thread ) {
+    static void setup(ThreadData* thread) {
         thread_data_ = thread;
     }
 
-public:
-    ThreadData()  = default;
+  public:
+    ThreadData() = default;
     ~ThreadData() = default;
 
     Session* session() const {
@@ -35,13 +35,13 @@ public:
     }
     Trx* trx() const;
 
-    void set_session( Session* session ) {
+    void set_session(Session* session) {
         session_ = session;
     }
 
-private:
+  private:
     static thread_local ThreadData* thread_data_;
 
-private:
+  private:
     Session* session_ = nullptr;
 };

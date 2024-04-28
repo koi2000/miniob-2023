@@ -23,9 +23,9 @@ class SQLStageEvent;
  * @ingroup Executor
  */
 class DropTableExecutor {
-public:
-    DropTableExecutor()          = default;
+  public:
+    DropTableExecutor() = default;
     virtual ~DropTableExecutor() = default;
 
-    RC execute( SQLStageEvent* sql_event );
+    RC execute(SQLStageEvent* sql_event);
 };

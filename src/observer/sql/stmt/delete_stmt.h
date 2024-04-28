@@ -25,8 +25,8 @@ class FilterStmt;
  * @ingroup Statement
  */
 class DeleteStmt : public Stmt {
-public:
-    DeleteStmt( Table* table, FilterStmt* filter_stmt );
+  public:
+    DeleteStmt(Table* table, FilterStmt* filter_stmt);
     ~DeleteStmt() override;
 
     Table* table() const {
@@ -40,10 +40,10 @@ public:
         return StmtType::DELETE;
     }
 
-public:
-    static RC create( Db* db, const DeleteSqlNode& delete_sql, Stmt*& stmt );
+  public:
+    static RC create(Db* db, const DeleteSqlNode& delete_sql, Stmt*& stmt);
 
-private:
-    Table*      table_       = nullptr;
+  private:
+    Table* table_ = nullptr;
     FilterStmt* filter_stmt_ = nullptr;
 };

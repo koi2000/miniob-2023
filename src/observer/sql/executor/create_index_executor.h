@@ -24,9 +24,9 @@ class SQLStageEvent;
  * @note 创建索引时不能做其它操作。MiniOB当前不完善，没有对一些并发做控制，包括schema的并发。
  */
 class CreateIndexExecutor {
-public:
-    CreateIndexExecutor()          = default;
+  public:
+    CreateIndexExecutor() = default;
     virtual ~CreateIndexExecutor() = default;
 
-    RC execute( SQLStageEvent* sql_event );
+    RC execute(SQLStageEvent* sql_event);
 };

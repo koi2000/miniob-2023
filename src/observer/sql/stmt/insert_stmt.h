@@ -25,18 +25,18 @@ class Db;
  * @ingroup Statement
  */
 class InsertStmt : public Stmt {
-public:
+  public:
     InsertStmt() = default;
-    InsertStmt( Table* table, const Value* values, int value_amount );
+    InsertStmt(Table* table, const Value* values, int value_amount);
 
     StmtType type() const override {
         return StmtType::INSERT;
     }
 
-public:
-    static RC create( Db* db, const InsertSqlNode& insert_sql, Stmt*& stmt );
+  public:
+    static RC create(Db* db, const InsertSqlNode& insert_sql, Stmt*& stmt);
 
-public:
+  public:
     Table* table() const {
         return table_;
     }
@@ -47,8 +47,8 @@ public:
         return value_amount_;
     }
 
-private:
-    Table*       table_        = nullptr;
-    const Value* values_       = nullptr;
-    int          value_amount_ = 0;
+  private:
+    Table* table_ = nullptr;
+    const Value* values_ = nullptr;
+    int value_amount_ = 0;
 };

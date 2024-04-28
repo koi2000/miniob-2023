@@ -24,7 +24,7 @@ See the Mulan PSL v2 for more details. */
  * @ingroup Statement
  */
 class TrxBeginStmt : public Stmt {
-public:
+  public:
     TrxBeginStmt() {}
     virtual ~TrxBeginStmt() = default;
 
@@ -32,7 +32,7 @@ public:
         return StmtType::BEGIN;
     }
 
-    static RC create( Stmt*& stmt ) {
+    static RC create(Stmt*& stmt) {
         stmt = new TrxBeginStmt();
         return RC::SUCCESS;
     }

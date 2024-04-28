@@ -21,19 +21,19 @@ See the Mulan PSL v2 for more details. */
  * @ingroup PhysicalOperator
  */
 class ProjectPhysicalOperator : public PhysicalOperator {
-public:
+  public:
     ProjectPhysicalOperator() {}
 
     virtual ~ProjectPhysicalOperator() = default;
 
-    void add_expressions( std::vector< std::unique_ptr< Expression > >&& expressions ) {}
-    void add_projection( const Table* table, const FieldMeta* field );
+    void add_expressions(std::vector<std::unique_ptr<Expression>>&& expressions) {}
+    void add_projection(const Table* table, const FieldMeta* field);
 
     PhysicalOperatorType type() const override {
         return PhysicalOperatorType::PROJECT;
     }
 
-    RC open( Trx* trx ) override;
+    RC open(Trx* trx) override;
     RC next() override;
     RC close() override;
 
@@ -43,6 +43,6 @@ public:
 
     Tuple* current_tuple() override;
 
-private:
+  private:
     ProjectTuple tuple_;
 };

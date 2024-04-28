@@ -23,17 +23,17 @@ Session& Session::default_session() {
     return session;
 }
 
-Session::Session( const Session& other ) : db_( other.db_ ) {}
+Session::Session(const Session& other) : db_(other.db_) {}
 
 Session::~Session() {
-    if ( nullptr != trx_ ) {
-        GCTX.trx_kit_->destroy_trx( trx_ );
+    if (nullptr != trx_) {
+        GCTX.trx_kit_->destroy_trx(trx_);
         trx_ = nullptr;
     }
 }
 
 const char* Session::get_current_db_name() const {
-    if ( db_ != nullptr )
+    if (db_ != nullptr)
         return db_->name();
     else
         return "";
@@ -43,19 +43,19 @@ Db* Session::get_current_db() const {
     return db_;
 }
 
-void Session::set_current_db( const std::string& dbname ) {
+void Session::set_current_db(const std::string& dbname) {
     DefaultHandler& handler = DefaultHandler::get_default();
-    Db*             db      = handler.find_db( dbname.c_str() );
-    if ( db == nullptr ) {
-        LOG_WARN( "no such database: %s", dbname.c_str() );
+    Db* db = handler.find_db(dbname.c_str());
+    if (db == nullptr) {
+        LOG_WARN("no such database: %s", dbname.c_str());
         return;
     }
 
-    LOG_TRACE( "change db to %s", dbname.c_str() );
+    LOG_TRACE("change db to %s", dbname.c_str());
     db_ = db;
 }
 
-void Session::set_trx_multi_operation_mode( bool multi_operation_mode ) {
+void Session::set_trx_multi_operation_mode(bool multi_operation_mode) {
     trx_multi_operation_mode_ = multi_operation_mode;
 }
 
@@ -64,15 +64,15 @@ bool Session::is_trx_multi_operation_mode() const {
 }
 
 Trx* Session::current_trx() {
-    if ( trx_ == nullptr ) {
-        trx_ = GCTX.trx_kit_->create_trx( db_->clog_manager() );
+    if (trx_ == nullptr) {
+        trx_ = GCTX.trx_kit_->create_trx(db_->clog_manager());
     }
     return trx_;
 }
 
 thread_local Session* thread_session = nullptr;
 
-void Session::set_current_session( Session* session ) {
+void Session::set_current_session(Session* session) {
     thread_session = session;
 }
 
@@ -80,7 +80,7 @@ Session* Session::current_session() {
     return thread_session;
 }
 
-void Session::set_current_request( SessionEvent* request ) {
+void Session::set_current_request(SessionEvent* request) {
     current_request_ = request;
 }
 

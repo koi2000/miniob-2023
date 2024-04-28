@@ -24,8 +24,8 @@ class DeleteStmt;
  * @ingroup PhysicalOperator
  */
 class DeletePhysicalOperator : public PhysicalOperator {
-public:
-    DeletePhysicalOperator( Table* table ) : table_( table ) {}
+  public:
+    DeletePhysicalOperator(Table* table) : table_(table) {}
 
     virtual ~DeletePhysicalOperator() = default;
 
@@ -33,7 +33,7 @@ public:
         return PhysicalOperatorType::DELETE;
     }
 
-    RC open( Trx* trx ) override;
+    RC open(Trx* trx) override;
     RC next() override;
     RC close() override;
 
@@ -41,7 +41,7 @@ public:
         return nullptr;
     }
 
-private:
+  private:
     Table* table_ = nullptr;
-    Trx*   trx_   = nullptr;
+    Trx* trx_ = nullptr;
 };
