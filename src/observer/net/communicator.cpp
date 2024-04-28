@@ -13,56 +13,53 @@ See the Mulan PSL v2 for more details. */
 //
 
 #include "net/communicator.h"
+#include "net/buffered_writer.h"
+#include "net/cli_communicator.h"
 #include "net/mysql_communicator.h"
 #include "net/plain_communicator.h"
-#include "net/cli_communicator.h"
-#include "net/buffered_writer.h"
 #include "session/session.h"
 
 #include "common/lang/mutex.h"
 
-RC Communicator::init(int fd, Session *session, const std::string &addr)
-{
-  fd_ = fd;
-  session_ = session;
-  addr_ = addr;
-  writer_ = new BufferedWriter(fd_);
-  return RC::SUCCESS;
+RC Communicator::init( int fd, Session* session, const std::string& addr ) {
+    fd_      = fd;
+    session_ = session;
+    addr_    = addr;
+    writer_  = new BufferedWriter( fd_ );
+    return RC::SUCCESS;
 }
 
-Communicator::~Communicator()
-{
-  if (fd_ >= 0) {
-    close(fd_);
-    fd_ = -1;
-  }
-  if (session_ != nullptr) {
-    delete session_;
-    session_ = nullptr;
-  }
+Communicator::~Communicator() {
+    if ( fd_ >= 0 ) {
+        close( fd_ );
+        fd_ = -1;
+    }
+    if ( session_ != nullptr ) {
+        delete session_;
+        session_ = nullptr;
+    }
 
-  if (writer_ != nullptr) {
-    delete writer_;
-    writer_ = nullptr;
-  }
+    if ( writer_ != nullptr ) {
+        delete writer_;
+        writer_ = nullptr;
+    }
 }
 
 /////////////////////////////////////////////////////////////////////////////////
 
-Communicator *CommunicatorFactory::create(CommunicateProtocol protocol)
-{
-  switch (protocol) {
+Communicator* CommunicatorFactory::create( CommunicateProtocol protocol ) {
+    switch ( protocol ) {
     case CommunicateProtocol::PLAIN: {
-      return new PlainCommunicator;
+        return new PlainCommunicator;
     } break;
     case CommunicateProtocol::CLI: {
-      return new CliCommunicator;
+        return new CliCommunicator;
     } break;
     case CommunicateProtocol::MYSQL: {
-      return new MysqlCommunicator;
+        return new MysqlCommunicator;
     } break;
     default: {
-      return nullptr;
+        return nullptr;
     }
-  }
+    }
 }

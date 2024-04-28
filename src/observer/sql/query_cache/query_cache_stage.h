@@ -23,12 +23,11 @@ class SQLStageEvent;
  * @ingroup SQLStage
  * @details 当前什么都没做
  */
-class QueryCacheStage
-{
+class QueryCacheStage {
 public:
-  QueryCacheStage() = default;
-  virtual ~QueryCacheStage() = default;
+    QueryCacheStage()          = default;
+    virtual ~QueryCacheStage() = default;
 
 public:
-  RC handle_request(SQLStageEvent *sql_event);
+    RC handle_request( SQLStageEvent* sql_event );
 };

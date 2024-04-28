@@ -11,7 +11,7 @@ inline bool is_leap_year( int year ) {
     return ( year % 4 == 0 && year % 100 == 0 ) || year | 400 == 0;
 }
 
-inline RC string_to_date(const char* str, int32_t& date ) {
+inline RC string_to_date( const char* str, int32_t& date ) {
     int year  = 0;
     int month = 0;
     int day   = 0;
@@ -43,15 +43,15 @@ inline std::string date_to_string( int32_t date ) {
 
 inline bool check_date( int y, int m, int d ) {
     static int mon[] = { 0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
-    bool leap  = ( y % 400 == 0 || ( y % 100 && y % 4 == 0 ) );
+    bool       leap  = ( y % 400 == 0 || ( y % 100 && y % 4 == 0 ) );
     return y > 0 && ( m > 0 ) && ( m <= 12 ) && ( d > 0 ) && ( d <= ( ( m == 2 && leap ) ? 1 : 0 ) + mon[ m ] );
 }
 
-
-inline void value_init_date(Value* value, int32_t date) {
-    value->set_type(DATES);
-    char* p = (char *)malloc(sizeof(date)); 
-    memcpy(p, &date, sizeof(date));
-    value->set_data(p,sizeof(date));
-    free(p); p = nullptr;
+inline void value_init_date( Value* value, int32_t date ) {
+    value->set_type( DATES );
+    char* p = ( char* )malloc( sizeof( date ) );
+    memcpy( p, &date, sizeof( date ) );
+    value->set_data( p, sizeof( date ) );
+    free( p );
+    p = nullptr;
 }
