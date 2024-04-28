@@ -17,6 +17,10 @@ See the Mulan PSL v2 for more details. */
 #include "storage/table/base_table.h"
 #include "storage/table/table_meta.h"
 #include <functional>
+#include <span>
+
+#include "storage/table/table_meta.h"
+#include "common/types.h"
 
 struct RID;
 class Record;
@@ -29,6 +33,7 @@ class Index;
 class IndexScanner;
 class RecordDeleter;
 class Trx;
+class Db;
 
 /**
  * @brief 表
@@ -59,7 +64,7 @@ public:
    * @param meta_file 保存表元数据的文件完整路径
    * @param base_dir 表所在的文件夹，表记录数据文件、索引数据文件存放位置
    */
-  RC open(const char *meta_file, const char *base_dir);
+  RC open(Db *db, const char *meta_file, const char *base_dir);
 
   /**
    * @brief 根据给定的字段生成一个记录/行
@@ -78,7 +83,7 @@ public:
   RC insert_record(Record &record);
   RC insert_records(std::vector<Record> &records);
   RC delete_record(const Record &record);
-  RC visit_record(const RID &rid, bool readonly, std::function<void(Record &)> visitor);
+  RC delete_record(const RID &rid);
   RC get_record(const RID &rid, Record &record);
 
   // 将该record的attr_name列更新为 value
@@ -91,7 +96,7 @@ public:
   // TODO refactor
   RC create_index(Trx *trx, bool unique, const std::vector<const FieldMeta *> &field_metas, const char *index_name);
 
-  RC get_record_scanner(RecordFileScanner &scanner, Trx *trx, bool readonly);
+  RC get_record_scanner(RecordFileScanner &scanner, Trx *trx, ReadWriteMode mode);
 
   RecordFileHandler *record_handler() const { return record_handler_; }
 
@@ -122,6 +127,7 @@ public:
   bool   is_field_in_index(std::vector<std::string> &field_names);
 
 private:
+  Db                  *db_ = nullptr;
   std::string          base_dir_;
   TableMeta            table_meta_;
   DiskBufferPool      *data_buffer_pool_ = nullptr;  /// 数据文件关联的buffer pool

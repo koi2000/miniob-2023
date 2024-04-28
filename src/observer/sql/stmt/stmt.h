@@ -74,6 +74,8 @@ inline const char *stmt_type_name(StmtType type)
   }
 }
 
+bool stmt_type_ddl(StmtType type);
+
 /**
  * @brief Stmt for Statement
  * @ingroup Statement

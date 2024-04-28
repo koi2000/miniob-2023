@@ -176,7 +176,7 @@ RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator &table_get_oper, u
 
     const Value               &value           = value_expr->get_value();
     IndexScanPhysicalOperator *index_scan_oper = new IndexScanPhysicalOperator(
-        table, index, table_get_oper.readonly(), &value, true /*left_inclusive*/, &value, true /*right_inclusive*/);
+        table, index, table_get_oper.read_write_mode(), &value, true /*left_inclusive*/, &value, true /*right_inclusive*/);
 
     index_scan_oper->set_predicates(std::move(predicates));
     oper = unique_ptr<PhysicalOperator>(index_scan_oper);
@@ -378,7 +378,8 @@ RC PhysicalPlanGenerator::create_plan(DeleteLogicalOperator &delete_oper, unique
   RC rc = RC::SUCCESS;
   if (!child_opers.empty()) {
     LogicalOperator *child_oper = child_opers.front().get();
-    rc                          = create(*child_oper, child_physical_oper);
+
+    rc = create(*child_oper, child_physical_oper);
     if (rc != RC::SUCCESS) {
       LOG_WARN("failed to create physical operator. rc=%s", strrc(rc));
       return rc;

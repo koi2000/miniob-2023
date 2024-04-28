@@ -221,7 +221,7 @@ RC PersistHandler::read_file(int size, char *data, int64_t *out_size)
     int64_t read_size = 0;
     if ((read_size = read(file_desc_, data, size)) != size) {
       LOG_ERROR("Failed to read file %d:%s due to %s.", file_desc_, file_name_.c_str(), strerror(errno));
-      rc = RC::FILE_READ;
+      rc = RC::IOERR_READ;
     }
     if (out_size != nullptr) {
       *out_size = read_size;
@@ -273,7 +273,7 @@ RC PersistHandler::seek(uint64_t offset)
     rc = RC::FILE_NOT_OPENED;
   } else if (lseek(file_desc_, offset, SEEK_SET) == off_t(-1)) {
     LOG_ERROR("Failed to seek %llu of %d:%s due to %s.", offset, file_desc_, file_name_.c_str(), strerror(errno));
-    rc = RC::FILE_SEEK;
+    rc = RC::IOERR_SEEK;
   }
 
   return rc;

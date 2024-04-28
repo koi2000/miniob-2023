@@ -16,6 +16,7 @@ See the Mulan PSL v2 for more details. */
 
 #include <string>
 #include <vector>
+#include <span>
 
 #include "common/lang/serializable.h"
 #include "common/rc.h"
@@ -36,7 +37,8 @@ public:
 
   void swap(TableMeta &other) noexcept;
 
-  RC init(int32_t table_id, const char *name, int field_num, const AttrInfoSqlNode attributes[]);
+  RC init(int32_t table_id, const char *name, const std::vector<FieldMeta> *trx_fields,
+      std::span<const AttrInfoSqlNode> attributes);
 
   RC add_index(const IndexMeta &index);
 

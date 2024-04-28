@@ -27,7 +27,8 @@ RC DeletePhysicalOperator::open(Trx *trx)
   }
 
   std::unique_ptr<PhysicalOperator> &child = children_[0];
-  RC                                 rc    = child->open(trx);
+
+  RC rc = child->open(trx);
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to open child operator: %s", strrc(rc));
     return rc;
@@ -76,6 +77,11 @@ RC DeletePhysicalOperator::delete_from_table()
     }
   }
 
+  return RC::SUCCESS;
+}
+
+RC DeletePhysicalOperator::next()
+{
   return RC::RECORD_EOF;
 }
 
@@ -120,8 +126,5 @@ RC DeletePhysicalOperator::delete_from_view()
 
 RC DeletePhysicalOperator::close()
 {
-  if (!children_.empty()) {
-    children_[0]->close();
-  }
   return RC::SUCCESS;
 }

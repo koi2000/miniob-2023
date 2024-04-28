@@ -57,8 +57,8 @@ Table::~Table()
   LOG_INFO("Table has been closed: %s", name());
 }
 
-RC Table::create(int32_t table_id, const char *path, const char *name, const char *base_dir, int attribute_count,
-    const AttrInfoSqlNode attributes[])
+RC Table::create(Db *db, int32_t table_id, const char *path, const char *name, const char *base_dir,
+    span<const AttrInfoSqlNode> attributes)
 {
   if (table_id < 0) {
     LOG_WARN("invalid table id. table_id=%d, table_name=%s", table_id, name);
@@ -94,7 +94,8 @@ RC Table::create(int32_t table_id, const char *path, const char *name, const cha
   close(fd);
 
   // 创建文件
-  if ((rc = table_meta_.init(table_id, name, attribute_count, attributes)) != RC::SUCCESS) {
+  const std::vector<FieldMeta> *trx_fields = db->trx_kit().trx_fields();
+  if ((rc = table_meta_.init(table_id, name, trx_fields, attributes)) != RC::SUCCESS) {
     LOG_ERROR("Failed to init table meta. name:%s, ret:%d", name, rc);
     return rc;  // delete table file
   }
@@ -110,8 +111,11 @@ RC Table::create(int32_t table_id, const char *path, const char *name, const cha
   table_meta_.serialize(fs);
   fs.close();
 
+  db_ = db;
+  base_dir_ = base_dir;
+
   std::string        data_file = table_data_file(base_dir, name);
-  BufferPoolManager &bpm       = BufferPoolManager::instance();
+  BufferPoolManager &bpm       = db->buffer_pool_manager();
   rc                           = bpm.create_file(data_file.c_str());
   if (rc != RC::SUCCESS) {
     LOG_ERROR("Failed to create disk buffer pool of data file. file name=%s", data_file.c_str());
@@ -153,7 +157,7 @@ RC Table::create(int32_t table_id, const char *path, const char *name, const cha
   return rc;
 }
 
-RC Table::open(const char *meta_file, const char *base_dir)
+RC Table::open(Db *db, const char *meta_file, const char *base_dir)
 {
   // 加载元数据文件
   std::fstream fs;
@@ -170,6 +174,9 @@ RC Table::open(const char *meta_file, const char *base_dir)
     return RC::INTERNAL;
   }
   fs.close();
+
+  db_ = db;
+  base_dir_ = base_dir;
 
   // 加载数据文件
   RC rc = init_record_handler(base_dir);
@@ -291,27 +298,17 @@ RC Table::insert_records(std::vector<Record> &records)
 
 RC Table::visit_record(const RID &rid, bool readonly, std::function<void(Record &)> visitor)
 {
-  return record_handler_->visit_record(rid, readonly, visitor);
+  return record_handler_->visit_record(rid, visitor);
 }
 
 RC Table::get_record(const RID &rid, Record &record)
 {
-  const int record_size = table_meta_.record_size();
-  char     *record_data = (char *)malloc(record_size);
-  ASSERT(nullptr != record_data, "failed to malloc memory. record data size=%d", record_size);
-
-  auto copier = [&record, record_data, record_size](Record &record_src) {
-    memcpy(record_data, record_src.data(), record_size);
-    record.set_rid(record_src.rid());
-  };
-  RC rc = record_handler_->visit_record(rid, true /*readonly*/, copier);
+  RC rc = record_handler_->get_record(rid, record);
   if (rc != RC::SUCCESS) {
-    free(record_data);
     LOG_WARN("failed to visit record. rid=%s, table=%s, rc=%s", rid.to_string().c_str(), name(), strrc(rc));
     return rc;
   }
 
-  record.set_data_owner(record_data, record_size);
   return rc;
 }
 
@@ -442,7 +439,8 @@ RC Table::init_record_handler(const char *base_dir)
 {
   std::string data_file = table_data_file(base_dir, table_meta_.name());
 
-  RC rc = BufferPoolManager::instance().open_file(data_file.c_str(), data_buffer_pool_);
+  BufferPoolManager &bpm = db_->buffer_pool_manager();
+  RC rc = bpm.open_file(db_->log_handler(), data_file.c_str(), data_buffer_pool_);
   if (rc != RC::SUCCESS) {
     LOG_ERROR("Failed to open disk buffer pool for file:%s. rc=%d:%s", data_file.c_str(), rc, strrc(rc));
     return rc;
@@ -484,7 +482,7 @@ RC Table::init_text_handler(const char *base_dir)
 }
 RC Table::get_record_scanner(RecordFileScanner &scanner, Trx *trx, bool readonly)
 {
-  RC rc = scanner.open_scan(this, *data_buffer_pool_, trx, readonly, nullptr);
+  RC rc = scanner.open_scan(this, *data_buffer_pool_, trx, db_->log_handler(), mode, nullptr);
   if (rc != RC::SUCCESS) {
     LOG_ERROR("failed to open scanner. rc=%s", strrc(rc));
   }
@@ -543,7 +541,7 @@ RC Table::create_index(Trx *trx, bool unique, const std::vector<const FieldMeta 
 
   // 遍历当前的所有数据，插入这个索引
   RecordFileScanner scanner;
-  rc = get_record_scanner(scanner, trx, true /*readonly*/);
+  rc = get_record_scanner(scanner, trx, ReadWriteMode::READ_ONLY);
   if (rc != RC::SUCCESS) {
     LOG_WARN("failed to create scanner while creating index. table=%s, index=%s, rc=%s", name(), index_name,
                  strrc(rc));
@@ -565,6 +563,13 @@ RC Table::create_index(Trx *trx, bool unique, const std::vector<const FieldMeta 
                      index_name, strrc(rc));
       return rc;
     }
+  }
+  if (RC::RECORD_EOF == rc) {
+    rc = RC::SUCCESS;
+  } else {
+    LOG_WARN("failed to insert record into index while creating index. table=%s, index=%s, rc=%s",
+             name(), index_name, strrc(rc));
+    return rc;
   }
   scanner.close_scan();
   LOG_INFO("inserted all records into new index. table=%s, index=%s", name(), index_name);
@@ -610,6 +615,18 @@ RC Table::create_index(Trx *trx, bool unique, const std::vector<const FieldMeta 
 
   LOG_INFO("Successfully added a new index (%s) on the table (%s)", index_name, name());
   return rc;
+}
+
+RC Table::delete_record(const RID &rid)
+{
+  RC rc = RC::SUCCESS;
+  Record record;
+  rc = get_record(rid, record);
+  if (OB_FAIL(rc)) {
+    return rc;
+  }
+
+  return delete_record(record);
 }
 
 RC Table::delete_record(const Record &record)
@@ -698,6 +715,8 @@ RC Table::sync()
       return rc;
     }
   }
+
+  rc = data_buffer_pool_->flush_all_pages();
   LOG_INFO("Sync table over. table=%s", name());
   return rc;
 }

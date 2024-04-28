@@ -16,10 +16,10 @@
                 "cli"
             ],
             "cwd": "${workspaceFolder}/${defaultBuildTask}/",
-            "externalConsole": true,
             "internalConsoleOptions": "openOnSessionStart",
             "osx": {
-                "MIMode": "lldb"
+                "MIMode": "lldb",
+                "externalConsole":true
             }
         },
         {

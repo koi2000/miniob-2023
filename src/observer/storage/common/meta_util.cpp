@@ -11,16 +11,26 @@ See the Mulan PSL v2 for more details. */
 // Created by wangyunlai.wyl on 2021/5/18.
 //
 
-#include "storage/common/meta_util.h"
-#include "common/defs.h"
+#include <filesystem>
 
-std::string table_meta_file(const char *base_dir, const char *table_name)
+#include "storage/common/meta_util.h"
+
+using namespace std;
+
+string db_meta_file(const char *base_dir, const char *db_name)
 {
-  return std::string(base_dir) + common::FILE_PATH_SPLIT_STR + table_name + TABLE_META_SUFFIX;
+  filesystem::path db_dir = filesystem::path(base_dir);
+  return db_dir / (string(db_name) + DB_META_SUFFIX);
 }
-std::string table_data_file(const char *base_dir, const char *table_name)
+
+string table_meta_file(const char *base_dir, const char *table_name)
 {
-  return std::string(base_dir) + common::FILE_PATH_SPLIT_STR + table_name + TABLE_DATA_SUFFIX;
+  return filesystem::path(base_dir) / (string(table_name) + TABLE_META_SUFFIX);
+}
+
+string table_data_file(const char *base_dir, const char *table_name)
+{
+  return filesystem::path(base_dir) / (string(table_name) + TABLE_DATA_SUFFIX);
 }
 
 std::string table_text_file(const char *base_dir, const char *table_name)
@@ -28,9 +38,10 @@ std::string table_text_file(const char *base_dir, const char *table_name)
   return std::string(base_dir) + common::FILE_PATH_SPLIT_STR + table_name + TABLE_TEXT_SUFFIX;
 }
 
-std::string table_index_file(const char *base_dir, const char *table_name, const char *index_name)
+
+string table_index_file(const char *base_dir, const char *table_name, const char *index_name)
 {
-  return std::string(base_dir) + common::FILE_PATH_SPLIT_STR + table_name + "-" + index_name + TABLE_INDEX_SUFFIX;
+  return filesystem::path(base_dir) / (string(table_name) + "-" + index_name + TABLE_INDEX_SUFFIX);
 }
 
 std::string view_meta_file(const char *base_dir, const char *view_name)

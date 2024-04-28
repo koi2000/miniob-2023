@@ -14,6 +14,8 @@ See the Mulan PSL v2 for more details. */
 
 #include "storage/index/bplus_tree_index.h"
 #include "common/log/log.h"
+#include "storage/table/table.h"
+#include "storage/db/db.h"
 
 BplusTreeIndex::~BplusTreeIndex() noexcept { close(); }
 
@@ -52,7 +54,8 @@ RC BplusTreeIndex::open(
 
   Index::init(index_meta, field_metas);
 
-  RC rc = index_handler_.open(file_name);
+  BufferPoolManager &bpm = table->db()->buffer_pool_manager();
+  RC rc = index_handler_.open(table->db()->log_handler(), bpm, file_name);
   if (RC::SUCCESS != rc) {
     LOG_WARN("Failed to open index_handler, file_name:%s, index:%s, field:%s, rc:%s", file_name, index_meta.name(),
                  index_meta.field(), strrc(rc));

@@ -34,6 +34,20 @@ See the Mulan PSL v2 for more details. */
 #include "sql/stmt/trx_end_stmt.h"
 #include "sql/stmt/update_stmt.h"
 
+bool stmt_type_ddl(StmtType type)
+{
+  switch (type) {
+    case StmtType::CREATE_TABLE:
+    case StmtType::DROP_TABLE:
+    case StmtType::DROP_INDEX:
+    case StmtType::CREATE_INDEX: {
+      return true;
+    }
+    default: {
+      return false;
+    }
+  }
+}
 RC Stmt::create_stmt(Db *db, ParsedSqlNode &sql_node, Stmt *&stmt)
 {
   stmt = nullptr;

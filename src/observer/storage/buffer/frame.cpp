@@ -18,24 +18,24 @@ See the Mulan PSL v2 for more details. */
 
 using namespace std;
 
-FrameId::FrameId(int file_desc, PageNum page_num) : file_desc_(file_desc), page_num_(page_num) {}
+FrameId::FrameId(int buffer_pool_id, PageNum page_num) : buffer_pool_id_(buffer_pool_id), page_num_(page_num) {}
 
 bool FrameId::equal_to(const FrameId &other) const
 {
-  return file_desc_ == other.file_desc_ && page_num_ == other.page_num_;
+  return buffer_pool_id_ == other.buffer_pool_id_ && page_num_ == other.page_num_;
 }
 
 bool FrameId::operator==(const FrameId &other) const { return this->equal_to(other); }
 
-size_t FrameId::hash() const { return (static_cast<size_t>(file_desc_) << 32L) | page_num_; }
+size_t FrameId::hash() const { return (static_cast<size_t>(buffer_pool_id_) << 32L) | page_num_; }
 
-int     FrameId::file_desc() const { return file_desc_; }
+int     FrameId::buffer_pool_id() const { return buffer_pool_id_; }
 PageNum FrameId::page_num() const { return page_num_; }
 
-string to_string(const FrameId &frame_id)
+string FrameId::to_string() const
 {
   stringstream ss;
-  ss << "fd:" << frame_id.file_desc() << ",page_num:" << frame_id.page_num();
+  ss << "buffer_pool_id:" << buffer_pool_id() << ",page_num:" << page_num();
   return ss.str();
 }
 
@@ -82,8 +82,8 @@ void Frame::write_latch(intptr_t xid)
   write_locker_ = xid;
   ++write_recursive_count_;
   TRACE("frame write lock success."
-        "this=%p, pin=%d, pageNum=%d, write locker=%lx(recursive=%d), fd=%d, xid=%lx, lbt=%s",
-        this, pin_count_.load(), page_.page_num, write_locker_, write_recursive_count_, file_desc_, xid, lbt());
+        "this=%p, pin=%d, frameId=%s, write locker=%lx(recursive=%d), xid=%lx, lbt=%s",
+        this, pin_count_.load(), frame_id_.to_string().c_str(), write_locker_, write_recursive_count_, xid, lbt());
 #endif
 }
 
@@ -104,8 +104,8 @@ void Frame::write_unlatch(intptr_t xid)
            "write_locker=%lx, this=%p, pin=%d, pageNum=%d, fd=%d, xid=%lx, lbt=%s",
            write_locker_, this, pin_count_.load(), page_.page_num, file_desc_, xid, lbt());
 
-  TRACE("frame write unlock success. this=%p, pin=%d, pageNum=%d, fd=%d, xid=%lx, lbt=%s",
-        this, pin_count_.load(), page_.page_num, file_desc_, xid, lbt());
+  TRACE("frame write unlock success. this=%p, pin=%d, frameId=%s, xid=%lx, lbt=%s",
+        this, pin_count_.load(), frame_id_.to_string().c_str(), xid, lbt());
 
   if (--write_recursive_count_ == 0) {
     write_locker_ = 0;
@@ -139,8 +139,8 @@ void Frame::read_latch(intptr_t xid)
     scoped_lock debug_lock(debug_lock_);
     ++read_lockers_[xid];
     TRACE("frame read lock success."
-          "this=%p, pin=%d, pageNum=%d, fd=%d, xid=%lx, recursive=%d, lbt=%s",
-          this, pin_count_.load(), page_.page_num, file_desc_, xid, read_lockers_[xid], lbt());
+          "this=%p, pin=%d, frameId=%s, xid=%lx, recursive=%d, lbt=%s",
+          this, pin_count_.load(), frame_id_.to_string().c_str(), xid, read_lockers_[xid], lbt());
 #endif
   }
 }
@@ -167,8 +167,8 @@ bool Frame::try_read_latch()
     debug_lock_.lock();
     ++read_lockers_[xid];
     TRACE("frame read lock success."
-          "this=%p, pin=%d, pageNum=%d, fd=%d, xid=%lx, recursive=%d, lbt=%s",
-          this, pin_count_.load(), page_.page_num, file_desc_, xid, read_lockers_[xid], lbt());
+          "this=%p, pin=%d, frameId=%s, xid=%lx, recursive=%d, lbt=%s",
+          this, pin_count_.load(), frame_id_.to_string().c_str(), xid, read_lockers_[xid], lbt());
     debug_lock_.unlock();
 #endif
   }
@@ -202,8 +202,8 @@ void Frame::read_unlatch(intptr_t xid)
   }
 
   TRACE("frame read unlock success."
-        "this=%p, pin=%d, pageNum=%d, fd=%d, xid=%lx, lbt=%s",
-        this, pin_count_.load(), page_.page_num, file_desc_, xid, lbt());
+        "this=%p, pin=%d, frameId=%s, xid=%lx, lbt=%s",
+        this, pin_count_.load(), frame_id_.to_string().c_str(), xid, lbt());
 
   lock_.unlock_shared();
 }
@@ -216,9 +216,9 @@ void Frame::pin()
   [[maybe_unused]] int      pin_count = ++pin_count_;
 
   TRACE("after frame pin. "
-        "this=%p, write locker=%lx, read locker has xid %d? pin=%d, fd=%d, pageNum=%d, xid=%lx, lbt=%s",
+        "this=%p, write locker=%lx, read locker has xid %d? pin=%d, frameId=%s, xid=%lx, lbt=%s",
         this, write_locker_, read_lockers_.find(xid) != read_lockers_.end(), 
-        pin_count, file_desc_, page_.page_num, xid, lbt());
+        pin_count, frame_id_.to_string().c_str(), xid, lbt());
 }
 
 int Frame::unpin()
@@ -234,17 +234,17 @@ int Frame::unpin()
 
   int pin_count = --pin_count_;
   TRACE("after frame unpin. "
-        "this=%p, write locker=%lx, read locker has xid? %d, pin=%d, fd=%d, pageNum=%d, xid=%lx, lbt=%s",
+        "this=%p, write locker=%lx, read locker has xid? %d, pin=%d, frameId=%s, xid=%lx, lbt=%s",
         this, write_locker_, read_lockers_.find(xid) != read_lockers_.end(), 
-        pin_count, file_desc_, page_.page_num, xid, lbt());
+        pin_count, frame_id_.to_string().c_str(), xid, lbt());
 
   if (0 == pin_count) {
     ASSERT(write_locker_ == 0,
-           "frame unpin to 0 failed while someone hold the write lock. write locker=%lx, pageNum=%d, fd=%d, xid=%lx",
-           write_locker_, page_.page_num, file_desc_, xid);
+           "frame unpin to 0 failed while someone hold the write lock. write locker=%lx, frameId=%s, xid=%lx",
+           write_locker_, frame_id_.to_string().c_str(), xid);
     ASSERT(read_lockers_.empty(),
-           "frame unpin to 0 failed while someone hold the read locks. reader num=%d, pageNum=%d, fd=%d, xid=%lx",
-           read_lockers_.size(), page_.page_num, file_desc_, xid);
+           "frame unpin to 0 failed while someone hold the read locks. reader num=%d, frameId=%s, xid=%lx",
+           read_lockers_.size(), frame_id_.to_string().c_str(), xid);
   }
   return pin_count;
 }
@@ -258,10 +258,10 @@ unsigned long current_time()
 
 void Frame::access() { acc_time_ = current_time(); }
 
-string to_string(const Frame &frame)
+string Frame::to_string() const
 {
   stringstream ss;
-  ss << "frame id:" << to_string(frame.frame_id()) << ", dirty=" << frame.dirty() << ", pin=" << frame.pin_count()
-     << ", fd=" << frame.file_desc() << ", page num=" << frame.page_num() << ", lsn=" << frame.lsn();
+  ss << "frame id:" << frame_id().to_string() << ", dirty=" << dirty() << ", pin=" << pin_count()
+     << ", lsn=" << lsn();
   return ss.str();
 }
