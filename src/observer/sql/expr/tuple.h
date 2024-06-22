@@ -101,7 +101,7 @@ class Tuple {
      * @param spec cell的描述
      * @param[out] cell 返回的cell
      */
-    virtual RC find_cell(const TupleCellSpec& spec, Value& cell) const = 0;
+    // virtual RC find_cell(const TupleCellSpec& spec, Value& cell) const = 0;
 
     virtual RC find_cell(const TupleCellSpec& spec, Value& cell, int& index) const = 0;
 
@@ -143,7 +143,8 @@ class RowTuple : public Tuple {
         this->record_ = record;
         ASSERT(!this->speces_.empty(), "RowTuple speces empty!");
         const FieldMeta* null_field = this->speces_.front()->field().meta();
-        ASSERT(nullptr != null_field && CHARS == null_field->type(), "RowTuple get null field failed!");
+        ASSERT(nullptr != null_field && CHARS == null_field->type(),
+               "RowTuple get null field failed!");
         bitmap_.init(record->data() + null_field->offset(), this->speces_.size());
     }
 
@@ -176,7 +177,8 @@ class RowTuple : public Tuple {
             if (TEXTS == field_meta->type()) {
                 cell.set_type(CHARS);
                 int64_t offset = *(int64_t*)(record_->data() + field_meta->offset());
-                int64_t length = *(int64_t*)(record_->data() + field_meta->offset() + sizeof(int64_t));
+                int64_t length =
+                    *(int64_t*)(record_->data() + field_meta->offset() + sizeof(int64_t));
                 char* text = (char*)malloc(length);
                 rc = table_->read_text(offset, length, text);
                 if (RC::SUCCESS != rc) {
@@ -193,7 +195,7 @@ class RowTuple : public Tuple {
         return RC::SUCCESS;
     }
 
-    RC find_cell(const TupleCellSpec& spec, Value& cell) const override {
+    RC find_cell(const TupleCellSpec& spec, Value& cell, int& index) const override {
         const char* table_name = spec.table_name();
         const char* field_name = spec.field_name();
         if (0 != strcmp(table_name, table_->name())) {
@@ -204,6 +206,7 @@ class RowTuple : public Tuple {
             const FieldExpr* field_expr = speces_[i];
             const Field& field = field_expr->field();
             if (0 == strcmp(field_name, field.field_name())) {
+                index = i;
                 return cell_at(i, cell);
             }
         }
@@ -274,9 +277,9 @@ class ProjectTuple : public Tuple {
     }
 
     // 可能无法走到这里，未重写
-    RC find_cell(const TupleCellSpec& spec, Value& cell) const override {
-        return tuple_->find_cell(spec, cell);
-    }
+    // RC find_cell(const TupleCellSpec& spec, Value& cell) const override {
+    //     return tuple_->find_cell(spec, cell);
+    // }
 
     const std::vector<std::unique_ptr<Expression>>& expressions() const {
         return exprs_;
@@ -300,7 +303,8 @@ private:
 
 class ExpressionTuple : public Tuple {
   public:
-    ExpressionTuple(std::vector<std::unique_ptr<Expression>>& expressions) : expressions_(expressions) {}
+    ExpressionTuple(std::vector<std::unique_ptr<Expression>>& expressions)
+        : expressions_(expressions) {}
 
     virtual ~ExpressionTuple() {}
 
@@ -317,14 +321,14 @@ class ExpressionTuple : public Tuple {
         return expr->try_get_value(cell);
     }
 
-    RC find_cell(const TupleCellSpec& spec, Value& cell) const override {
-        for (const std::unique_ptr<Expression>& expr : expressions_) {
-            if (0 == strcmp(spec.alias(), expr->name().c_str())) {
-                return expr->try_get_value(cell);
-            }
-        }
-        return RC::NOTFOUND;
-    }
+    // RC find_cell(const TupleCellSpec& spec, Value& cell) const override {
+    //     for (const std::unique_ptr<Expression>& expr : expressions_) {
+    //         if (0 == strcmp(spec.alias(), expr->name().c_str())) {
+    //             return expr->try_get_value(cell);
+    //         }
+    //     }
+    //     return RC::NOTFOUND;
+    // }
 
   private:
     const std::vector<std::unique_ptr<Expression>>& expressions_;
@@ -356,9 +360,9 @@ class ValueListTuple : public Tuple {
         return RC::SUCCESS;
     }
 
-    virtual RC find_cell(const TupleCellSpec& spec, Value& cell) const override {
-        return RC::INTERNAL;
-    }
+    // virtual RC find_cell(const TupleCellSpec& spec, Value& cell) const override {
+    //     return RC::INTERNAL;
+    // }
 
   private:
     std::vector<Value> cells_;
@@ -398,14 +402,14 @@ class JoinedTuple : public Tuple {
         return RC::NOTFOUND;
     }
 
-    RC find_cell(const TupleCellSpec& spec, Value& value) const override {
-        RC rc = left_->find_cell(spec, value);
-        if (rc == RC::SUCCESS || rc != RC::NOTFOUND) {
-            return rc;
-        }
+    // RC find_cell(const TupleCellSpec& spec, Value& value) const override {
+    //     RC rc = left_->find_cell(spec, value);
+    //     if (rc == RC::SUCCESS || rc != RC::NOTFOUND) {
+    //         return rc;
+    //     }
 
-        return right_->find_cell(spec, value);
-    }
+    //     return right_->find_cell(spec, value);
+    // }
 
     RC find_cell(const TupleCellSpec& spec, Value& value, int& index) const override {
         RC rc = left_->find_cell(spec, value, index);
@@ -467,7 +471,8 @@ class GroupTuple : public Tuple {
         // 先从字段表达式里面找
         for (size_t i = 0; i < field_results_.size(); ++i) {
             const FieldExpr& expr = *field_results_[i].expr();
-            if (std::string(expr.field_name()) == std::string(spec.field_name()) && std::string(expr.table_name()) == std::string(spec.table_name())) {
+            if (std::string(expr.field_name()) == std::string(spec.field_name()) &&
+                std::string(expr.table_name()) == std::string(spec.table_name())) {
                 cell = field_results_[i].result();
                 index = i;
                 LOG_INFO("Field is found in field_exprs");
@@ -481,16 +486,195 @@ class GroupTuple : public Tuple {
             return RC::NOTFOUND;
         }
         cell = aggr_results_[index].result();
-        ////因为 GroupTuple 有两个存放结果的 vector ，所以给 aggr_results_ 返回的 index 加上一个偏移量
+        ////因为 GroupTuple 有两个存放结果的 vector ，所以给 aggr_results_ 返回的 index
+        /// 加上一个偏移量
         index += field_results_.size();
         return RC::SUCCESS;
     }
 
-    void init(std::vector<std::unique_ptr<AggrFunc>)
+    void init(std::vector<std::unique_ptr<AggrFuncExpr>>&& aggr_exprs,
+              std::vector<std::unique_ptr<FieldExpr>>&& field_exprs) {
+        aggr_results_.resize(aggr_exprs.size());
+        for (size_t i = 0; i < aggr_exprs.size(); i++) {
+            aggr_results_[i].set_expr(std::move(aggr_exprs[i]));
+        }
+        aggr_exprs.clear();
+        field_results_.resize(field_exprs.size());
+        for (size_t i = 0; i < field_exprs.size(); ++i) {
+            field_results_[i].set_expr(std::move(field_exprs[i]));
+        }
+        field_exprs.clear();
+    }
+
+    void reset() {
+        for (auto& res : aggr_results_) {
+            res.reset();
+        }
+        for (auto& res : field_results_) {
+            res.reset();
+        }
+    }
+
+    void do_aggregate_first() {
+        for (size_t i = 0; i < aggr_results_.size(); i++) {
+            aggr_results_[i].init(*tuple_);
+        }
+        for (size_t i = 0; i < field_results_.size(); i++) {
+            field_results_[i].init(*tuple_);
+        }
+    }
+
+    void do_aggregate() {
+        for (auto& ar : aggr_results_) {
+            ar.advance(*tuple_);
+        }
+    }
+
+    void do_aggregate_done() {
+        for (auto& ar : aggr_results_) {
+            ar.finish();
+        }
+    }
+
+    class AggrExprResults {
+      public:
+        // 每个group的第一行调用init一次
+        void init(const Tuple& tuple) {
+            // 1. reset
+            count_ = 0;
+            all_null_ = true;
+            // 2. count(1) count(*) count(1+1)
+            if (expr_->is_count_constexpr()) {
+                count_ = 1;
+                return;
+            }
+            // 3. get current value and set result_
+            expr_->get_param()->get_value(tuple, result_);
+            // ignore null
+            if (!result_.is_null()) {
+                count_ = 1;
+                all_null_ = false;
+            }
+            return;
+        }
+
+        void advance(const Tuple& tuple) {
+            // 1. count(1) count(*) count(1+1)
+            if (expr_->is_count_constexpr()) {
+                count_++;
+                return;
+            }
+            // 2. get current value
+            Value temp;
+            expr_->get_param()->get_value(tuple, temp);
+            // 3. ignore null
+            if (temp.is_null()) {  // 直接跳过
+                return;
+            }
+            // 4. update status
+            count_++;
+            all_null_ = false;
+            // 5. init 的时候拿到的是 null
+            if (result_.is_null()) {
+                result_ = temp;
+                return;
+            }
+            // 6. do aggr calc
+            switch (expr_->get_aggr_func_type()) {
+                case AggrFuncType::AGG_COUNT: {
+                    // do nothing
+                } break;
+                case AggrFuncType::AGG_AVG:
+                case AggrFuncType::AGG_SUM: {
+                    result_.add(temp);
+                } break;
+                case AggrFuncType::AGG_MAX: {
+                    if (result_ < temp) {
+                        result_ = temp;
+                    }
+                } break;
+                case AggrFuncType::AGG_MIN: {
+                    if (result_ > temp) {
+                        result_ = temp;
+                    }
+                } break;
+                default: {
+                    LOG_ERROR("Unsupported AggrFuncType");
+                } break;
+            }
+        }
+
+        // 每个 group 迭代完之后计算最终结果
+        void finish() {
+            // 1. count(*) count(1) count(1+1) count(id)
+            if (expr_->get_aggr_func_type() == AGG_COUNT) {
+                result_.set_int(count_);
+                return;
+            }
+            // 2. all null
+            if (all_null_) {
+                result_.set_null();
+                return;
+            }
+            // 3. other situation
+            switch (expr_->get_aggr_func_type()) {
+                case AggrFuncType::AGG_COUNT: {
+                    result_.set_int(count_);
+                } break;
+                case AggrFuncType::AGG_AVG: {
+                    result_.div(Value(count_));
+                } break;
+                default: {
+                    // do nothing for other type
+                } break;
+            }
+        }
+        void reset() {
+            count_ = 0;
+            all_null_ = true;
+        }
+        const std::string name() const {
+            return expr_->name();
+        }
+        const Value& result() const {
+            return result_;
+        }
+        void set_expr(std::unique_ptr<AggrFuncExpr> expr) {
+            expr_ = std::move(expr);
+        }
+
+      private:
+        std::unique_ptr<AggrFuncExpr> expr_;
+        Value result_;
+        int count_;
+        bool all_null_ = true;
+    };
+
+    class FieldExprResults {
+      public:
+        // only called when first row in a new group. no need advance
+        void init(const Tuple& tuple) {
+            expr_->get_value(tuple, result_);  // do nothing for null
+        }
+        void reset() {}
+        const Value& result() const {
+            return result_;
+        }
+        void set_expr(std::unique_ptr<FieldExpr> expr) {
+            expr_ = std::move(expr);
+        }
+        const std::unique_ptr<FieldExpr>& expr() const {
+            return expr_;
+        }
+
+      private:
+        std::unique_ptr<FieldExpr> expr_;
+        Value result_;
+    };
 
   private:
     int count_ = 0;
-    std::vector<AggrExprResult> aggr_results_;
+    std::vector<AggrExprResults> aggr_results_;
     std::vector<FieldExprResults> field_results_;
     Tuple* tuple_ = nullptr;
 };
@@ -537,7 +721,8 @@ class SpliceTuple : public Tuple {
         for (size_t i = 0; i < exprs_.size(); ++i) {
             if (exprs_[i]->type() == ExprType::FIELD) {
                 const FieldExpr* expr = static_cast<FieldExpr*>(exprs_[i].get());
-                if (std::string(expr->field_name()) == std::string(spec.field_name()) && std::string(expr->table_name()) == std::string(spec.table_name())) {
+                if (std::string(expr->field_name()) == std::string(spec.field_name()) &&
+                    std::string(expr->table_name()) == std::string(spec.table_name())) {
                     cell = (*cells_)[i];
                     index = i;
                     LOG_INFO("Field is found in field_exprs");

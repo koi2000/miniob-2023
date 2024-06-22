@@ -1,7 +1,6 @@
-/* Copyright (c) 2021 Xie Meiyi(xiemeiyi@hust.edu.cn) and OceanBase and/or its affiliates. All rights reserved.
-miniob is licensed under Mulan PSL v2.
-You can use this software according to the terms and conditions of the Mulan PSL v2.
-You may obtain a copy of Mulan PSL v2 at:
+/* Copyright (c) 2021 Xie Meiyi(xiemeiyi@hust.edu.cn) and OceanBase and/or its affiliates. All
+rights reserved. miniob is licensed under Mulan PSL v2. You can use this software according to the
+terms and conditions of the Mulan PSL v2. You may obtain a copy of Mulan PSL v2 at:
          http://license.coscl.org.cn/MulanPSL2
 THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
 EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
@@ -29,6 +28,8 @@ See the Mulan PSL v2 for more details. */
 #include "storage/record/record_manager.h"
 #include "storage/trx/latch_memo.h"
 
+#define MAX_INDEX_FIELD_NUM 16
+
 /**
  * @brief B+树的实现
  * @defgroup BPlusTree
@@ -50,36 +51,74 @@ enum class BplusTreeOperationType {
  */
 class AttrComparator {
   public:
-    void init(AttrType type, int length) {
-        attr_type_ = type;
-        attr_length_ = length;
-    }
-
-    int attr_length() const {
-        return attr_length_;
-    }
-
-    int operator()(const char* v1, const char* v2) const {
-        switch (attr_type_) {
-            case INTS: {
-                return common::compare_int((void*)v1, (void*)v2);
-            } break;
-            case FLOATS: {
-                return common::compare_float((void*)v1, (void*)v2);
-            }
-            case CHARS: {
-                return common::compare_string((void*)v1, attr_length_, (void*)v2, attr_length_);
-            }
-            default: {
-                ASSERT(false, "unknown attr type. %d", attr_type_);
-                return 0;
-            }
+    void init(int attr_num, int* field_id, AttrType* type, int* length) {
+        for (int i = 0; i < attr_num; i++) {
+            field_id_.emplace_back(field_id[i]);
+            attr_type_.emplace_back(type[i]);
+            attr_length_.emplace_back(length[i]);
         }
     }
 
+    int attr_length() const {
+        int sum_len = 0;
+        for (size_t i = 0; i < attr_length_.size(); i++) {
+            sum_len += attr_length_[i];
+        }
+
+        return sum_len;
+    }
+
+    int operator()(const char* v1, const char* v2) const {
+        int cmp_res = 0;
+        // 第一列是bitmap，比较时应该跳过
+        // 默认NULL比任何值都大，放在B+树最右面
+        int offset = attr_length_[0];
+        common::Bitmap l_map(const_cast<char*>(v1), attr_length_[0] * 8);
+        common::Bitmap r_map(const_cast<char*>(v2), attr_length_[0] * 8);
+        for (size_t i = 1; i < attr_type_.size(); i++) {
+            if (l_map.get_bit(field_id_[i]) == true || r_map.get_bit(field_id_[i]) == true) {
+                return -1;
+            }
+            switch (attr_type_[i]) {
+                case INTS:
+                case DATES: {
+                    if (0 == (cmp_res = common::compare_int((void*)(v1 + offset), (void*)(v2 + offset)))) {
+                        offset += attr_length_[i];
+                    } else {
+                        return cmp_res;
+                    }
+                    break;
+                }
+                case FLOATS: {
+                    if (0 == (cmp_res = common::compare_float((void*)(v1 + offset), (void*)(v2 + offset)))) {
+                        offset += attr_length_[i];
+                    } else {
+                        return cmp_res;
+                    }
+                    break;
+                }
+                case CHARS: {
+                    if (0 == (cmp_res = common::compare_string((void*)(v1 + offset), attr_length_[i],
+                                                               (void*)(v2 + offset), attr_length_[i]))) {
+                        offset += attr_length_[i];
+                    } else {
+                        return cmp_res;
+                    }
+                    break;
+                }
+                default: {
+                    ASSERT(false, "unknown attr type. %d", attr_type_);
+                    return 0;
+                }
+            }
+        }
+        return cmp_res;
+    }
+
   private:
-    AttrType attr_type_;
-    int attr_length_;
+    std::vector<int> field_id_;
+    std::vector<int> attr_length_;
+    std::vector<AttrType> attr_type_;
 };
 
 /**
@@ -90,7 +129,12 @@ class AttrComparator {
 class KeyComparator {
   public:
     void init(AttrType type, int length) {
-        attr_comparator_.init(type, length);
+        attr_comparator_.init(1, 0, &type, &length);
+    }
+
+    void init(bool unique, int attr_num, int* field_id, AttrType* type, int* length) {
+        attr_comparator_.init(attr_num, field_id, type, length);
+        unique_ = unique;
     }
 
     const AttrComparator& attr_comparator() const {
@@ -101,14 +145,17 @@ class KeyComparator {
         int result = attr_comparator_(v1, v2);
         if (result != 0) {
             return result;
+        } else if (!unique_) {
+            /* 唯一索引不比较RID */
+            const RID* rid1 = (const RID*)(v1 + attr_comparator_.attr_length());
+            const RID* rid2 = (const RID*)(v2 + attr_comparator_.attr_length());
+            result = RID::compare(rid1, rid2);
         }
-
-        const RID* rid1 = (const RID*)(v1 + attr_comparator_.attr_length());
-        const RID* rid2 = (const RID*)(v2 + attr_comparator_.attr_length());
-        return RID::compare(rid1, rid2);
+        return result;
     }
 
   private:
+    bool unique_;
     AttrComparator attr_comparator_;
 };
 
@@ -118,43 +165,64 @@ class KeyComparator {
  */
 class AttrPrinter {
   public:
-    void init(AttrType type, int length) {
-        attr_type_ = type;
-        attr_length_ = length;
+    void init(int attr_num, AttrType* type, int* length) {
+        for (int i = 0; i < attr_num; i++) {
+            attr_type_.emplace_back(type[i]);
+            attr_length_.emplace_back(length[i]);
+        }
     }
 
     int attr_length() const {
-        return attr_length_;
+        int len_sum = 0;
+        for (size_t i = 0; i < attr_length_.size(); i++) {
+            len_sum += attr_length_[i];
+        }
+        return len_sum;
     }
 
+    /* TODO: NULL，跳过第一个字段 */
     std::string operator()(const char* v) const {
-        switch (attr_type_) {
-            case INTS: {
-                return std::to_string(*(int*)v);
-            } break;
-            case FLOATS: {
-                return std::to_string(*(float*)v);
-            }
-            case CHARS: {
-                std::string str;
-                for (int i = 0; i < attr_length_; i++) {
-                    if (v[i] == 0) {
-                        break;
-                    }
-                    str.push_back(v[i]);
+        int offset = 0;
+        std::string key_str;
+        for (size_t idx = 0; idx < attr_type_.size(); idx++) {
+            switch (attr_type_[idx]) {
+                case INTS:
+                case DATES: {
+                    key_str += std::to_string(*(int*)(v + offset));
+                    key_str += ",";
+                    offset += attr_length_[idx];
+                    break;
                 }
-                return str;
-            }
-            default: {
-                ASSERT(false, "unknown attr type. %d", attr_type_);
+                case FLOATS: {
+                    key_str += std::to_string(*(float*)(v + offset));
+                    key_str += ",";
+                    offset += attr_length_[idx];
+                    break;
+                }
+                case CHARS: {
+                    std::string str;
+                    for (int i = 0; i < attr_length_[idx]; i++) {
+                        if (v[i] == 0) {
+                            break;
+                        }
+                        str.push_back(v[i]);
+                    }
+                    key_str += str;
+                    key_str += ",";
+                    break;
+                }
+                default: {
+                    ASSERT(false, "unknown attr type. %d", attr_type_);
+                }
             }
         }
-        return std::string();
+        key_str += " ";
+        return key_str;
     }
 
   private:
-    AttrType attr_type_;
-    int attr_length_;
+    std::vector<AttrType> attr_type_;
+    std::vector<int> attr_length_;
 };
 
 /**
@@ -163,8 +231,8 @@ class AttrPrinter {
  */
 class KeyPrinter {
   public:
-    void init(AttrType type, int length) {
-        attr_printer_.init(type, length);
+    void init(int attr_num, AttrType* type, int* length) {
+        attr_printer_.init(attr_num, type, length);
     }
 
     const AttrPrinter& attr_printer() const {
@@ -173,7 +241,7 @@ class KeyPrinter {
 
     std::string operator()(const char* v) const {
         std::stringstream ss;
-        ss << "{key:" << attr_printer_(v) << ",";
+        ss << "{key:" << attr_printer_(v);
 
         const RID* rid = (const RID*)(v + attr_printer_.attr_length());
         ss << "rid:{" << rid->to_string() << "}}";
@@ -198,18 +266,19 @@ struct IndexFileHeader {
     PageNum root_page;          ///< 根节点在磁盘中的页号
     int32_t internal_max_size;  ///< 内部节点最大的键值对数
     int32_t leaf_max_size;      ///< 叶子节点最大的键值对数
-    int32_t attr_length;        ///< 键值的长度
     int32_t key_length;         ///< attr length + sizeof(RID)
-    AttrType attr_type;         ///< 键值的类型
+    int32_t unique;             ///< 是否是唯一索引
+    int32_t attr_num;           ///< 索引列数量
+    int32_t field_id[MAX_INDEX_FIELD_NUM];
+    int32_t attr_length[MAX_INDEX_FIELD_NUM];  ///< 键值的长度
+    int32_t attr_offset[MAX_INDEX_FIELD_NUM];  ///< 键值在record中的offset
+    AttrType attr_type[MAX_INDEX_FIELD_NUM];   ///< 键值的类型
 
     const std::string to_string() {
         std::stringstream ss;
 
-        ss << "attr_length:" << attr_length << ","
-           << "key_length:" << key_length << ","
-           << "attr_type:" << attr_type << ","
-           << "root_page:" << root_page << ","
-           << "internal_max_size:" << internal_max_size << ","
+        ss << "attr_length:" << attr_length << "," << "key_length:" << key_length << "," << "attr_type:" << attr_type
+           << "," << "root_page:" << root_page << "," << "internal_max_size:" << internal_max_size << ","
            << "leaf_max_size:" << leaf_max_size << ";";
 
         return ss.str();
@@ -394,7 +463,10 @@ class InternalIndexNodeHandler : public IndexNodeHandler {
      * @param[out] found 如果是有效指针，将会返回当前是否存在指定的键值
      * @param[out] insert_position 如果是有效指针，将会返回可以插入指定键值的位置
      */
-    int lookup(const KeyComparator& comparator, const char* key, bool* found = nullptr, int* insert_position = nullptr) const;
+    int lookup(const KeyComparator& comparator,
+               const char* key,
+               bool* found = nullptr,
+               int* insert_position = nullptr) const;
 
     RC move_to(InternalIndexNodeHandler& other, DiskBufferPool* disk_buffer_pool);
     RC move_first_to_end(InternalIndexNodeHandler& other, DiskBufferPool* disk_buffer_pool);
@@ -432,7 +504,18 @@ class BplusTreeHandler {
      * 此函数创建一个名为fileName的索引。
      * attrType描述被索引属性的类型，attrLength描述被索引属性的长度
      */
-    RC create(const char* file_name, AttrType attr_type, int attr_length, int internal_max_size = -1, int leaf_max_size = -1);
+    RC create(const char* file_name,
+              AttrType attr_type,
+              int attr_length,
+              int internal_max_size = -1,
+              int leaf_max_size = -1);
+
+    RC create(const char* file_name,
+              const bool unique,
+              const std::vector<int>& field_ids,
+              const std::vector<const FieldMeta*>& fields,
+              int internal_max_size = -1,
+              int leaf_max_size = -1);
 
     /**
      * 打开名为fileName的索引文件。
@@ -501,17 +584,30 @@ class BplusTreeHandler {
   protected:
     RC find_leaf(LatchMemo& latch_memo, BplusTreeOperationType op, const char* key, Frame*& frame);
     RC left_most_page(LatchMemo& latch_memo, Frame*& frame);
-    RC find_leaf_internal(LatchMemo& latch_memo, BplusTreeOperationType op, const std::function<PageNum(InternalIndexNodeHandler&)>& child_page_getter, Frame*& frame);
-    RC crabing_protocal_fetch_page(LatchMemo& latch_memo, BplusTreeOperationType op, PageNum page_num, bool is_root_page, Frame*& frame);
+    RC find_leaf_internal(LatchMemo& latch_memo,
+                          BplusTreeOperationType op,
+                          const std::function<PageNum(InternalIndexNodeHandler&)>& child_page_getter,
+                          Frame*& frame);
+    RC crabing_protocal_fetch_page(LatchMemo& latch_memo,
+                                   BplusTreeOperationType op,
+                                   PageNum page_num,
+                                   bool is_root_page,
+                                   Frame*& frame);
 
-    RC insert_into_parent(LatchMemo& latch_memo, PageNum parent_page, Frame* left_frame, const char* pkey, Frame& right_frame);
+    RC insert_into_parent(LatchMemo& latch_memo,
+                          PageNum parent_page,
+                          Frame* left_frame,
+                          const char* pkey,
+                          Frame& right_frame);
 
     RC delete_entry_internal(LatchMemo& latch_memo, Frame* leaf_frame, const char* key);
 
     template <typename IndexNodeHandlerType> RC split(LatchMemo& latch_memo, Frame* frame, Frame*& new_frame);
     template <typename IndexNodeHandlerType> RC coalesce_or_redistribute(LatchMemo& latch_memo, Frame* frame);
-    template <typename IndexNodeHandlerType> RC coalesce(LatchMemo& latch_memo, Frame* neighbor_frame, Frame* frame, Frame* parent_frame, int index);
-    template <typename IndexNodeHandlerType> RC redistribute(Frame* neighbor_frame, Frame* frame, Frame* parent_frame, int index);
+    template <typename IndexNodeHandlerType>
+    RC coalesce(LatchMemo& latch_memo, Frame* neighbor_frame, Frame* frame, Frame* parent_frame, int index);
+    template <typename IndexNodeHandlerType>
+    RC redistribute(Frame* neighbor_frame, Frame* frame, Frame* parent_frame, int index);
 
     RC insert_entry_into_parent(LatchMemo& latch_memo, Frame* frame, Frame* new_frame, const char* key);
     RC insert_entry_into_leaf_node(LatchMemo& latch_memo, Frame* frame, const char* pkey, const RID* rid);
@@ -563,7 +659,12 @@ class BplusTreeScanner {
      * @param right_len right_user_key 的内存大小(只有在变长字段中才会关注)
      * @param right_inclusive 右边界的值是否包含在内
      */
-    RC open(const char* left_user_key, int left_len, bool left_inclusive, const char* right_user_key, int right_len, bool right_inclusive);
+    RC open(const char* left_user_key,
+            int left_len,
+            bool left_inclusive,
+            const char* right_user_key,
+            int right_len,
+            bool right_inclusive);
 
     RC next_entry(RID& rid);
 

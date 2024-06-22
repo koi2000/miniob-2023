@@ -22,6 +22,11 @@ See the Mulan PSL v2 for more details. */
 #include "sql/parser/value.h"
 
 class Expression;
+class FiledExpr;
+class OrderByUnit;
+
+typedef enum { AGG_MAX, AGG_MIN, AGG_SUM, AGG_AVG, AGG_COUNT, AGGR_FUNC_TYPE_NUM } AggrFuncType;
+typedef enum { SYS_FUNC_LENGTH, SYS_FUNC_ROUND, SYS_FUNC_DATE_FORMAT, SYS_FUNC_TYPE_NUM } SysFuncType;
 
 /**
  * @defgroup SQLParser SQL Parser
@@ -50,7 +55,28 @@ enum CompOp {
     LESS_THAN,    ///< "<"
     GREAT_EQUAL,  ///< ">="
     GREAT_THAN,   ///< ">"
+    LIKE_OP,      ///< "like"
+    NOT_LIKE_OP,  ///< "not like"
+    IS_NULL,      ///< is null
+    IS_NOT_NULL,  ///< is not null
+    // -------
+    IN_OP,          ///< in (sub query)
+    NOT_IN_OP,      ///< not in (sub query)
+    EXISTS_OP,      ///< exists (sub query)
+    NOT_EXISTS_OP,  ///< not exists (sub query)
+    // ------- 上面这四个连着不要拆开
     NO_OP
+};
+
+struct OrderBySqlNode {
+    Expression* expr = nullptr;
+    bool is_asc;  // true 为升序
+};
+
+struct InnerJoinSqlNode {
+    std::pair<std::string, std::string> base_relation;
+    std::vector<std::pair<std::string, std::string>> join_relations;
+    std::vector<Expression*> conditions;
 };
 
 /**
@@ -302,5 +328,6 @@ class ParsedSqlResult {
     }
 
   private:
-    std::vector<std::unique_ptr<ParsedSqlNode>> sql_nodes_;  ///< 这里记录SQL命令。虽然看起来支持多个，但是当前仅处理一个
+    std::vector<std::unique_ptr<ParsedSqlNode>>
+        sql_nodes_;  ///< 这里记录SQL命令。虽然看起来支持多个，但是当前仅处理一个
 };

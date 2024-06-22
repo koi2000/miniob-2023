@@ -54,7 +54,8 @@ class Operation {
     };
 
   public:
-    Operation(Type type, Table* table, const RID& rid) : type_(type), table_(table), page_num_(rid.page_num), slot_num_(rid.slot_num) {}
+    Operation(Type type, Table* table, const RID& rid)
+        : type_(type), table_(table), page_num_(rid.page_num), slot_num_(rid.slot_num) {}
 
     Type type() const {
         return type_;
@@ -140,6 +141,7 @@ class Trx {
     virtual ~Trx() = default;
 
     virtual RC insert_record(Table* table, Record& record) = 0;
+    virtual RC insert_records(Table* table, std::vector<Record>& records) = 0;
     virtual RC delete_record(Table* table, Record& record) = 0;
     virtual RC visit_record(Table* table, Record& record, bool readonly) = 0;
 

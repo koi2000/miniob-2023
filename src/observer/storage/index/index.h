@@ -42,7 +42,7 @@ class Index {
     const IndexMeta& index_meta() const {
         return index_meta_;
     }
-    virtual RC drop() = 0;
+    // virtual RC drop() = 0;
 
     /**
      * @brief 插入一条数据
@@ -79,11 +79,12 @@ class Index {
     virtual RC sync() = 0;
 
   protected:
-    RC init(const IndexMeta& index_meta, const FieldMeta& field_meta);
+    RC init(const IndexMeta& index_meta, const std::vector<const FieldMeta*>& field_metas);
 
   protected:
     IndexMeta index_meta_;  ///< 索引的元数据
-    FieldMeta field_meta_;  ///< 当前实现仅考虑一个字段的索引
+    // FieldMeta field_meta_;  ///< 当前实现仅考虑一个字段的索引
+    std::vector<FieldMeta> field_metas_; ///< 多字段索引
 };
 
 /**

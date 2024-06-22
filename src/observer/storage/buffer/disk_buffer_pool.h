@@ -1,7 +1,6 @@
-/* Copyright (c) 2021 Xie Meiyi(xiemeiyi@hust.edu.cn) and OceanBase and/or its affiliates. All rights reserved.
-miniob is licensed under Mulan PSL v2.
-You can use this software according to the terms and conditions of the Mulan PSL v2.
-You may obtain a copy of Mulan PSL v2 at:
+/* Copyright (c) 2021 Xie Meiyi(xiemeiyi@hust.edu.cn) and OceanBase and/or its affiliates. All
+rights reserved. miniob is licensed under Mulan PSL v2. You can use this software according to the
+terms and conditions of the Mulan PSL v2. You may obtain a copy of Mulan PSL v2 at:
          http://license.coscl.org.cn/MulanPSL2
 THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
 EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
@@ -63,7 +62,8 @@ struct BPFileHeader {
     /**
      * 能够分配的最大的页面个数，即bitmap的字节数 乘以8
      */
-    static const int MAX_PAGE_NUM = (BP_PAGE_DATA_SIZE - sizeof(page_count) - sizeof(allocated_pages)) * 8;
+    static const int MAX_PAGE_NUM =
+        (BP_PAGE_DATA_SIZE - sizeof(page_count) - sizeof(allocated_pages)) * 8;
 
     std::string to_string() const;
 };
@@ -262,6 +262,12 @@ class DiskBufferPool {
      * 回放日志时处理page0中已被认定为不存在的page
      */
     RC recover_page(PageNum page_num);
+
+  public:
+    // 用于text数据的读写
+    RC append_data(int64_t& offset, int64_t length, const char* data);
+
+    RC get_data(int64_t offset, int64_t length, char* data);
 
   protected:
     RC allocate_frame(PageNum page_num, Frame** buf);
