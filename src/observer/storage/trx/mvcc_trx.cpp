@@ -30,8 +30,9 @@ MvccTrxKit::~MvccTrxKit() {
 }
 
 RC MvccTrxKit::init() {
-    fields_ = vector<FieldMeta>{FieldMeta("__trx_xid_begin", AttrType::INTS, 0 /*attr_offset*/, 4 /*attr_len*/, false /*visible*/),
-                                FieldMeta("__trx_xid_end", AttrType::INTS, 0 /*attr_offset*/, 4 /*attr_len*/, false /*visible*/)};
+    fields_ = vector<FieldMeta>{
+        FieldMeta("__trx_xid_begin", AttrType::INTS, 0 /*attr_offset*/, 4 /*attr_len*/, false /*visible*/),
+        FieldMeta("__trx_xid_end", AttrType::INTS, 0 /*attr_offset*/, 4 /*attr_len*/, false /*visible*/)};
 
     LOG_INFO("init mvcc trx kit done.");
     return RC::SUCCESS;
@@ -115,6 +116,17 @@ MvccTrx::MvccTrx(MvccTrxKit& kit, int32_t trx_id) : trx_kit_(kit), trx_id_(trx_i
 
 MvccTrx::~MvccTrx() {}
 
+RC MvccTrx::insert_records(Table* table, std::vector<Record>& records) {
+    RC rc = RC::SUCCESS;
+    for (auto& rcd : records) {
+        rc = insert_record(table, rcd);
+        if (RC::SUCCESS != rc) {
+            break;
+        }
+    }
+    return rc;
+}
+
 RC MvccTrx::insert_record(Table* table, Record& record) {
     Field begin_field;
     Field end_field;
@@ -129,11 +141,14 @@ RC MvccTrx::insert_record(Table* table, Record& record) {
         return rc;
     }
 
-    rc = log_manager_->append_log(CLogType::INSERT, trx_id_, table->table_id(), record.rid(), record.len(), 0 /*offset*/, record.data());
-    ASSERT(rc == RC::SUCCESS, "failed to append insert record log. trx id=%d, table id=%d, rid=%s, record len=%d, rc=%s", trx_id_, table->table_id(), record.rid().to_string().c_str(), record.len(),
-           strrc(rc));
+    rc = log_manager_->append_log(CLogType::INSERT, trx_id_, table->table_id(), record.rid(), record.len(),
+                                  0 /*offset*/, record.data());
+    ASSERT(rc == RC::SUCCESS,
+           "failed to append insert record log. trx id=%d, table id=%d, rid=%s, record len=%d, rc=%s", trx_id_,
+           table->table_id(), record.rid().to_string().c_str(), record.len(), strrc(rc));
 
-    pair<OperationSet::iterator, bool> ret = operations_.insert(Operation(Operation::Type::INSERT, table, record.rid()));
+    pair<OperationSet::iterator, bool> ret =
+        operations_.insert(Operation(Operation::Type::INSERT, table, record.rid()));
     if (!ret.second) {
         rc = RC::INTERNAL;
         LOG_WARN("failed to insert operation(insertion) into operation set: duplicate");
@@ -148,7 +163,9 @@ RC MvccTrx::delete_record(Table* table, Record& record) {
 
     [[maybe_unused]] int32_t end_xid = end_field.get_int(record);
     /// 在删除之前，第一次获取record时，就已经对record做了对应的检查，并且保证不会有其它的事务来访问这条数据
-    ASSERT(end_xid > 0, "concurrency conflit: other transaction is updating this record. end_xid=%d, current trx id=%d, rid=%s", end_xid, trx_id_, record.rid().to_string().c_str());
+    ASSERT(end_xid > 0,
+           "concurrency conflit: other transaction is updating this record. end_xid=%d, current trx id=%d, rid=%s",
+           end_xid, trx_id_, record.rid().to_string().c_str());
     if (end_xid != trx_kit_.max_trx_id()) {
         // 当前不是多版本数据中的最新记录，不需要删除
         return RC::SUCCESS;
@@ -156,8 +173,9 @@ RC MvccTrx::delete_record(Table* table, Record& record) {
 
     end_field.set_int(record, -trx_id_);
     RC rc = log_manager_->append_log(CLogType::DELETE, trx_id_, table->table_id(), record.rid(), 0, 0, nullptr);
-    ASSERT(rc == RC::SUCCESS, "failed to append delete record log. trx id=%d, table id=%d, rid=%s, record len=%d, rc=%s", trx_id_, table->table_id(), record.rid().to_string().c_str(), record.len(),
-           strrc(rc));
+    ASSERT(rc == RC::SUCCESS,
+           "failed to append delete record log. trx id=%d, table id=%d, rid=%s, record len=%d, rc=%s", trx_id_,
+           table->table_id(), record.rid().to_string().c_str(), record.len(), strrc(rc));
 
     operations_.insert(Operation(Operation::Type::DELETE, table, record.rid()));
 
@@ -246,14 +264,18 @@ RC MvccTrx::commit_with_trx_id(int32_t commit_xid) {
                 trx_fields(table, begin_xid_field, end_xid_field);
 
                 auto record_updater = [this, &begin_xid_field, commit_xid](Record& record) {
-                    LOG_DEBUG("before commit insert record. trx id=%d, begin xid=%d, commit xid=%d, lbt=%s", trx_id_, begin_xid_field.get_int(record), commit_xid, lbt());
-                    ASSERT(begin_xid_field.get_int(record) == -this->trx_id_, "got an invalid record while committing. begin xid=%d, this trx id=%d", begin_xid_field.get_int(record), trx_id_);
+                    LOG_DEBUG("before commit insert record. trx id=%d, begin xid=%d, commit xid=%d, lbt=%s", trx_id_,
+                              begin_xid_field.get_int(record), commit_xid, lbt());
+                    ASSERT(begin_xid_field.get_int(record) == -this->trx_id_,
+                           "got an invalid record while committing. begin xid=%d, this trx id=%d",
+                           begin_xid_field.get_int(record), trx_id_);
 
                     begin_xid_field.set_int(record, commit_xid);
                 };
 
                 rc = operation.table()->visit_record(rid, false /*readonly*/, record_updater);
-                ASSERT(rc == RC::SUCCESS, "failed to get record while committing. rid=%s, rc=%s", rid.to_string().c_str(), strrc(rc));
+                ASSERT(rc == RC::SUCCESS, "failed to get record while committing. rid=%s, rc=%s",
+                       rid.to_string().c_str(), strrc(rc));
             } break;
 
             case Operation::Type::DELETE: {
@@ -265,13 +287,16 @@ RC MvccTrx::commit_with_trx_id(int32_t commit_xid) {
 
                 auto record_updater = [this, &end_xid_field, commit_xid](Record& record) {
                     (void)this;
-                    ASSERT(end_xid_field.get_int(record) == -trx_id_, "got an invalid record while committing. end xid=%d, this trx id=%d", end_xid_field.get_int(record), trx_id_);
+                    ASSERT(end_xid_field.get_int(record) == -trx_id_,
+                           "got an invalid record while committing. end xid=%d, this trx id=%d",
+                           end_xid_field.get_int(record), trx_id_);
 
                     end_xid_field.set_int(record, commit_xid);
                 };
 
                 rc = operation.table()->visit_record(rid, false /*readonly*/, record_updater);
-                ASSERT(rc == RC::SUCCESS, "failed to get record while committing. rid=%s, rc=%s", rid.to_string().c_str(), strrc(rc));
+                ASSERT(rc == RC::SUCCESS, "failed to get record while committing. rid=%s, rc=%s",
+                       rid.to_string().c_str(), strrc(rc));
             } break;
 
             default: {
@@ -304,27 +329,33 @@ RC MvccTrx::rollback() {
                 // 也就是不需要从table中获取这条数据，可以直接从当前内存中获取
                 // 这里也可以不删除，仅仅给数据加个标识位，等垃圾回收器来收割也行
                 rc = table->get_record(rid, record);
-                ASSERT(rc == RC::SUCCESS, "failed to get record while rollback. rid=%s, rc=%s", rid.to_string().c_str(), strrc(rc));
+                ASSERT(rc == RC::SUCCESS, "failed to get record while rollback. rid=%s, rc=%s", rid.to_string().c_str(),
+                       strrc(rc));
                 rc = table->delete_record(record);
-                ASSERT(rc == RC::SUCCESS, "failed to delete record while rollback. rid=%s, rc=%s", rid.to_string().c_str(), strrc(rc));
+                ASSERT(rc == RC::SUCCESS, "failed to delete record while rollback. rid=%s, rc=%s",
+                       rid.to_string().c_str(), strrc(rc));
             } break;
 
             case Operation::Type::DELETE: {
                 Table* table = operation.table();
                 RID rid(operation.page_num(), operation.slot_num());
 
-                ASSERT(rc == RC::SUCCESS, "failed to get record while rollback. rid=%s, rc=%s", rid.to_string().c_str(), strrc(rc));
+                ASSERT(rc == RC::SUCCESS, "failed to get record while rollback. rid=%s, rc=%s", rid.to_string().c_str(),
+                       strrc(rc));
                 Field begin_xid_field, end_xid_field;
                 trx_fields(table, begin_xid_field, end_xid_field);
 
                 auto record_updater = [this, &end_xid_field](Record& record) {
-                    ASSERT(end_xid_field.get_int(record) == -trx_id_, "got an invalid record while rollback. end xid=%d, this trx id=%d", end_xid_field.get_int(record), trx_id_);
+                    ASSERT(end_xid_field.get_int(record) == -trx_id_,
+                           "got an invalid record while rollback. end xid=%d, this trx id=%d",
+                           end_xid_field.get_int(record), trx_id_);
 
                     end_xid_field.set_int(record, trx_kit_.max_trx_id());
                 };
 
                 rc = table->visit_record(rid, false /*readonly*/, record_updater);
-                ASSERT(rc == RC::SUCCESS, "failed to get record while committing. rid=%s, rc=%s", rid.to_string().c_str(), strrc(rc));
+                ASSERT(rc == RC::SUCCESS, "failed to get record while committing. rid=%s, rc=%s",
+                       rid.to_string().c_str(), strrc(rc));
             } break;
 
             default: {
@@ -349,7 +380,8 @@ RC find_table(Db* db, const CLogRecord& log_record, Table*& table) {
             const CLogRecordData& data_record = log_record.data_record();
             table = db->find_table(data_record.table_id_);
             if (nullptr == table) {
-                LOG_WARN("no such table to redo. table id=%d, log record=%s", data_record.table_id_, log_record.to_string().c_str());
+                LOG_WARN("no such table to redo. table id=%d, log record=%s", data_record.table_id_,
+                         log_record.to_string().c_str());
                 return RC::SCHEMA_TABLE_NOT_EXIST;
             }
         } break;
@@ -375,7 +407,8 @@ RC MvccTrx::redo(Db* db, const CLogRecord& log_record) {
             record.set_rid(data_record.rid_);
             RC rc = table->recover_insert_record(record);
             if (OB_FAIL(rc)) {
-                LOG_WARN("failed to recover insert. table=%s, log record=%s, rc=%s", table->name(), log_record.to_string().c_str(), strrc(rc));
+                LOG_WARN("failed to recover insert. table=%s, log record=%s, rc=%s", table->name(),
+                         log_record.to_string().c_str(), strrc(rc));
                 return rc;
             }
             operations_.insert(Operation(Operation::Type::INSERT, table, record.rid()));
@@ -389,13 +422,16 @@ RC MvccTrx::redo(Db* db, const CLogRecord& log_record) {
 
             auto record_updater = [this, &end_field](Record& record) {
                 (void)this;
-                ASSERT(end_field.get_int(record) == trx_kit_.max_trx_id(), "got an invalid record while committing. end xid=%d, this trx id=%d", end_field.get_int(record), trx_id_);
+                ASSERT(end_field.get_int(record) == trx_kit_.max_trx_id(),
+                       "got an invalid record while committing. end xid=%d, this trx id=%d", end_field.get_int(record),
+                       trx_id_);
 
                 end_field.set_int(record, -trx_id_);
             };
 
             RC rc = table->visit_record(data_record.rid_, false /*readonly*/, record_updater);
-            ASSERT(rc == RC::SUCCESS, "failed to get record while committing. rid=%s, rc=%s", data_record.rid_.to_string().c_str(), strrc(rc));
+            ASSERT(rc == RC::SUCCESS, "failed to get record while committing. rid=%s, rc=%s",
+                   data_record.rid_.to_string().c_str(), strrc(rc));
 
             operations_.insert(Operation(Operation::Type::DELETE, table, data_record.rid_));
         } break;

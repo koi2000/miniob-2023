@@ -1,7 +1,7 @@
 /* Copyright (c) 2021 OceanBase and/or its affiliates. All rights reserved.
 miniob is licensed under Mulan PSL v2.
-You can use this software according to the terms and conditions of the Mulan PSL
-v2. You may obtain a copy of Mulan PSL v2 at:
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
          http://license.coscl.org.cn/MulanPSL2
 THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
 EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
@@ -27,15 +27,14 @@ See the Mulan PSL v2 for more details. */
 
 using namespace std;
 
-std::string month_name[] = {"",        "January",  "February", "March",  "April",
-                            "May",     "June",     "July",     "August", "September",
-                            "October", "November", "December"};
+std::string month_name[] = {"",     "January", "February",  "March",   "April",    "May",     "June",
+                            "July", "August",  "September", "October", "November", "December"};
 
 RC FieldExpr::get_value(const Tuple& tuple, Value& value) const {
     if (is_first_) {
         bool& is_first_ref = const_cast<bool&>(is_first_);
         is_first_ref = false;
-        return tuple.find_cell(TupleCellSpec(table_name(), field_name()), value, const_cast<int&>(index_)));
+        return tuple.find_cell(TupleCellSpec(table_name(), field_name()), value, const_cast<int&>(index_));
     } else {
         return tuple.cell_at(index_, value);
     }
@@ -98,10 +97,9 @@ static void replace_all(std::string& str, const std::string& from, const std::st
     size_t pos = 0;
     while (std::string::npos != (pos = str.find(from, pos))) {
         str.replace(pos, from.length(), to);
-        pos += to.length();
+        pos += to.length();  // in case 'to' contains 'from'
     }
 }
-
 static bool str_like(const Value& left, const Value& right) {
     std::string raw_reg(right.data());
     replace_all(raw_reg, "_", "[^']");
@@ -111,11 +109,7 @@ static bool str_like(const Value& left, const Value& right) {
     return res;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-
-ComparisonExpr::ComparisonExpr(CompOp comp,
-                               unique_ptr<Expression> left,
-                               unique_ptr<Expression> right)
+ComparisonExpr::ComparisonExpr(CompOp comp, unique_ptr<Expression> left, unique_ptr<Expression> right)
     : comp_(comp), left_(std::move(left)), right_(std::move(right)) {}
 
 ComparisonExpr::ComparisonExpr(CompOp comp, Expression* left, Expression* right)
@@ -125,12 +119,14 @@ ComparisonExpr::~ComparisonExpr() {}
 
 RC ComparisonExpr::compare_value(const Value& left, const Value& right, bool& result) const {
     RC rc = RC::SUCCESS;
+
     if (comp_ == IS_NULL || comp_ == IS_NOT_NULL) {
         ASSERT(right.is_null(), "IS_[NOT_]NULL rhs NOT NULL!");
         result = comp_ == IS_NULL ? left.is_null() : !left.is_null();
         return rc;
     }
 
+    // check null firstly. don't care comp_
     if (left.is_null() || right.is_null()) {
         result = false;
         return rc;
@@ -198,15 +194,14 @@ RC ComparisonExpr::get_value(const Tuple& tuple, Value& value) const {
 
     SubQueryExpr* left_subquery_expr = nullptr;
     SubQueryExpr* right_subquery_expr = nullptr;
-
+    // TODO(wbj) 为啥不能传两个参数
     DEFER([&left_subquery_expr]() {
-        if (left_subquery_expr != nullptr) {
+        if (nullptr != left_subquery_expr) {
             left_subquery_expr->close();
         }
     });
-
     DEFER([&right_subquery_expr]() {
-        if (right_subquery_expr != nullptr) {
+        if (nullptr != right_subquery_expr) {
             right_subquery_expr->close();
         }
     });
@@ -215,19 +210,21 @@ RC ComparisonExpr::get_value(const Tuple& tuple, Value& value) const {
         SubQueryExpr* sqexp = nullptr;
         if (expr->type() == ExprType::SUBQUERY) {
             sqexp = static_cast<SubQueryExpr*>(expr.get());
-            sqexp->open(nullptr);
+            sqexp->open(nullptr);  // 暂时先 nullptr
         }
         return sqexp;
     };
     left_subquery_expr = if_subquery_open(left_);
     right_subquery_expr = if_subquery_open(right_);
+
     RC rc = RC::SUCCESS;
     if (comp_ == EXISTS_OP || comp_ == NOT_EXISTS_OP) {
         rc = right_->get_value(tuple, right_value);
         value.set_boolean(comp_ == EXISTS_OP ? rc == RC::SUCCESS : rc == RC::RECORD_EOF);
         return RC::RECORD_EOF == rc ? RC::SUCCESS : rc;
     }
-    auto get_value = [&tuple](const std::unique_ptr<Expression>& expr, Value value) {
+
+    auto get_value = [&tuple](const std::unique_ptr<Expression>& expr, Value& value) {
         RC rc = expr->get_value(tuple, value);
         if (expr->type() == ExprType::SUBQUERY && RC::RECORD_EOF == rc) {
             value.set_null();
@@ -243,6 +240,7 @@ RC ComparisonExpr::get_value(const Tuple& tuple, Value& value) const {
     if (left_subquery_expr && left_subquery_expr->has_more_row(tuple)) {
         return RC::INVALID_ARGUMENT;
     }
+
     if (comp_ == IN_OP || comp_ == NOT_IN_OP) {
         if (left_value.is_null()) {
             value.set_boolean(false);
@@ -282,11 +280,10 @@ RC ComparisonExpr::get_value(const Tuple& tuple, Value& value) const {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-ConjunctionExpr::ConjunctionExpr(Type type, vector<unique_ptr<Expression>>& children)
+ConjunctionExpr::ConjunctionExpr(Type type, vector<unique_ptr<Expression>> children)
     : conjunction_type_(type), children_(std::move(children)) {}
 
-ConjunctionExpr::ConjunctionExpr(Type type, Expression* left, Expression* right)
-    : conjunction_type_(type) {
+ConjunctionExpr::ConjunctionExpr(Type type, Expression* left, Expression* right) : conjunction_type_(type) {
     children_.emplace_back(left);
     children_.emplace_back(right);
 }
@@ -300,14 +297,13 @@ RC ConjunctionExpr::get_value(const Tuple& tuple, Value& value) const {
 
     Value tmp_value;
     for (const unique_ptr<Expression>& expr : children_) {
-        rc = expr->get_value(tuple, tmp_value);
+        rc = expr->get_value(tuple, tmp_value);  // 这边会进行表达式的计算
         if (rc != RC::SUCCESS) {
             LOG_WARN("failed to get value by child expression. rc=%s", strrc(rc));
             return rc;
         }
         bool bool_value = tmp_value.get_boolean();
-        if ((conjunction_type_ == Type::AND && !bool_value) ||
-            (conjunction_type_ == Type::OR && bool_value)) {
+        if ((conjunction_type_ == Type::AND && !bool_value) || (conjunction_type_ == Type::OR && bool_value)) {
             value.set_boolean(bool_value);
             return rc;
         }
@@ -322,27 +318,25 @@ RC ConjunctionExpr::get_value(const Tuple& tuple, Value& value) const {
 
 ArithmeticExpr::ArithmeticExpr(ArithmeticExpr::Type type, Expression* left, Expression* right)
     : arithmetic_type_(type), left_(left), right_(right) {}
-ArithmeticExpr::ArithmeticExpr(ArithmeticExpr::Type type,
-                               unique_ptr<Expression> left,
-                               unique_ptr<Expression> right)
+ArithmeticExpr::ArithmeticExpr(ArithmeticExpr::Type type, unique_ptr<Expression> left, unique_ptr<Expression> right)
     : arithmetic_type_(type), left_(std::move(left)), right_(std::move(right)) {}
 
 AttrType ArithmeticExpr::value_type() const {
     if (!right_) {
         return left_->value_type();
     }
-
+    if (left_->value_type() == AttrType::NULLS || right_->value_type() == AttrType::NULLS) {
+        return AttrType::NULLS;
+    }
     if (left_->value_type() == AttrType::INTS && right_->value_type() == AttrType::INTS &&
         arithmetic_type_ != Type::DIV) {
         return AttrType::INTS;
     }
 
-    return AttrType::FLOATS;
+    return AttrType::DOUBLES;
 }
 
-RC ArithmeticExpr::calc_value(const Value& left_value,
-                              const Value& right_value,
-                              Value& value) const {
+RC ArithmeticExpr::calc_value(const Value& left_value, const Value& right_value, Value& value) const {
     RC rc = RC::SUCCESS;
 
     const AttrType target_type = value_type();
@@ -457,6 +451,9 @@ RC ArithmeticExpr::try_get_value(Value& value) const {
     return calc_value(left_value, right_value, value);
 }
 
+// table_map 有表名检查表名(可能是别名) 没表名只能有一个 table 或者用 default table 检查列名
+// table_alias_map 是为了设置 name alias 的时候用
+// NOTE: 是针对 projects 中的 FieldExpr 写的 conditions 中的也可以用 但是处理之后的 name alias 是无用的
 RC FieldExpr::check_field(const std::unordered_map<std::string, Table*>& table_map,
                           const std::vector<Table*>& tables,
                           Table* default_table,
@@ -465,30 +462,33 @@ RC FieldExpr::check_field(const std::unordered_map<std::string, Table*>& table_m
     const char* table_name = table_name_.c_str();
     const char* field_name = field_name_.c_str();
     Table* table = nullptr;
-    if (!common::is_blank(table_name)) {
+    if (!common::is_blank(table_name)) {  // 表名不为空
+        // check table
         auto iter = table_map.find(table_name);
         if (iter == table_map.end()) {
             LOG_WARN("no such table in from list: %s", table_name);
             return RC::SCHEMA_FIELD_MISSING;
         }
         table = iter->second;
-    } else {
+    } else {  // 表名为空，只有列名
         if (tables.size() != 1 && default_table == nullptr) {
-            LOG_WARN("invalid. I do not know the attr's table. attr=%s",
-                     this->get_field_name().c_str());
+            LOG_WARN("invalid. I do not know the attr's table. attr=%s", this->get_field_name().c_str());
             return RC::SCHEMA_FIELD_MISSING;
         }
         table = default_table ? default_table : tables[0];
     }
-    ASSERT(nullptr != table, "ERROR");
+    ASSERT(nullptr != table, "ERROR!");
+    // set table_name
     table_name = table->name();
+    // check field
     const FieldMeta* field_meta = table->table_meta().field(field_name);
-    if (field_meta != nullptr) {
+    if (nullptr == field_meta) {
         LOG_WARN("no such field. field=%s.%s", table->name(), field_name);
         return RC::SCHEMA_FIELD_MISSING;
     }
-    // set field
+    // set field_
     field_ = Field(table, field_meta);
+    // set name 没用了 暂时保留它
     bool is_single_table = (tables.size() == 1);
     if (is_single_table) {
         set_name(field_name_);
@@ -513,9 +513,8 @@ RC FieldExpr::check_field(const std::unordered_map<std::string, Table*>& table_m
 
 AggrFuncExpr::AggrFuncExpr(AggrFuncType type, Expression* param)
     : AggrFuncExpr(type, std::unique_ptr<Expression>(param)) {}
-
-AggrFuncExpr::AggrFuncExpr(AggrFuncType type, unique_ptr<Expression> param)
-    : type_(type), param_(std::move(param)) {
+AggrFuncExpr::AggrFuncExpr(AggrFuncType type, unique_ptr<Expression> param) : type_(type), param_(std::move(param)) {
+    //
     auto check_is_constexpr = [](const Expression* expr) -> RC {
         if (expr->type() == ExprType::FIELD) {
             return RC::INTERNAL;
@@ -551,8 +550,7 @@ AttrType AggrFuncExpr::value_type() const {
     return UNDEFINED;
 }
 
-// Proiect算子的cell_at 会调用该函数取得聚集函数最后计算的结果
-// 传入的Tuple就是groupby
+// Project 算子的cell_at 会调用该函数取得聚集函数最后计算的结果,传入的Tuple 就是gropuby 中的 grouptuple
 RC AggrFuncExpr::get_value(const Tuple& tuple, Value& cell) const {
     TupleCellSpec spec(name().c_str());
     // int index = 0;
@@ -748,8 +746,7 @@ RC SysFuncExpr::check_param_type_and_number() const {
             }
         } break;
         case SYS_FUNC_DATE_FORMAT: {
-            if (params_.size() != 2 || params_[0]->value_type() != DATES ||
-                params_[1]->value_type() != CHARS)
+            if (params_.size() != 2 || params_[0]->value_type() != DATES || params_[1]->value_type() != CHARS)
                 rc = RC::INVALID_ARGUMENT;
         } break;
         default: {
@@ -765,8 +762,7 @@ SubQueryExpr::SubQueryExpr(const SelectSqlNode& sql_node) {
 
 SubQueryExpr::~SubQueryExpr() = default;
 
-RC SubQueryExpr::generate_select_stmt(Db* db,
-                                      const std::unordered_map<std::string, Table*>& tables) {
+RC SubQueryExpr::generate_select_stmt(Db* db, const std::unordered_map<std::string, Table*>& tables) {
     Stmt* select_stmt = nullptr;
     if (RC rc = SelectStmt::create(db, *sql_node_.get(), select_stmt, tables); OB_FAIL(rc)) {
         return rc;
@@ -781,7 +777,6 @@ RC SubQueryExpr::generate_select_stmt(Db* db,
     stmt_ = std::unique_ptr<SelectStmt>(ss);
     return RC::SUCCESS;
 }
-
 RC SubQueryExpr::generate_logical_oper() {
     if (RC rc = LogicalPlanGenerator::create(stmt_.get(), logical_oper_); OB_FAIL(rc)) {
         LOG_WARN("subquery logical oper generate failed. return %s", strrc(rc));
@@ -789,7 +784,6 @@ RC SubQueryExpr::generate_logical_oper() {
     }
     return RC::SUCCESS;
 }
-
 RC SubQueryExpr::generate_physical_oper() {
     if (RC rc = PhysicalPlanGenerator::create(*logical_oper_, physical_oper_); OB_FAIL(rc)) {
         LOG_WARN("subquery physical oper generate failed. return %s", strrc(rc));
@@ -797,8 +791,7 @@ RC SubQueryExpr::generate_physical_oper() {
     }
     return RC::SUCCESS;
 }
-
-// 子算子树的open和close逻辑由外部控制
+// 子算子树的 open 和 close 逻辑由外部控制
 RC SubQueryExpr::open(Trx* trx) {
     return physical_oper_->open(trx);
 }
@@ -808,6 +801,7 @@ RC SubQueryExpr::close() {
 }
 
 bool SubQueryExpr::has_more_row(const Tuple& tuple) const {
+    // TODO(wbj) 这里没考虑其他错误
     physical_oper_->set_parent_tuple(&tuple);
     return physical_oper_->next() != RC::RECORD_EOF;
 }

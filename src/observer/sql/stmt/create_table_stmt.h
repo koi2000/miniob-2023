@@ -28,8 +28,16 @@ class Db;
  */
 class CreateTableStmt : public Stmt {
   public:
-    CreateTableStmt(const std::string& table_name, const std::vector<AttrInfoSqlNode>& attr_infos) : table_name_(table_name), attr_infos_(attr_infos) {}
-    virtual ~CreateTableStmt() = default;
+    CreateTableStmt(Db* db,
+                    const std::string& table_name,
+                    const std::vector<AttrInfoSqlNode>& attr_infos,
+                    Stmt* select_stmt)
+        : db_(db), table_name_(table_name), attr_infos_(attr_infos), select_stmt_(select_stmt) {}
+    virtual ~CreateTableStmt() {
+        if (nullptr != select_stmt_) {
+            delete select_stmt_;
+        }
+    }
 
     StmtType type() const override {
         return StmtType::CREATE_TABLE;
@@ -42,9 +50,18 @@ class CreateTableStmt : public Stmt {
         return attr_infos_;
     }
 
-    static RC create(Db* db, const CreateTableSqlNode& create_table, Stmt*& stmt);
+    static RC create(Db* db, const CreateTableSqlNode& create_table, Stmt*& stmt, SelectSqlNode& select_sql);
+
+    Db* get_db() const {
+        return db_;
+    }
+    Stmt* get_create_table_select_stmt() const {
+        return select_stmt_;
+    }
 
   private:
+    Db* db_ = nullptr;
     std::string table_name_;
     std::vector<AttrInfoSqlNode> attr_infos_;
+    Stmt* select_stmt_ = nullptr;
 };

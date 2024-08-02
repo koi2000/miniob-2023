@@ -101,8 +101,6 @@ class Tuple {
      * @param spec cell的描述
      * @param[out] cell 返回的cell
      */
-    // virtual RC find_cell(const TupleCellSpec& spec, Value& cell) const = 0;
-
     virtual RC find_cell(const TupleCellSpec& spec, Value& cell, int& index) const = 0;
 
     virtual std::string to_string() const {
@@ -143,16 +141,15 @@ class RowTuple : public Tuple {
         this->record_ = record;
         ASSERT(!this->speces_.empty(), "RowTuple speces empty!");
         const FieldMeta* null_field = this->speces_.front()->field().meta();
-        ASSERT(nullptr != null_field && CHARS == null_field->type(),
-               "RowTuple get null field failed!");
+        ASSERT(nullptr != null_field && CHARS == null_field->type(), "RowTuple get null field failed!");
         bitmap_.init(record->data() + null_field->offset(), this->speces_.size());
     }
 
-    void set_schema(const Table* table, const std::vector<FieldMeta>* fields) {
+    void set_schema(const Table* table) {
         ASSERT(nullptr != table, "RowTuple set_schema with a null table");
         table_ = table;
         const std::vector<FieldMeta>* fields = table_->table_meta().field_metas();
-        this->speces_.clear();
+        this->speces_.clear();  // 有的算子会 反复open close
         this->speces_.reserve(fields->size());
         for (const FieldMeta& field : *fields) {
             speces_.push_back(new FieldExpr(table, &field));
@@ -169,6 +166,7 @@ class RowTuple : public Tuple {
             LOG_WARN("invalid argument. index=%d", index);
             return RC::INVALID_ARGUMENT;
         }
+
         if (bitmap_.get_bit(index)) {
             cell.set_null();
         } else {
@@ -177,8 +175,7 @@ class RowTuple : public Tuple {
             if (TEXTS == field_meta->type()) {
                 cell.set_type(CHARS);
                 int64_t offset = *(int64_t*)(record_->data() + field_meta->offset());
-                int64_t length =
-                    *(int64_t*)(record_->data() + field_meta->offset() + sizeof(int64_t));
+                int64_t length = *(int64_t*)(record_->data() + field_meta->offset() + sizeof(int64_t));
                 char* text = (char*)malloc(length);
                 rc = table_->read_text(offset, length, text);
                 if (RC::SUCCESS != rc) {
@@ -259,9 +256,8 @@ class ProjectTuple : public Tuple {
     }
 
     void add_expr(std::unique_ptr<Expression> expr) {
-        exprs_.push_back(std::move(expr));
+        exprs_.emplace_back(std::move(expr));
     }
-
     int cell_num() const override {
         return exprs_.size();
     }
@@ -273,18 +269,19 @@ class ProjectTuple : public Tuple {
         if (tuple_ == nullptr) {
             return RC::INTERNAL;
         }
+
+        // 原本这里会根据 tuple cell spec 去 tuple_ 里 find cell
+        // 现在这个逻辑是在 FieldExpr 的 get_value 里面
         return exprs_[index]->get_value(*tuple_, cell);
     }
 
-    // 可能无法走到这里，未重写
-    // RC find_cell(const TupleCellSpec& spec, Value& cell) const override {
-    //     return tuple_->find_cell(spec, cell);
-    // }
+    RC find_cell(const TupleCellSpec& spec, Value& cell, int& index) const override {
+        return tuple_->find_cell(spec, cell, index);  // TODO 应该不会走到这里
+    }
 
     const std::vector<std::unique_ptr<Expression>>& expressions() const {
         return exprs_;
     }
-
 #if 0
   RC cell_spec_at(int index, const TupleCellSpec *&spec) const override
   {
@@ -293,18 +290,18 @@ class ProjectTuple : public Tuple {
     }
     spec = speces_[index];
     return RC::SUCCESS;
-private:
-    std::vector<TupleCellSpec*> speces_;
   }
+private:
+  std::vector<TupleCellSpec *> speces_;
 #endif
+  private:
     std::vector<std::unique_ptr<Expression>> exprs_;
     Tuple* tuple_ = nullptr;
 };
 
 class ExpressionTuple : public Tuple {
   public:
-    ExpressionTuple(std::vector<std::unique_ptr<Expression>>& expressions)
-        : expressions_(expressions) {}
+    ExpressionTuple(std::vector<std::unique_ptr<Expression>>& expressions) : expressions_(expressions) {}
 
     virtual ~ExpressionTuple() {}
 
@@ -321,14 +318,14 @@ class ExpressionTuple : public Tuple {
         return expr->try_get_value(cell);
     }
 
-    // RC find_cell(const TupleCellSpec& spec, Value& cell) const override {
-    //     for (const std::unique_ptr<Expression>& expr : expressions_) {
-    //         if (0 == strcmp(spec.alias(), expr->name().c_str())) {
-    //             return expr->try_get_value(cell);
-    //         }
-    //     }
-    //     return RC::NOTFOUND;
-    // }
+    RC find_cell(const TupleCellSpec& spec, Value& cell, int& index) const override {
+        for (const std::unique_ptr<Expression>& expr : expressions_) {
+            if (0 == strcmp(spec.alias(), expr->name().c_str())) {
+                return expr->try_get_value(cell);
+            }
+        }
+        return RC::NOTFOUND;
+    }
 
   private:
     const std::vector<std::unique_ptr<Expression>>& expressions_;
@@ -360,9 +357,9 @@ class ValueListTuple : public Tuple {
         return RC::SUCCESS;
     }
 
-    // virtual RC find_cell(const TupleCellSpec& spec, Value& cell) const override {
-    //     return RC::INTERNAL;
-    // }
+    virtual RC find_cell(const TupleCellSpec& spec, Value& cell, int& index) const override {
+        return RC::INTERNAL;
+    }
 
   private:
     std::vector<Value> cells_;
@@ -376,6 +373,7 @@ class ValueListTuple : public Tuple {
 class JoinedTuple : public Tuple {
   public:
     JoinedTuple() = default;
+    JoinedTuple(Tuple* left, Tuple* right) : left_(left), right_(right) {}
     virtual ~JoinedTuple() = default;
 
     void set_left(Tuple* left) {
@@ -402,20 +400,12 @@ class JoinedTuple : public Tuple {
         return RC::NOTFOUND;
     }
 
-    // RC find_cell(const TupleCellSpec& spec, Value& value) const override {
-    //     RC rc = left_->find_cell(spec, value);
-    //     if (rc == RC::SUCCESS || rc != RC::NOTFOUND) {
-    //         return rc;
-    //     }
-
-    //     return right_->find_cell(spec, value);
-    // }
-
     RC find_cell(const TupleCellSpec& spec, Value& value, int& index) const override {
         RC rc = left_->find_cell(spec, value, index);
         if (rc == RC::SUCCESS || rc != RC::NOTFOUND) {
             return rc;
         }
+
         rc = right_->find_cell(spec, value, index);
         if (rc != RC::SUCCESS) {
             return rc;
@@ -433,6 +423,7 @@ class GroupTuple : public Tuple {
   public:
     GroupTuple() = default;
     virtual ~GroupTuple() = default;
+
     void set_tuple(Tuple* tuple) {
         this->tuple_ = tuple;
     }
@@ -466,7 +457,17 @@ class GroupTuple : public Tuple {
         }
         return -1;
     }
-
+    // RC find_cell(std::string expr_name,Value &cell,int &index) const
+    // {
+    //   index = find_agg_index_by_name(expr_name);
+    //   if (index < 0 || index >= aggr_results_.size()) {
+    //     return RC::NOTFOUND;
+    //   }
+    //   cell = aggr_results_[index].result();
+    //   ////因为 GroupTuple 有两个存放结果的 vector ，所以给 aggr_results_ 返回的 index 加上一个偏移量
+    //   index += field_results_.size();
+    //   return RC::SUCCESS;
+    // }
     RC find_cell(const TupleCellSpec& spec, Value& cell, int& index) const override {
         // 先从字段表达式里面找
         for (size_t i = 0; i < field_results_.size(); ++i) {
@@ -486,8 +487,7 @@ class GroupTuple : public Tuple {
             return RC::NOTFOUND;
         }
         cell = aggr_results_[index].result();
-        ////因为 GroupTuple 有两个存放结果的 vector ，所以给 aggr_results_ 返回的 index
-        /// 加上一个偏移量
+        ////因为 GroupTuple 有两个存放结果的 vector ，所以给 aggr_results_ 返回的 index 加上一个偏移量
         index += field_results_.size();
         return RC::SUCCESS;
     }
@@ -495,17 +495,17 @@ class GroupTuple : public Tuple {
     void init(std::vector<std::unique_ptr<AggrFuncExpr>>&& aggr_exprs,
               std::vector<std::unique_ptr<FieldExpr>>&& field_exprs) {
         aggr_results_.resize(aggr_exprs.size());
-        for (size_t i = 0; i < aggr_exprs.size(); i++) {
+        for (size_t i = 0; i < aggr_exprs.size(); ++i) {
             aggr_results_[i].set_expr(std::move(aggr_exprs[i]));
         }
         aggr_exprs.clear();
+
         field_results_.resize(field_exprs.size());
         for (size_t i = 0; i < field_exprs.size(); ++i) {
             field_results_[i].set_expr(std::move(field_exprs[i]));
         }
         field_exprs.clear();
     }
-
     void reset() {
         for (auto& res : aggr_results_) {
             res.reset();
@@ -514,23 +514,24 @@ class GroupTuple : public Tuple {
             res.reset();
         }
     }
-
     void do_aggregate_first() {
-        for (size_t i = 0; i < aggr_results_.size(); i++) {
+        // first row in current group
+        for (size_t i = 0; i < aggr_results_.size(); ++i) {
             aggr_results_[i].init(*tuple_);
         }
-        for (size_t i = 0; i < field_results_.size(); i++) {
+        // do this only at "first"
+        for (size_t i = 0; i < field_results_.size(); ++i) {
             field_results_[i].init(*tuple_);
         }
     }
-
     void do_aggregate() {
+        // other rows in current group
         for (auto& ar : aggr_results_) {
             ar.advance(*tuple_);
         }
     }
-
     void do_aggregate_done() {
+        // set result for current group
         for (auto& ar : aggr_results_) {
             ar.finish();
         }
@@ -538,26 +539,27 @@ class GroupTuple : public Tuple {
 
     class AggrExprResults {
       public:
-        // 每个group的第一行调用init一次
+        // 每个 group 的第一行调用一次 init
         void init(const Tuple& tuple) {
             // 1. reset
             count_ = 0;
             all_null_ = true;
             // 2. count(1) count(*) count(1+1)
             if (expr_->is_count_constexpr()) {
+                // 不能跳过 null 这种情况下可以直接递增 count_
                 count_ = 1;
                 return;
             }
             // 3. get current value and set result_
             expr_->get_param()->get_value(tuple, result_);
-            // ignore null
+            // 4. ignore null
             if (!result_.is_null()) {
                 count_ = 1;
                 all_null_ = false;
             }
             return;
         }
-
+        // 每个 group 进行中间结果的计算
         void advance(const Tuple& tuple) {
             // 1. count(1) count(*) count(1+1)
             if (expr_->is_count_constexpr()) {
@@ -603,7 +605,6 @@ class GroupTuple : public Tuple {
                 } break;
             }
         }
-
         // 每个 group 迭代完之后计算最终结果
         void finish() {
             // 1. count(*) count(1) count(1+1) count(id)
@@ -646,7 +647,7 @@ class GroupTuple : public Tuple {
       private:
         std::unique_ptr<AggrFuncExpr> expr_;
         Value result_;
-        int count_;
+        int count_ = 0;
         bool all_null_ = true;
     };
 
@@ -683,6 +684,7 @@ class EmptyTuple : public Tuple {
   public:
     EmptyTuple() = default;
     virtual ~EmptyTuple() = default;
+
     int cell_num() const {
         return 0;
     }
@@ -696,10 +698,14 @@ class EmptyTuple : public Tuple {
     }
 };
 
-class SpliceTuple : public Tuple {
+/**
+ * @brief 一些常量值组成的Tuple,用于 orderby 算子中
+ * @ingroup Tuple
+ */
+class SplicedTuple : public Tuple {
   public:
-    SpliceTuple() = default;
-    virtual ~SpliceTuple() = default;
+    SplicedTuple() = default;
+    virtual ~SplicedTuple() = default;
 
     void set_cells(const std::vector<Value>* cells) {
         cells_ = cells;
@@ -713,11 +719,13 @@ class SpliceTuple : public Tuple {
         if (index < 0 || index >= cell_num()) {
             return RC::NOTFOUND;
         }
+
         cell = (*cells_)[index];
         return RC::SUCCESS;
     }
 
     RC find_cell(const TupleCellSpec& spec, Value& cell, int& index) const override {
+        // 先从字段表达式里面找
         for (size_t i = 0; i < exprs_.size(); ++i) {
             if (exprs_[i]->type() == ExprType::FIELD) {
                 const FieldExpr* expr = static_cast<FieldExpr*>(exprs_[i].get());
@@ -754,6 +762,6 @@ class SpliceTuple : public Tuple {
 
   private:
     const std::vector<Value>* cells_ = nullptr;
-    // 在create order by stmt之前提取的select clause后的field_expr
+    // 在 create order by stmt 之前提取的  select clause 后的 field_expr (非a gg_expr 中的)和 agg_expr
     std::vector<std::unique_ptr<Expression>> exprs_;
 };

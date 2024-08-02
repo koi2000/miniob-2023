@@ -31,13 +31,14 @@ enum AttrType {
     INTS,    ///< 整数类型(4字节)
     FLOATS,  ///< 浮点数类型(4字节)
     DOUBLES,
-    DATES,     /// 日期类型
-    LONGS,     /// Int64
-    TEXTS,     /// text 类型
-    NULLS,     /// null类型
+    DATES,     ///< 日期类型
+    LONGS,     ///< Int64
+    TEXTS,     ///< text类型，最大65535字节
+    NULLS,     ///< null类型
     BOOLEANS,  ///< boolean类型，当前不是由parser解析出来的，是程序内部使用的
-
 };
+// CHARS..DATES 是字段类型，FieldMeta 会进行检查
+// 所有都是值类型，BOOLEANS 是内部值类型
 
 const char* attr_type_to_string(AttrType type);
 AttrType attr_type_from_string(const char* s);
@@ -51,7 +52,8 @@ class Value {
     Value() = default;
 
     Value(AttrType attr_type, char* data, int length = 4) : attr_type_(attr_type) {
-        this->set_data(data, length);
+        if (NULLS != attr_type_)
+            this->set_data(data, length);
     }
 
     explicit Value(int val);
@@ -83,12 +85,11 @@ class Value {
     void set_int(int val);
     void set_float(float val);
     void set_double(double val);
-    void set_long(long val);
+    void set_long(int64_t val);
     void set_date(int val);
     void set_boolean(bool val);
     void set_string(const char* s, int len = 0);
     void set_value(const Value& value);
-
     std::string to_string() const;
 
     static const Value& max(const Value& a, const Value& b);
@@ -102,6 +103,7 @@ class Value {
     void div(const Value& rhs) {
         *this = Value::div(*this, rhs);
     }
+
     int compare(const Value& other) const;
 
     bool operator<(const Value& other) {
@@ -110,15 +112,19 @@ class Value {
     bool operator>(const Value& other) {
         return compare(other) > 0;
     }
+
     bool operator==(const Value& other) const {
         return 0 == compare(other);
     }
+
     bool operator!=(const Value& other) const {
         return 0 != compare(other);
     }
+
     bool operator<(const Value& other) const {
         return compare(other) < 0;
     }
+
     bool operator<=(const Value& other) const {
         return compare(other) <= 0;
     }
@@ -138,7 +144,6 @@ class Value {
     AttrType attr_type() const {
         return attr_type_;
     }
-
     bool is_minus() const {
         if (attr_type_ == INTS) {
             return num_value_.int_value_ < 0;
@@ -182,6 +187,7 @@ class Value {
     /**
      * 获取对应的值
      * 如果当前的类型与期望获取的类型不符，就会执行转换操作
+     * NULLS类型不适用于以下接口
      */
     int get_int() const;
     float get_float() const;

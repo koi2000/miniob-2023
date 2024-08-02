@@ -20,10 +20,11 @@ See the Mulan PSL v2 for more details. */
 #include "storage/field/field.h"
 #include <sstream>
 
-const char* ATTR_TYPE_NAME[] = {"undefined", "chars", "ints", "floats", "doubles", "dates", "long", "texts", "nulls", "booleans"};
+const char* ATTR_TYPE_NAME[] = {"undefined", "chars", "ints",  "floats", "doubles",
+                                "dates",     "long",  "texts", "nulls",  "booleans"};
 
 const char* attr_type_to_string(AttrType type) {
-    if (type >= UNDEFINED && type <= FLOATS) {
+    if (type >= UNDEFINED && type <= NULLS) {
         return ATTR_TYPE_NAME[type];
     }
     return "unknown";
@@ -44,23 +45,20 @@ Value::Value(int val) {
 Value::Value(float val) {
     set_float(val);
 }
-
 Value::Value(double val) {
     set_double(val);
 }
-
 Value::Value(bool val) {
     set_boolean(val);
 }
-
 Value::Value(int64_t val) {
     set_long(val);
 }
-
 Value::Value(const char* s, int len /*= 0*/) {
     set_string(s, len);
 }
 
+// NULLS can not set data
 void Value::set_data(char* data, int length) {
     switch (attr_type_) {
         case CHARS: {
@@ -112,19 +110,16 @@ void Value::set_float(float val) {
     num_value_.float_value_ = val;
     length_ = sizeof(val);
 }
-
 void Value::set_double(double val) {
     attr_type_ = DOUBLES;
     num_value_.double_value_ = val;
     length_ = sizeof(val);
 }
-
 void Value::set_long(int64_t val) {
     attr_type_ = LONGS;
     num_value_.long_ = val;
     length_ = sizeof(int64_t);
 }
-
 void Value::set_boolean(bool val) {
     attr_type_ = BOOLEANS;
     num_value_.bool_value_ = val;
@@ -202,6 +197,7 @@ std::string Value::to_string() const {
         case DATES: {
             os << date_to_string(num_value_.int_value_);
         } break;
+        // TODO(wbj) used to cast ?
         case NULLS: {
             os << "NULL";
         } break;
@@ -213,6 +209,8 @@ std::string Value::to_string() const {
 }
 
 int Value::compare(const Value& other) const {
+    // ASSERT(!this->is_null() && !other.is_null(), "Cound Not Be Null!");
+    //  null compare null ,return 0
     if (this->is_null() || other.is_null()) {
         if (this->is_null() && other.is_null()) {
             return 0;
@@ -229,13 +227,16 @@ int Value::compare(const Value& other) const {
                 return common::compare_int((void*)&this->num_value_.int_value_, (void*)&other.num_value_.int_value_);
             } break;
             case FLOATS: {
-                return common::compare_float((void*)&this->num_value_.float_value_, (void*)&other.num_value_.float_value_);
+                return common::compare_float((void*)&this->num_value_.float_value_,
+                                             (void*)&other.num_value_.float_value_);
             } break;
             case DOUBLES: {
-                return common::compare_double((void*)&this->num_value_.double_value_, (void*)&other.num_value_.double_value_);
+                return common::compare_double((void*)&this->num_value_.double_value_,
+                                              (void*)&other.num_value_.double_value_);
             } break;
             case CHARS: {
-                return common::compare_string((void*)this->str_value_.c_str(), this->str_value_.length(), (void*)other.str_value_.c_str(), other.str_value_.length());
+                return common::compare_string((void*)this->str_value_.c_str(), this->str_value_.length(),
+                                              (void*)other.str_value_.c_str(), other.str_value_.length());
             } break;
             case BOOLEANS: {
                 return common::compare_int((void*)&this->num_value_.bool_value_, (void*)&other.num_value_.bool_value_);
@@ -250,6 +251,18 @@ int Value::compare(const Value& other) const {
     } else if (this->attr_type_ == FLOATS && other.attr_type_ == INTS) {
         float other_data = other.num_value_.int_value_;
         return common::compare_float((void*)&this->num_value_.float_value_, (void*)&other_data);
+        // } else if (this->attr_type_ == INTS && other.attr_type_ == DOUBLES) {
+        //   double this_data = this->num_value_.int_value_;
+        //   return common::compare_double((void *)&this_data, (void *)&other.num_value_.double_value_);
+        // } else if (this->attr_type_ == DOUBLES && other.attr_type_ == INTS) {
+        //   double other_data = other.num_value_.int_value_;
+        //   return common::compare_double((void *)&this->num_value_.double_value_, (void *)&other_data);
+        // } else if (this->attr_type_ == FLOATS && other.attr_type_ == DOUBLES) {
+        //   float this_data = this->num_value_.float_value_;
+        //   return common::compare_double((void *)&this_data, (void *)&other.num_value_.double_value_);
+        // } else if (this->attr_type_ == DOUBLES && other.attr_type_ == FLOATS) {
+        //   float other_data = other.num_value_.float_value_;
+        //   return common::compare_double((void *)&this->num_value_.double_value_, (void *)&other_data);
     } else {
         double this_data = this->get_double();
         double other_data = other.get_double();
@@ -260,6 +273,7 @@ int Value::compare(const Value& other) const {
 }
 
 int Value::get_int() const {
+    // ASSERT(attr_type_ != DATES,"date can not get_int()"); date_format 需要调用 get_int()
     switch (attr_type_) {
         case CHARS: {
             try {
@@ -405,14 +419,13 @@ bool Value::get_boolean() const {
 
 const Value& Value::min(const Value& a, const Value& b) {
     if (a.is_null()) {
-        return b;
+        return b;  // even if b is also null
     }
     return a.compare(b) <= 0 ? a : b;
 }
-
 const Value& Value::max(const Value& a, const Value& b) {
     if (a.is_null()) {
-        return b;
+        return b;  // even if b is also null
     }
     return a.compare(b) >= 0 ? a : b;
 }

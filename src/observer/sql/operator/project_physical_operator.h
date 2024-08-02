@@ -26,8 +26,16 @@ class ProjectPhysicalOperator : public PhysicalOperator {
 
     virtual ~ProjectPhysicalOperator() = default;
 
-    void add_expressions(std::vector<std::unique_ptr<Expression>>&& expressions) {}
-    void add_projection(const Table* table, const FieldMeta* field);
+    void add_projections(std::vector<std::unique_ptr<Expression>>&& projections) {
+        for (auto& project : projections) {
+            add_projection(std::move(project));
+        }
+    }
+    void add_projection(std::unique_ptr<Expression>&& project);
+
+    const std::vector<std::unique_ptr<Expression>>& projections() const {
+        return tuple_.expressions();
+    }
 
     PhysicalOperatorType type() const override {
         return PhysicalOperatorType::PROJECT;

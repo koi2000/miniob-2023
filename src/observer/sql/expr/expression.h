@@ -68,6 +68,7 @@ class Expression {
     /**
      * @brief 根据具体的tuple，来计算当前表达式的值。tuple有可能是一个具体某个表的行数据
      */
+    // TODO 取消 const，有些表达式需要维护内部状态，比如 FieldExpr 维护 is_first
     virtual RC get_value(const Tuple& tuple, Value& value) const = 0;
 
     /**
@@ -90,25 +91,26 @@ class Expression {
      */
     virtual AttrType value_type() const = 0;
 
-    virtual AttrType value_type() const = 0;
-
     virtual void traverse(const std::function<void(Expression*)>& func) {
         constexpr auto always_true = [](const Expression*) { return true; };
         this->traverse(func, always_true);
     }
 
     // 带条件的 后序遍历 dfs
-    virtual void traverse(const std::function<void(Expression*)>& func, const std::function<bool(Expression*)>& filter) {
+    virtual void traverse(const std::function<void(Expression*)>& func,
+                          const std::function<bool(Expression*)>& filter) {
         if (filter(this)) {
             func(this);
         }
     }
 
+    // 后序遍历 检查
     virtual RC traverse_check(const std::function<RC(Expression*)>& check_func) {
         return check_func(this);
     }
 
     virtual std::unique_ptr<Expression> deep_copy() const = 0;
+
     /**
      * @brief 表达式的名字，比如是字段名称，或者用户在执行SQL语句时输入的内容
      */
@@ -119,24 +121,18 @@ class Expression {
         name_ = name;
     }
 
-    virtual std::string name() const {
-        return name_;
-    }
-
-    virtual void set_name(std::string name) {
-        name_ = name;
-    }
-
+    /**
+     * @brief 表达式的别名
+     */
     virtual std::string alias() const {
         return alias_;
     }
-
     virtual void set_alias(std::string alias) {
         alias_ = alias;
     }
 
   private:
-    std::string name_;
+    std::string name_{};
     std::string alias_{};
 };
 
@@ -147,9 +143,12 @@ class Expression {
 class FieldExpr : public Expression {
   public:
     FieldExpr() = default;
-    FieldExpr(const std::string& table_name, const std::string& field_name) : table_name_(table_name), field_name_(field_name) {}
-    FieldExpr(const Table* table, const FieldMeta* field) : field_(table, field), table_name_(table->name()), field_name_(field->name()) {}
+    FieldExpr(const std::string& table_name, const std::string& field_name)
+        : table_name_(table_name), field_name_(field_name) {}
+    FieldExpr(const Table* table, const FieldMeta* field)
+        : field_(table, field), table_name_(table->name()), field_name_(field->name()) {}
     FieldExpr(const Field& field) : field_(field), table_name_(field.table_name()), field_name_(field.field_name()) {}
+
     virtual ~FieldExpr() = default;
 
     ExprType type() const override {
@@ -178,7 +177,6 @@ class FieldExpr : public Expression {
     const std::string& get_table_name() const {
         return table_name_;
     }
-
     const std::string& get_field_name() const {
         return field_name_;
     }
@@ -197,8 +195,6 @@ class FieldExpr : public Expression {
     std::unique_ptr<Expression> deep_copy() const override {
         return std::unique_ptr<FieldExpr>(new FieldExpr(*this));
     }
-
-    RC get_value(const Tuple& tuple, Value& value) const override;
 
   private:
     Field field_;
@@ -238,6 +234,9 @@ class ValueExpr : public Expression {
         value = value_;
     }
 
+    void set_value(Value& value) {
+        value_ = value;
+    }
     const Value& get_value() const {
         return value_;
     }
@@ -293,7 +292,8 @@ class CastExpr : public Expression {
         return child_;
     }
 
-    void traverse(const std::function<void(Expression*)>& func, const std::function<bool(Expression*)>& filter) override {
+    void traverse(const std::function<void(Expression*)>& func,
+                  const std::function<bool(Expression*)>& filter) override {
         if (filter(this)) {
             child_->traverse(func, filter);
             func(this);
@@ -329,7 +329,7 @@ class CastExpr : public Expression {
  */
 class ComparisonExpr : public Expression {
   public:
-    ComparisonExpr(CompOp, Expression* left, Expression* right);
+    ComparisonExpr(CompOp comp, Expression* left, Expression* right);
     ComparisonExpr(CompOp comp, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right);
     virtual ~ComparisonExpr();
 
@@ -367,10 +367,13 @@ class ComparisonExpr : public Expression {
     RC compare_value(const Value& left, const Value& right, bool& value) const;
 
     bool has_rhs() const {
+        // return right_;
+        // 虽然 IS_[NOT]_NULL 的情况下 rhs 是 null ValueExpr 但仍然提供这个接口
         return comp_ != IS_NULL && comp_ != IS_NOT_NULL;
     }
 
-    void traverse(const std::function<void(Expression*)>& func, const std::function<bool(Expression*)>& filter) override {
+    void traverse(const std::function<void(Expression*)>& func,
+                  const std::function<bool(Expression*)>& filter) override {
         if (filter(this)) {
             left_->traverse(func, filter);
             if (has_rhs()) {
@@ -424,7 +427,7 @@ class ConjunctionExpr : public Expression {
 
   public:
     ConjunctionExpr(Type type, Expression* left, Expression* right);
-    ConjunctionExpr(Type type, std::vector<std::unique_ptr<Expression>>& children);
+    ConjunctionExpr(Type type, std::vector<std::unique_ptr<Expression>> children);
     virtual ~ConjunctionExpr() = default;
 
     ExprType type() const override {
@@ -445,7 +448,8 @@ class ConjunctionExpr : public Expression {
         return children_;
     }
 
-    void traverse(const std::function<void(Expression*)>& func, const std::function<bool(Expression*)>& filter) override {
+    void traverse(const std::function<void(Expression*)>& func,
+                  const std::function<bool(Expression*)>& filter) override {
         if (filter(this)) {
             for (auto& child : children_) {
                 child->traverse(func, filter);
@@ -526,7 +530,8 @@ class ArithmeticExpr : public Expression {
         return right_ != nullptr;  // physical
     }
 
-    void traverse(const std::function<void(Expression*)>& func, const std::function<bool(Expression*)>& filter) override {
+    void traverse(const std::function<void(Expression*)>& func,
+                  const std::function<bool(Expression*)>& filter) override {
         if (filter(this)) {
             left_->traverse(func, filter);
             if (has_rhs()) {
@@ -597,20 +602,27 @@ class AggrFuncExpr : public Expression {
 
     ExprType type() const override {
         return ExprType::AGGRFUNCTION;
-    };
-
+    }
+    // void set_param_constexpr(bool flag)
+    // {
+    //   param_is_constexpr_ = flag;
+    // }
     std::unique_ptr<Expression>& get_param() {
         return param_;
     }
-
+    const std::unique_ptr<Expression>& get_param() const {
+        return param_;
+    }
     RC get_value(const Tuple& tuple, Value& value) const override;
 
     std::string get_func_name() const;
+
     AttrType value_type() const override;
     AggrFuncType get_aggr_func_type() const {
         return type_;
     }
 
+    // count(*) count(1) count(1+1) 需要特殊处理 null
     bool is_count_constexpr() const {
         if (type_ == AggrFuncType::AGG_COUNT && param_is_constexpr_) {
             return true;
@@ -623,7 +635,8 @@ class AggrFuncExpr : public Expression {
     }
 
     // 聚集函数表达式的 traverse[_check] 需要特殊对待 param 可能是个 *
-    void traverse(const std::function<void(Expression*)>& func, const std::function<bool(Expression*)>& filter) override {
+    void traverse(const std::function<void(Expression*)>& func,
+                  const std::function<bool(Expression*)>& filter) override {
         if (filter(this)) {
             param_->traverse(func, filter);
             func(this);
@@ -668,14 +681,15 @@ class SysFuncExpr : public Expression {
             params_.emplace_back(expr);
         }
     }
-    SysFuncExpr(SysFuncType func_type, std::vector<std::unique_ptr<Expression>> params) : func_type_(func_type), params_(std::move(params)) {}
+    SysFuncExpr(SysFuncType func_type, std::vector<std::unique_ptr<Expression>> params)
+        : func_type_(func_type), params_(std::move(params)) {}
     virtual ~SysFuncExpr() = default;
 
     AttrType value_type() const override {
         switch (func_type_) {
             case SYS_FUNC_LENGTH: return INTS; break;
-            case SYS_FUNC_ROUND: return FLOATS;
-            case SYS_FUNC_DATE_FORMAT: return CHARS;
+            case SYS_FUNC_ROUND: return FLOATS; break;
+            case SYS_FUNC_DATE_FORMAT: return CHARS; break;
             default: break;
         }
         return UNDEFINED;
@@ -686,7 +700,9 @@ class SysFuncExpr : public Expression {
     }
 
     RC get_func_length_value(const Tuple& tuple, Value& value) const;
+
     RC get_func_round_value(const Tuple& tuple, Value& value) const;
+
     RC get_func_data_format_value(const Tuple& tuple, Value& value) const;
 
     RC get_value(const Tuple& tuple, Value& value) const override {
@@ -709,7 +725,8 @@ class SysFuncExpr : public Expression {
         return rc;
     }
 
-    void traverse(const std::function<void(Expression*)>& func, const std::function<bool(Expression*)>& filter) override {
+    void traverse(const std::function<void(Expression*)>& func,
+                  const std::function<bool(Expression*)>& filter) override {
         if (filter(this)) {
             for (auto& param : params_) {
                 param->traverse(func, filter);
@@ -761,11 +778,15 @@ class SubQueryExpr : public Expression {
     bool has_more_row(const Tuple& tuple) const;
 
     RC get_value(const Tuple& tuple, Value& value) const;
+
     RC try_get_value(Value& value) const;
+
     ExprType type() const;
 
     AttrType value_type() const;
+
     std::unique_ptr<Expression> deep_copy() const;
+
     RC generate_select_stmt(Db* db, const std::unordered_map<std::string, Table*>& tables);
     RC generate_logical_oper();
     RC generate_physical_oper();
@@ -783,20 +804,13 @@ class ExprListExpr : public Expression {
         for (auto expr : exprs) {
             exprs_.emplace_back(expr);
         }
-        exprs_.clear();
+        exprs.clear();
     }
     ExprListExpr(std::vector<std::unique_ptr<Expression>>&& exprs) : exprs_(std::move(exprs)) {}
     virtual ~ExprListExpr() = default;
 
     void reset() {
         cur_idx_ = 0;
-    }
-
-    RC get_value(const Tuple& tuple, Value& value) const override {
-        if (cur_idx_ >= exprs_.size()) {
-            return RC::RECORD_EOF;
-        }
-        return exprs_[const_cast<int&>(cur_idx_)++]->get_value(tuple,value);
     }
 
     RC get_value(const Tuple& tuple, Value& value) const override {
@@ -818,7 +832,8 @@ class ExprListExpr : public Expression {
         return UNDEFINED;
     }
 
-    void traverse(const std::function<void(Expression*)>& func, const std::function<bool(Expression*)>& filter) override {
+    void traverse(const std::function<void(Expression*)>& func,
+                  const std::function<bool(Expression*)>& filter) override {
         if (filter(this)) {
             for (auto& expr : exprs_) {
                 expr->traverse(func, filter);
