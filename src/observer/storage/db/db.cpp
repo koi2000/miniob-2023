@@ -98,19 +98,6 @@ RC Db::create_table(const char* table_name, int attribute_count, const AttrInfoS
     return RC::SUCCESS;
 }
 
-RC Db::drop_table(const char* name) {
-    RC rc = RC::SUCCESS;
-    Table* table = find_table(name);
-    if (table == nullptr) {
-        return RC::SCHEMA_DB_NOT_EXIST;
-    }
-    std::string table_file_path = table_meta_file(path_.c_str(), name);
-
-    rc = table->drop(table_file_path.c_str());
-    opened_tables_.erase(std::string(name));
-    return rc;
-}
-
 Table* Db::find_table(const char* table_name) const {
     std::unordered_map<std::string, Table*>::const_iterator iter = opened_tables_.find(table_name);
     if (iter != opened_tables_.end()) {
@@ -148,7 +135,8 @@ RC Db::open_all_tables() {
 
         if (opened_tables_.count(table->name()) != 0) {
             delete table;
-            LOG_ERROR("Duplicate table with difference file name. table=%s, the other filename=%s", table->name(), filename.c_str());
+            LOG_ERROR("Duplicate table with difference file name. table=%s, the other filename=%s", table->name(),
+                      filename.c_str());
             return RC::INTERNAL;
         }
 
@@ -194,4 +182,23 @@ RC Db::recover() {
 
 CLogManager* Db::clog_manager() {
     return clog_manager_.get();
+}
+
+RC Db::drop_table(const char* table_name) {
+    RC rc = RC::SUCCESS;
+    Table* table = nullptr;
+    auto it = opened_tables_.find(table_name);
+    if (it == opened_tables_.end()) {
+        LOG_WARN("table : %s not exist", table_name);
+        rc = RC::SCHEMA_TABLE_NOT_EXIST;
+    } else if ((table = it->second) == nullptr) {
+        LOG_WARN("table : %s not exist", table_name);
+        rc = RC::SCHEMA_TABLE_NOT_EXIST;
+    } else if ((rc = table->drop(path_.c_str())) != RC::SUCCESS) {
+        LOG_WARN("table drop file,errno: %s", strrc(rc));
+    } else {
+        opened_tables_.erase(it);
+        delete table;
+    }
+    return rc;
 }

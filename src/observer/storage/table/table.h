@@ -1,6 +1,7 @@
-/* Copyright (c) 2021 Xie Meiyi(xiemeiyi@hust.edu.cn) and OceanBase and/or its affiliates. All
-rights reserved. miniob is licensed under Mulan PSL v2. You can use this software according to the
-terms and conditions of the Mulan PSL v2. You may obtain a copy of Mulan PSL v2 at:
+/* Copyright (c) 2021 Xie Meiyi(xiemeiyi@hust.edu.cn) and OceanBase and/or its affiliates. All rights reserved.
+miniob is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
          http://license.coscl.org.cn/MulanPSL2
 THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
 EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
@@ -81,18 +82,13 @@ class Table {
 
     // 将该record的attr_name列更新为 value
     RC update_record(Record& record, const char* attr_name, Value* value);
-    RC update_record(Record& record,
-                     const std::vector<std::string>& attr_names,
-                     const std::vector<Value*>& values);
+    RC update_record(Record& record, const std::vector<std::string>& attr_names, const std::vector<Value*>& values);
     RC update_record(Record& old_record, Record& new_record);
 
     RC recover_insert_record(Record& record);
 
     // TODO refactor
-    RC create_index(Trx* trx,
-                    bool unique,
-                    const std::vector<const FieldMeta*>& field_metas,
-                    const char* index_name);
+    RC create_index(Trx* trx, bool unique, const std::vector<const FieldMeta*>& field_metas, const char* index_name);
 
     RC get_record_scanner(RecordFileScanner& scanner, Trx* trx, bool readonly);
 

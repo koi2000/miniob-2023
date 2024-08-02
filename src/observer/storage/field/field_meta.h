@@ -30,22 +30,12 @@ class Value;
 class FieldMeta {
   public:
     FieldMeta();
-    FieldMeta(const char* name,
-              AttrType attr_type,
-              int attr_offset,
-              int attr_len,
-              bool visible,
-              bool nullable = false);
+    FieldMeta(const char* name, AttrType attr_type, int attr_offset, int attr_len, bool visible, bool nullable = false);
     ~FieldMeta() = default;
     FieldMeta(const FieldMeta& other) = default;
     FieldMeta& operator=(const FieldMeta& other) = default;
 
-    RC init(const char* name,
-            AttrType attr_type,
-            int attr_offset,
-            int attr_len,
-            bool visible,
-            bool nullable = false);
+    RC init(const char* name, AttrType attr_type, int attr_offset, int attr_len, bool visible, bool nullable = false);
 
   public:
     const char* name() const;
@@ -63,7 +53,7 @@ class FieldMeta {
     static RC from_json(const Json::Value& json_value, FieldMeta& field);
 
   protected:
-    // TEXT类型数据不直接存储在Record内部，列中记录他在另一个文件中的偏移量长度
+    // TEXT类型数据不直接存到Record内部，列中只是记录它在文件中的偏移量、长度
     const static int TEXT_FIELD_LENGTH = 16;
 
   protected:

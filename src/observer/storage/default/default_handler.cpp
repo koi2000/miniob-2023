@@ -147,7 +147,10 @@ RC DefaultHandler::execute(const char* sql) {
     return RC::UNIMPLENMENT;
 }
 
-RC DefaultHandler::create_table(const char* dbname, const char* relation_name, int attribute_count, const AttrInfoSqlNode* attributes) {
+RC DefaultHandler::create_table(const char* dbname,
+                                const char* relation_name,
+                                int attribute_count,
+                                const AttrInfoSqlNode* attributes) {
     Db* db = find_db(dbname);
     if (db == nullptr) {
         return RC::SCHEMA_DB_NOT_OPENED;

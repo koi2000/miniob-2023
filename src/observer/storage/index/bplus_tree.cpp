@@ -126,8 +126,9 @@ bool IndexNodeHandler::is_safe(BplusTreeOperationType op, bool is_root_node) {
 std::string to_string(const IndexNodeHandler& handler) {
     std::stringstream ss;
 
-    ss << "PageNum:" << handler.page_num() << ",is_leaf:" << handler.is_leaf() << "," << "key_num:" << handler.size()
-       << "," << "parent:" << handler.parent_page_num() << ",";
+    ss << "PageNum:" << handler.page_num() << ",is_leaf:" << handler.is_leaf() << ","
+       << "key_num:" << handler.size() << ","
+       << "parent:" << handler.parent_page_num() << ",";
 
     return ss.str();
 }
@@ -348,8 +349,9 @@ InternalIndexNodeHandler::InternalIndexNodeHandler(const IndexFileHeader& header
 std::string to_string(const InternalIndexNodeHandler& node, const KeyPrinter& printer) {
     std::stringstream ss;
     ss << to_string((const IndexNodeHandler&)node);
-    ss << ",children:[" << "{key:" << printer(node.__key_at(0)) << "," << "value:" << *(PageNum*)node.__value_at(0)
-       << "}";
+    ss << ",children:["
+       << "{key:" << printer(node.__key_at(0)) << ","
+       << "value:" << *(PageNum*)node.__value_at(0) << "}";
 
     for (int i = 1; i < node.size(); i++) {
         ss << ",{key:" << printer(node.__key_at(i)) << ",value:" << *(PageNum*)node.__value_at(i) << "}";
@@ -901,17 +903,6 @@ RC BplusTreeHandler::close() {
     return RC::SUCCESS;
 }
 
-RC BplusTreeHandler::drop() {
-    RC rc = RC::SUCCESS;
-    if (disk_buffer_pool_ != nullptr) {
-        BufferPoolManager& bpm = BufferPoolManager::instance();
-        rc = bpm.remove_file(disk_buffer_pool_->file_name().c_str());
-        mem_pool_item_.reset();
-    }
-    disk_buffer_pool_ = nullptr;
-    return RC::SUCCESS;
-}
-
 RC BplusTreeHandler::print_leaf(Frame* frame) {
     LeafIndexNodeHandler leaf_node(file_header_, frame);
     LOG_INFO("leaf node: %s", to_string(leaf_node, key_printer_).c_str());
@@ -1250,6 +1241,7 @@ RC BplusTreeHandler::insert_entry_into_parent(LatchMemo& latch_memo, Frame* fram
         disk_buffer_pool_->unpin_page(root_frame);
 
         return RC::SUCCESS;
+
     } else {
         Frame* parent_frame = nullptr;
         rc = latch_memo.get_page(parent_page_num, parent_frame);
@@ -1273,6 +1265,7 @@ RC BplusTreeHandler::insert_entry_into_parent(LatchMemo& latch_memo, Frame* fram
             // disk_buffer_pool_->unpin_page(frame);
             // disk_buffer_pool_->unpin_page(new_frame);
             // disk_buffer_pool_->unpin_page(parent_frame);
+
         } else {
             // 当前父节点即将装满了，那只能再将父节点执行分裂操作
             Frame* new_parent_frame = nullptr;
@@ -1374,7 +1367,6 @@ MemPoolItem::unique_ptr BplusTreeHandler::make_key(const char* user_key, const R
     // 先把bitmap复制进去，然后复制索引列
     int offset = file_header_.attr_length[0];
     memcpy(static_cast<char*>(key.get()), user_key, file_header_.attr_length[0]);
-
     for (int i = 1; i < file_header_.attr_num; i++) {
         memcpy(static_cast<char*>(key.get()) + offset, user_key + file_header_.attr_offset[i],
                file_header_.attr_length[i]);
@@ -1384,6 +1376,7 @@ MemPoolItem::unique_ptr BplusTreeHandler::make_key(const char* user_key, const R
     return key;
 }
 
+/* 传入的user_key是一条完整的record */
 RC BplusTreeHandler::insert_entry(const char* user_key, const RID* rid) {
     if (user_key == nullptr || rid == nullptr) {
         LOG_WARN("Invalid arguments, key is empty or rid is empty");

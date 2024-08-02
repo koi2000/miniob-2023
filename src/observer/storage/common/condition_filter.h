@@ -44,6 +44,7 @@ class DefaultConditionFilter : public ConditionFilter {
     virtual ~DefaultConditionFilter();
 
     RC init(const ConDesc& left, const ConDesc& right, AttrType attr_type, CompOp comp_op);
+    // RC init(Table &table, const ConditionSqlNode &condition);
 
     virtual bool filter(const Record& rec) const;
 
@@ -77,7 +78,7 @@ class CompositeConditionFilter : public ConditionFilter {
     virtual ~CompositeConditionFilter();
 
     RC init(const ConditionFilter* filters[], int filter_num);
-    // RC init(Table& table, const ConditionSqlNode* conditions, int condition_num);
+    // RC init(Table &table, const ConditionSqlNode *conditions, int condition_num);
     virtual bool filter(const Record& rec) const;
 
   public:

@@ -1,6 +1,7 @@
-/* Copyright (c) 2021 Xie Meiyi(xiemeiyi@hust.edu.cn) and OceanBase and/or its affiliates. All
-rights reserved. miniob is licensed under Mulan PSL v2. You can use this software according to the
-terms and conditions of the Mulan PSL v2. You may obtain a copy of Mulan PSL v2 at:
+/* Copyright (c) 2021 Xie Meiyi(xiemeiyi@hust.edu.cn) and OceanBase and/or its affiliates. All rights reserved.
+miniob is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
          http://license.coscl.org.cn/MulanPSL2
 THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
 EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
@@ -64,18 +65,18 @@ class AttrComparator {
         for (size_t i = 0; i < attr_length_.size(); i++) {
             sum_len += attr_length_[i];
         }
-
         return sum_len;
     }
 
     int operator()(const char* v1, const char* v2) const {
         int cmp_res = 0;
-        // 第一列是bitmap，比较时应该跳过
-        // 默认NULL比任何值都大，放在B+树最右面
+        // 第一列是bitmap，比较时应该跳过它
+        // 这里认为NULL比任何值都大，放在B+树的最右边
         int offset = attr_length_[0];
         common::Bitmap l_map(const_cast<char*>(v1), attr_length_[0] * 8);
         common::Bitmap r_map(const_cast<char*>(v2), attr_length_[0] * 8);
         for (size_t i = 1; i < attr_type_.size(); i++) {
+            // NULL get_bit 是true
             if (l_map.get_bit(field_id_[i]) == true || r_map.get_bit(field_id_[i]) == true) {
                 return -1;
             }
@@ -277,8 +278,11 @@ struct IndexFileHeader {
     const std::string to_string() {
         std::stringstream ss;
 
-        ss << "attr_length:" << attr_length << "," << "key_length:" << key_length << "," << "attr_type:" << attr_type
-           << "," << "root_page:" << root_page << "," << "internal_max_size:" << internal_max_size << ","
+        ss << "attr_length:" << attr_length << ","
+           << "key_length:" << key_length << ","
+           << "attr_type:" << attr_type << ","
+           << "root_page:" << root_page << ","
+           << "internal_max_size:" << internal_max_size << ","
            << "leaf_max_size:" << leaf_max_size << ";";
 
         return ss.str();
@@ -509,7 +513,6 @@ class BplusTreeHandler {
               int attr_length,
               int internal_max_size = -1,
               int leaf_max_size = -1);
-
     RC create(const char* file_name,
               const bool unique,
               const std::vector<int>& field_ids,
@@ -528,8 +531,6 @@ class BplusTreeHandler {
      * 关闭句柄indexHandle对应的索引文件
      */
     RC close();
-
-    RC drop();
 
     /**
      * 此函数向IndexHandle对应的索引中插入一个索引项。

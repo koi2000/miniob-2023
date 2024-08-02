@@ -30,7 +30,7 @@ using namespace common;
 const char* CLOG_FILE_NAME = "clog";
 
 const char* clog_type_name(CLogType type) {
-#define DEFINE_CLOG_TYPE(name)                                                                                                                                                                         \
+#define DEFINE_CLOG_TYPE(name)                                                                                         \
     case CLogType::name: return #name;
     switch (type) {
         DEFINE_CLOG_TYPE_ENUM;
@@ -50,7 +50,8 @@ CLogType clog_type_from_integer(int32_t value) {
 
 string CLogRecordHeader::to_string() const {
     stringstream ss;
-    ss << "lsn:" << lsn_ << ", trx_id:" << trx_id_ << ", type:" << clog_type_name(clog_type_from_integer(type_)) << "(" << type_ << ")"
+    ss << "lsn:" << lsn_ << ", trx_id:" << trx_id_ << ", type:" << clog_type_name(clog_type_from_integer(type_)) << "("
+       << type_ << ")"
        << ", len:" << logrec_len_;
     return ss.str();
 }
@@ -105,7 +106,13 @@ CLogRecord* CLogRecord::build_commit_record(int32_t trx_id, int32_t commit_xid) 
     return log_record;
 }
 
-CLogRecord* CLogRecord::build_data_record(CLogType type, int32_t trx_id, int32_t table_id, const RID& rid, int32_t data_len, int32_t data_offset, const char* data) {
+CLogRecord* CLogRecord::build_data_record(CLogType type,
+                                          int32_t trx_id,
+                                          int32_t table_id,
+                                          const RID& rid,
+                                          int32_t data_len,
+                                          int32_t data_offset,
+                                          const char* data) {
     CLogRecord* log_record = new CLogRecord();
     CLogRecordHeader& header = log_record->header_;
     header.trx_id_ = trx_id;
@@ -140,7 +147,8 @@ CLogRecord* CLogRecord::build(const CLogRecordHeader& header, char* data) {
     }
 
     if (header.type_ == clog_type_to_integer(CLogType::MTR_COMMIT)) {
-        ASSERT(header.logrec_len_ == sizeof(CLogRecordCommitData), "invalid length of mtr commit. expect %d, got %d", sizeof(CLogRecordCommitData), header.logrec_len_);
+        ASSERT(header.logrec_len_ == sizeof(CLogRecordCommitData), "invalid length of mtr commit. expect %d, got %d",
+               sizeof(CLogRecordCommitData), header.logrec_len_);
 
         CLogRecordCommitData& commit_record = log_record->commit_record();
         memcpy(reinterpret_cast<void*>(&commit_record), data, sizeof(CLogRecordCommitData));
@@ -212,7 +220,8 @@ RC CLogBuffer::flush_buffer(CLogFile& log_file) {
 
         rc = write_log_record(log_file, log_record.get());
         // 当前无法处理日志写不完整的情况，所以直接粗暴退出
-        ASSERT(rc == RC::SUCCESS, "failed to write log record. log_record=%s, rc=%s", log_record->to_string().c_str(), strrc(rc));
+        ASSERT(rc == RC::SUCCESS, "failed to write log record. log_record=%s, rc=%s", log_record->to_string().c_str(),
+               strrc(rc));
 
         lock_.unlock();
         total_size_ -= log_record->logrec_len();
@@ -239,7 +248,8 @@ RC CLogBuffer::write_log_record(CLogFile& log_file, CLogRecord* log_record) {
         } break;
 
         case CLogType::MTR_COMMIT: {
-            rc = log_file.write(reinterpret_cast<const char*>(&log_record->commit_record()), log_record->header().logrec_len_);
+            rc = log_file.write(reinterpret_cast<const char*>(&log_record->commit_record()),
+                                log_record->header().logrec_len_);
         } break;
 
         default: {
@@ -290,7 +300,8 @@ CLogFile::~CLogFile() {
 RC CLogFile::write(const char* data, int len) {
     int ret = writen(fd_, data, len);
     if (0 != ret) {
-        LOG_WARN("failed to write data to file. filename=%s, data len=%d, error=%s", filename_.c_str(), len, strerror(ret));
+        LOG_WARN("failed to write data to file. filename=%s, data len=%d, error=%s", filename_.c_str(), len,
+                 strerror(ret));
         return RC::IOERR_WRITE;
     }
     return RC::SUCCESS;
@@ -303,7 +314,8 @@ RC CLogFile::read(char* data, int len) {
             eof_ = true;
             LOG_TRACE("file read touch eof. filename=%s", filename_.c_str());
         } else {
-            LOG_WARN("failed to read data from file. file=%s, data len=%d, error=%s", filename_.c_str(), len, strerror(ret));
+            LOG_WARN("failed to read data from file. file=%s, data len=%d, error=%s", filename_.c_str(), len,
+                     strerror(ret));
         }
         return RC::IOERR_READ;
     }
@@ -401,7 +413,13 @@ CLogManager::~CLogManager() {
     }
 }
 
-RC CLogManager::append_log(CLogType type, int32_t trx_id, int32_t table_id, const RID& rid, int32_t data_len, int32_t data_offset, const char* data) {
+RC CLogManager::append_log(CLogType type,
+                           int32_t trx_id,
+                           int32_t table_id,
+                           const RID& rid,
+                           int32_t data_len,
+                           int32_t data_offset,
+                           const char* data) {
     CLogRecord* log_record = CLogRecord::build_data_record(type, trx_id, table_id, rid, data_len, data_offset, data);
     if (nullptr == log_record) {
         LOG_WARN("failed to create log record");
@@ -469,12 +487,14 @@ RC CLogManager::recover(Db* db) {
             case CLogType::MTR_ROLLBACK: {
                 Trx* trx = trx_manager->find_trx(log_record.trx_id());
                 if (nullptr == trx) {
-                    LOG_WARN("no such trx. trx id=%d, log_record={%s}", log_record.trx_id(), log_record.to_string().c_str());
+                    LOG_WARN("no such trx. trx id=%d, log_record={%s}", log_record.trx_id(),
+                             log_record.to_string().c_str());
                     return RC::INTERNAL;
                 }
                 rc = trx->redo(db, log_record);
                 if (OB_FAIL(rc)) {
-                    LOG_WARN("failed to redo log. trx id=%d, log_record={%s}, rc=%s", log_record.trx_id(), log_record.to_string().c_str(), strrc(rc));
+                    LOG_WARN("failed to redo log. trx id=%d, log_record={%s}, rc=%s", log_record.trx_id(),
+                             log_record.to_string().c_str(), strrc(rc));
                     return rc;
                 }
 
@@ -482,11 +502,13 @@ RC CLogManager::recover(Db* db) {
 
             default: {
                 Trx* trx = GCTX.trx_kit_->find_trx(log_record.trx_id());
-                ASSERT(trx != nullptr, "cannot find such trx. trx id=%d, log_record={%s}", log_record.trx_id(), log_record.to_string().c_str());
+                ASSERT(trx != nullptr, "cannot find such trx. trx id=%d, log_record={%s}", log_record.trx_id(),
+                       log_record.to_string().c_str());
 
                 rc = trx->redo(db, log_record);
                 if (rc != RC::SUCCESS) {
-                    LOG_WARN("failed to redo log record. log_record={%s}, rc=%s", log_record.to_string().c_str(), strrc(rc));
+                    LOG_WARN("failed to redo log record. log_record={%s}, rc=%s", log_record.to_string().c_str(),
+                             strrc(rc));
                     return rc;
                 }
 

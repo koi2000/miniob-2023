@@ -31,9 +31,7 @@ class BplusTreeIndex : public Index {
               const IndexMeta& index_meta,
               const std::vector<int>& field_ids,
               const std::vector<const FieldMeta*>& field_metas);
-    RC open(const char* file_name,
-            const IndexMeta& index_meta,
-            const std::vector<const FieldMeta*>& field_metas);
+    RC open(const char* file_name, const IndexMeta& index_meta, const std::vector<const FieldMeta*>& field_metas);
     RC close();
 
     RC insert_entry(const char* record, const RID* rid) override;

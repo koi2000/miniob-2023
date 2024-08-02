@@ -1,6 +1,7 @@
-/* Copyright (c) 2021 Xie Meiyi(xiemeiyi@hust.edu.cn) and OceanBase and/or its affiliates. All
-rights reserved. miniob is licensed under Mulan PSL v2. You can use this software according to the
-terms and conditions of the Mulan PSL v2. You may obtain a copy of Mulan PSL v2 at:
+/* Copyright (c) 2021 Xie Meiyi(xiemeiyi@hust.edu.cn) and OceanBase and/or its affiliates. All rights reserved.
+miniob is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
          http://license.coscl.org.cn/MulanPSL2
 THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
 EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
@@ -56,9 +57,9 @@ Table::~Table() {
 }
 
 RC Table::create(int32_t table_id,
-                 const char* path,      // 表的元数据
-                 const char* name,      //
-                 const char* base_dir,  // 表存在哪个位置
+                 const char* path,
+                 const char* name,
+                 const char* base_dir,
                  int attribute_count,
                  const AttrInfoSqlNode attributes[]) {
     if (table_id < 0) {
@@ -127,14 +128,14 @@ RC Table::create(int32_t table_id,
     }
 
     // 创建文件存放text
-    bool exist_text_field = false;
+    bool exist_text_feild = false;
     for (const FieldMeta& field : *table_meta_.field_metas()) {
         if (TEXTS == field.type()) {
-            exist_text_field = true;
+            exist_text_feild = true;
             break;
         }
     }
-    if (exist_text_field) {
+    if (exist_text_feild) {
         std::string text_file = table_text_file(base_dir, name);
         rc = bpm.create_file(text_file.c_str());
         if (rc != RC::SUCCESS) {
@@ -151,58 +152,6 @@ RC Table::create(int32_t table_id,
 
     base_dir_ = base_dir;
     LOG_INFO("Successfully create table %s:%s", base_dir, name);
-    return rc;
-}
-
-/*
-  这里有几个问题不清晰:
-    1.为什么要先做sync把缓冲区中的内容刷盘
-    2.删除数据文件时，也会把缓冲区中数据文件的的内容清空，但是删除索引文件和元数据文件时并没有清空缓冲区中的内容
-*/
-RC Table::drop(const char* dir) {
-    // 1.drop index first
-    RC rc = RC::SUCCESS;
-    if ((rc = sync()) != RC::SUCCESS) {
-        LOG_WARN("Failed to sync table %s to disk.", name());
-    } else {
-        std::string meta_file = ::table_meta_file(dir, name());
-        // 1.drop  meta file and index file
-        if (0 != ::unlink(meta_file.c_str())) {
-            LOG_WARN("unable to delete %s meta file", name());
-            rc = RC::DELETE_FILE_ERROR;
-        } else {
-            const int index_num = table_meta_.index_num();
-            for (int i = 0; i < index_num; i++) {
-                ((BplusTreeIndex*)indexes_[i])->close();
-                const IndexMeta* index_meta = table_meta_.index(i);
-                if (index_meta != nullptr) {
-                    std::string index_file = ::table_index_file(dir, name(), index_meta->name());
-                    if (0 != ::unlink(index_file.c_str())) {
-                        LOG_WARN("unable to delete %s meta file", name());
-                        rc = RC::DELETE_FILE_ERROR;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-    if (RC::SUCCESS == rc) {
-        // 2.destroy record handler
-        record_handler_->close();
-        delete record_handler_;
-        record_handler_ = nullptr;
-        // 3.destroy buffer pool and remove data file
-        std::string data_file = table_data_file(dir, name());
-        BufferPoolManager& bpm = BufferPoolManager::instance();
-        rc = bpm.remove_file(data_file.c_str());
-
-        // 4.destroy text handler
-        // 5.destory buffer pool and remove text fild
-        if (nullptr != text_buffer_pool_) {
-            std::string text_file = table_text_file(dir, name());
-            rc = bpm.remove_file(text_file.c_str());
-        }
-    }
     return rc;
 }
 
@@ -231,6 +180,13 @@ RC Table::open(const char* meta_file, const char* base_dir) {
         return rc;
     }
 
+    // 加载text数据
+    // rc = init_text_handler(base_dir);
+    // if (rc != RC::SUCCESS) {
+    //   LOG_ERROR("Failed to open table %s due to init text handler failed.", base_dir);
+    //   return rc;
+    // }
+
     base_dir_ = base_dir;
 
     const int index_num = table_meta_.index_num();
@@ -241,8 +197,7 @@ RC Table::open(const char* meta_file, const char* base_dir) {
         for (size_t j = 0; j < field_names.size(); i++) {
             const FieldMeta* field_meta = table_meta_.field(field_names[j].c_str());
             if (field_meta == nullptr) {
-                LOG_ERROR("Found invalid index meta info which has a non-exists field. table=%s, "
-                          "index=%s, field=%s",
+                LOG_ERROR("Found invalid index meta info which has a non-exists field. table=%s, index=%s, field=%s",
                           name(), index_meta->name(), index_meta->field().data());
                 // skip cleanup
                 //  do all cleanup action in destructive Table function
@@ -250,6 +205,7 @@ RC Table::open(const char* meta_file, const char* base_dir) {
             }
             field_metas.emplace_back(field_meta);
         }
+
         BplusTreeIndex* index = new BplusTreeIndex();
         std::string index_file = table_index_file(base_dir, name(), index_meta->name());
         rc = index->open(index_file.c_str(), *index_meta, field_metas);
@@ -279,8 +235,7 @@ RC Table::insert_record(Record& record) {
     if (rc != RC::SUCCESS) {  // 可能出现了键值重复，插索引操作是原子性的，因此不需要在这里删索引
         RC rc2 = record_handler_->delete_record(&record.rid());
         if (rc2 != RC::SUCCESS) {
-            LOG_PANIC("Failed to rollback record data when insert index entries failed. table "
-                      "name=%s, rc=%d:%s",
+            LOG_PANIC("Failed to rollback record data when insert index entries failed. table name=%s, rc=%d:%s",
                       name(), rc2, strrc(rc2));
         }
     }
@@ -289,24 +244,24 @@ RC Table::insert_record(Record& record) {
 
 RC Table::insert_records(std::vector<Record>& records) {
     RC rc = RC::SUCCESS;
+
     // 回滚前 num 个插入
     auto rollback = [this, &records](int num) {
         for (int i = 0; i < num; ++i) {
             Record& record = records[i];
             RC rc2 = delete_entry_of_indexes(record.data(), record.rid(), false /*error_on_not_exists*/);
             if (rc2 != RC::SUCCESS) {
-                LOG_ERROR("Failed to rollback index data when insert index entries failed. table "
-                          "name=%s, rc=%d:%s",
+                LOG_ERROR("Failed to rollback index data when insert index entries failed. table name=%s, rc=%d:%s",
                           name(), rc2, strrc(rc2));
             }
             rc2 = record_handler_->delete_record(&record.rid());
             if (rc2 != RC::SUCCESS) {
-                LOG_PANIC("Failed to rollback record data when insert index entries failed. table "
-                          "name=%s, rc=%d:%s",
+                LOG_PANIC("Failed to rollback record data when insert index entries failed. table name=%s, rc=%d:%s",
                           name(), rc2, strrc(rc2));
             }
         }
     };
+
     int idx = 0;
     while (idx < records.size()) {
         Record& record = records[idx];
@@ -320,15 +275,16 @@ RC Table::insert_records(std::vector<Record>& records) {
         if (rc != RC::SUCCESS) {  // 可能出现了键值重复，需要删除当前record数据，并回滚之前的record的数据与索引
             RC rc2 = record_handler_->delete_record(&record.rid());
             if (rc2 != RC::SUCCESS) {
-                LOG_PANIC("Failed to rollback current record data when insert index entries "
-                          "failed. table name=%s, rc=%d:%s",
-                          name(), rc2, strrc(rc2));
+                LOG_PANIC(
+                    "Failed to rollback current record data when insert index entries failed. table name=%s, rc=%d:%s",
+                    name(), rc2, strrc(rc2));
             }
             rollback(idx);
             break;
         }
         ++idx;
     }
+
     return rc;
 }
 
@@ -368,14 +324,12 @@ RC Table::recover_insert_record(Record& record) {
     if (rc != RC::SUCCESS) {  // 可能出现了键值重复
         RC rc2 = delete_entry_of_indexes(record.data(), record.rid(), false /*error_on_not_exists*/);
         if (rc2 != RC::SUCCESS) {
-            LOG_ERROR("Failed to rollback index data when insert index entries failed. table "
-                      "name=%s, rc=%d:%s",
-                      name(), rc2, strrc(rc2));
+            LOG_ERROR("Failed to rollback index data when insert index entries failed. table name=%s, rc=%d:%s", name(),
+                      rc2, strrc(rc2));
         }
         rc2 = record_handler_->delete_record(&record.rid());
         if (rc2 != RC::SUCCESS) {
-            LOG_PANIC("Failed to rollback record data when insert index entries failed. table "
-                      "name=%s, rc=%d:%s",
+            LOG_PANIC("Failed to rollback record data when insert index entries failed. table name=%s, rc=%d:%s",
                       name(), rc2, strrc(rc2));
         }
     }
@@ -392,7 +346,6 @@ const TableMeta& Table::table_meta() const {
 
 RC Table::make_record(int value_num, const Value* values, Record& record) {
     RC rc = RC::SUCCESS;
-
     // 检查字段类型是否一致
     if (value_num + table_meta_.sys_field_num() != table_meta_.field_num()) {
         LOG_WARN("Input values don't match the table's schema, table name:%s", table_meta_.name());
@@ -403,7 +356,7 @@ RC Table::make_record(int value_num, const Value* values, Record& record) {
     for (int i = 0; i < value_num; i++) {
         const FieldMeta* field = table_meta_.field(i + normal_field_start_index);
         const Value& value = values[i];
-        // double check
+        // double check. no need to cast.
         if (value.is_null() && field->nullable()) {
             continue;
         }
@@ -421,14 +374,17 @@ RC Table::make_record(int value_num, const Value* values, Record& record) {
     // 复制所有字段的值
     int record_size = table_meta_.record_size();
     char* record_data = (char*)malloc(record_size);
+
     // null field
     const FieldMeta* null_field = table_meta_.null_field();
     common::Bitmap null_bitmap(record_data + null_field->offset(), table_meta_.field_num());
     null_bitmap.clear_bits();
+
     for (int i = 0; i < value_num; i++) {
         const FieldMeta* field = table_meta_.field(i + normal_field_start_index);
         const Value& value = values[i];
         if (value.is_null()) {
+            // null 值的 data 部分的数据是未定义的
             null_bitmap.set_bit(normal_field_start_index + i);
             continue;
         }
@@ -440,7 +396,7 @@ RC Table::make_record(int value_num, const Value* values, Record& record) {
             }
         }
         if (TEXTS == field->type()) {
-            // 将value中的字符串写入到文件中，将offset，length写入到record
+            // 需要将value中的字符串插入到文件中，然后将offset、length写入record
             int64_t position[2];
             position[1] = value.length();
             text_buffer_pool_->append_data(position[0], position[1], value.data());
@@ -521,7 +477,6 @@ RC Table::init_text_handler(const char* base_dir) {
     }
     return rc;
 }
-
 RC Table::get_record_scanner(RecordFileScanner& scanner, Trx* trx, bool readonly) {
     RC rc = scanner.open_scan(this, *data_buffer_pool_, trx, readonly, nullptr);
     if (rc != RC::SUCCESS) {
@@ -666,9 +621,21 @@ RC Table::delete_record(const Record& record) {
 
 RC Table::insert_entry_of_indexes(const char* record, const RID& rid) {
     RC rc = RC::SUCCESS;
-    for (Index* index : indexes_) {
+    for (size_t i = 0; i < indexes_.size(); i++) {
+        Index* index = indexes_[i];
         rc = index->insert_entry(record, &rid);
+
+        // 插入失败的时候，回滚已经成功的索引
         if (rc != RC::SUCCESS) {
+            RC rc2 = RC::SUCCESS;
+            for (size_t j = 0; j < i; j++) {
+                rc2 = indexes_[j]->delete_entry(record, &rid);
+                if (RC::SUCCESS != rc2) {
+                    sql_debug("Delete index failed after insert index failed. rc=%s", strrc(rc2));
+                    LOG_ERROR("rollback index [%d] failed after insert index failed", j);
+                    break;
+                }
+            }
             break;
         }
     }
@@ -680,6 +647,7 @@ RC Table::delete_entry_of_indexes(const char* record, const RID& rid, bool error
     for (Index* index : indexes_) {
         rc = index->delete_entry(record, &rid);
         if (rc != RC::SUCCESS) {
+            sql_debug("delete index failed, rc=%s", strrc(rc));
             if (rc != RC::RECORD_INVALID_KEY || !error_on_not_exists) {
                 break;
             }
@@ -697,12 +665,16 @@ Index* Table::find_index(const char* index_name) const {
     return nullptr;
 }
 Index* Table::find_index_by_field(const char* field_name) const {
-    const TableMeta& table_meta = this->table_meta();
-    const IndexMeta* index_meta = table_meta.find_index_by_field(field_name);
-    if (index_meta != nullptr) {
-        return this->find_index(index_meta->name());
-    }
+    // const TableMeta &table_meta = this->table_meta();
+    // const IndexMeta *index_meta = table_meta.find_index_by_field(field_name);
+    // if (index_meta != nullptr) {
+    //   return this->find_index(index_meta->name());
+    // }
     return nullptr;
+}
+
+bool Table::is_field_in_index(std::vector<std::string>& field_names) {
+    return table_meta_.is_field_in_index(field_names);
 }
 
 RC Table::sync() {
@@ -855,5 +827,57 @@ RC Table::update_record(Record& old_record, Record& new_record) {
         return rc;
     }
 
+    return rc;
+}
+
+/*
+  这里有几个问题不清晰:
+    1.为什么要先做sync把缓冲区中的内容刷盘
+    2.删除数据文件时，也会把缓冲区中数据文件的的内容清空，但是删除索引文件和元数据文件时并没有清空缓冲区中的内容
+*/
+RC Table::drop(const char* dir) {
+    // 1.drop index first
+    RC rc = RC::SUCCESS;
+    if ((rc = sync()) != RC::SUCCESS) {
+        LOG_WARN("Failed to sync table %s to disk.", name());
+    } else {
+        std::string meta_file = ::table_meta_file(dir, name());
+        // 1.drop  meta file and index file
+        if (0 != ::unlink(meta_file.c_str())) {
+            LOG_WARN("unable to delete %s meta file", name());
+            rc = RC::DELETE_FILE_ERROR;
+        } else {
+            const int index_num = table_meta_.index_num();
+            for (int i = 0; i < index_num; i++) {
+                ((BplusTreeIndex*)indexes_[i])->close();
+                const IndexMeta* index_meta = table_meta_.index(i);
+                if (index_meta != nullptr) {
+                    std::string index_file = ::table_index_file(dir, name(), index_meta->name());
+                    if (0 != ::unlink(index_file.c_str())) {
+                        LOG_WARN("unable to delete %s meta file", name());
+                        rc = RC::DELETE_FILE_ERROR;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    if (RC::SUCCESS == rc) {
+        // 2.destroy record handler
+        record_handler_->close();
+        delete record_handler_;
+        record_handler_ = nullptr;
+        // 3.destroy buffer pool and remove data file
+        std::string data_file = table_data_file(dir, name());
+        BufferPoolManager& bpm = BufferPoolManager::instance();
+        rc = bpm.remove_file(data_file.c_str());
+
+        // 4.destroy text handler
+        // 5.destory buffer pool and remove text fild
+        if (nullptr != text_buffer_pool_) {
+            std::string text_file = table_text_file(dir, name());
+            rc = bpm.remove_file(text_file.c_str());
+        }
+    }
     return rc;
 }

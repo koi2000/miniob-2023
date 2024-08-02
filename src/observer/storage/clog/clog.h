@@ -49,12 +49,12 @@ class Db;
  * 也就是说，像INSERT、DELETE等是事务自己处理的，其实这种类型的日志不需要在这里定义，而是在各个
  * 事务模型中定义，由各个事务模型自行处理。
  */
-#define DEFINE_CLOG_TYPE_ENUM                                                                                                                                                                          \
-    DEFINE_CLOG_TYPE(ERROR)                                                                                                                                                                            \
-    DEFINE_CLOG_TYPE(MTR_BEGIN)                                                                                                                                                                        \
-    DEFINE_CLOG_TYPE(MTR_COMMIT)                                                                                                                                                                       \
-    DEFINE_CLOG_TYPE(MTR_ROLLBACK)                                                                                                                                                                     \
-    DEFINE_CLOG_TYPE(INSERT)                                                                                                                                                                           \
+#define DEFINE_CLOG_TYPE_ENUM                                                                                          \
+    DEFINE_CLOG_TYPE(ERROR)                                                                                            \
+    DEFINE_CLOG_TYPE(MTR_BEGIN)                                                                                        \
+    DEFINE_CLOG_TYPE(MTR_COMMIT)                                                                                       \
+    DEFINE_CLOG_TYPE(MTR_ROLLBACK)                                                                                     \
+    DEFINE_CLOG_TYPE(INSERT)                                                                                           \
     DEFINE_CLOG_TYPE(DELETE)
 
 enum class CLogType {
@@ -91,7 +91,8 @@ struct CLogRecordHeader {
     int32_t logrec_len_ = 0;                                ///< record的长度，不包含header长度
 
     bool operator==(const CLogRecordHeader& other) const {
-        return lsn_ == other.lsn_ && trx_id_ == other.trx_id_ && type_ == other.type_ && logrec_len_ == other.logrec_len_;
+        return lsn_ == other.lsn_ && trx_id_ == other.trx_id_ && type_ == other.type_ &&
+               logrec_len_ == other.logrec_len_;
     }
 
     std::string to_string() const;
@@ -118,16 +119,17 @@ struct CLogRecordCommitData {
  * @details 这里记录的都是操作的记录，比如插入、删除一条数据。
  */
 struct CLogRecordData {
-    int32_t table_id_ = -1;    ///< 操作的表
-    RID rid_;                  ///< 操作的哪条记录
-    int32_t data_len_ = 0;     ///< 记录的数据长度(因为header中也包含长度信息，这个长度可以不要)
+    int32_t table_id_ = -1;  ///< 操作的表
+    RID rid_;                ///< 操作的哪条记录
+    int32_t data_len_ = 0;   ///< 记录的数据长度(因为header中也包含长度信息，这个长度可以不要)
     int32_t data_offset_ = 0;  ///< 操作的数据在完整记录中的偏移量
     char* data_ = nullptr;     ///< 具体的数据，可能没有任何数据
 
     ~CLogRecordData();
 
     bool operator==(const CLogRecordData& other) const {
-        return table_id_ == other.table_id_ && rid_ == other.rid_ && data_len_ == other.data_len_ && data_offset_ == other.data_offset_ && 0 == memcmp(data_, other.data_, data_len_);
+        return table_id_ == other.table_id_ && rid_ == other.rid_ && data_len_ == other.data_len_ &&
+               data_offset_ == other.data_offset_ && 0 == memcmp(data_, other.data_, data_len_);
     }
 
     std::string to_string() const;
@@ -178,7 +180,13 @@ class CLogRecord {
      * @param data_offset 偏移量，参考 CLogRecordData::data_offset_
      * @param data 具体的数据
      */
-    static CLogRecord* build_data_record(CLogType type, int32_t trx_id, int32_t table_id, const RID& rid, int32_t data_len, int32_t data_offset, const char* data);
+    static CLogRecord* build_data_record(CLogType type,
+                                         int32_t trx_id,
+                                         int32_t table_id,
+                                         const RID& rid,
+                                         int32_t data_len,
+                                         int32_t data_offset,
+                                         const char* data);
 
     /**
      * @brief 根据二进制数据创建日志对象
@@ -367,7 +375,13 @@ class CLogManager {
     /**
      * @brief 新增一条数据更新的日志
      */
-    RC append_log(CLogType type, int32_t trx_id, int32_t table_id, const RID& rid, int32_t data_len, int32_t data_offset, const char* data);
+    RC append_log(CLogType type,
+                  int32_t trx_id,
+                  int32_t table_id,
+                  const RID& rid,
+                  int32_t data_len,
+                  int32_t data_offset,
+                  const char* data);
 
     /**
      * @brief 开启一个事务

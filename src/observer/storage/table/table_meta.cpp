@@ -28,8 +28,8 @@ static const Json::StaticString FIELD_FIELDS("fields");
 static const Json::StaticString FIELD_INDEXES("indexes");
 
 TableMeta::TableMeta(const TableMeta& other)
-    : table_id_(other.table_id_), name_(other.name_), fields_(other.fields_),
-      indexes_(other.indexes_), record_size_(other.record_size_) {}
+    : table_id_(other.table_id_), name_(other.name_), fields_(other.fields_), indexes_(other.indexes_),
+      record_size_(other.record_size_) {}
 
 void TableMeta::swap(TableMeta& other) noexcept {
     name_.swap(other.name_);
@@ -38,18 +38,14 @@ void TableMeta::swap(TableMeta& other) noexcept {
     std::swap(record_size_, other.record_size_);
 }
 
-RC TableMeta::init(int32_t table_id,
-                   const char* name,
-                   int field_num,
-                   const AttrInfoSqlNode attributes[]) {
+RC TableMeta::init(int32_t table_id, const char* name, int field_num, const AttrInfoSqlNode attributes[]) {
     if (common::is_blank(name)) {
         LOG_ERROR("Name cannot be empty");
         return RC::INVALID_ARGUMENT;
     }
 
     if (field_num <= 0 || nullptr == attributes) {
-        LOG_ERROR("Invalid argument. name=%s, field_num=%d, attributes=%p", name, field_num,
-                  attributes);
+        LOG_ERROR("Invalid argument. name=%s, field_num=%d, attributes=%p", name, field_num, attributes);
         return RC::INVALID_ARGUMENT;
     }
 
@@ -61,11 +57,11 @@ RC TableMeta::init(int32_t table_id,
     if (trx_fields != nullptr) {
         trx_field_num = static_cast<int>(trx_fields->size());
     }
-    int sys_field_num = trx_field_num + 1;  // _null
+    int sys_field_num = trx_field_num + 1;  // __null
     fields_.resize(field_num + sys_field_num);
 
-    // _null
-    int null_len = (sys_field_num + field_num + 7) / 8;
+    // __null
+    int null_len = (sys_field_num + field_num + 7) / 8;  // one field one bit
     fields_[0] = FieldMeta("__null", CHARS, 0, null_len, false, false);
     field_offset += null_len;
 
@@ -73,20 +69,18 @@ RC TableMeta::init(int32_t table_id,
         // trx_fields
         for (size_t i = 0; i < trx_fields->size(); i++) {
             const FieldMeta& field_meta = (*trx_fields)[i];
-            fields_[i + 1] = FieldMeta(field_meta.name(), field_meta.type(), field_offset,
-                                       field_meta.len(), false /*visible*/, field_meta.nullable());
+            fields_[i + 1] = FieldMeta(field_meta.name(), field_meta.type(), field_offset, field_meta.len(),
+                                       false /*visible*/, field_meta.nullable());
             field_offset += field_meta.len();
         }
     }
 
     for (int i = 0; i < field_num; i++) {
         const AttrInfoSqlNode& attr_info = attributes[i];
-        rc =
-            fields_[i + sys_field_num].init(attr_info.name.c_str(), attr_info.type, field_offset,
-                                            attr_info.length, true /*visible*/, attr_info.nullable);
+        rc = fields_[i + sys_field_num].init(attr_info.name.c_str(), attr_info.type, field_offset, attr_info.length,
+                                             true /*visible*/, attr_info.nullable);
         if (rc != RC::SUCCESS) {
-            LOG_ERROR("Failed to init field meta. table name=%s, field name: %s", name,
-                      attr_info.name.c_str());
+            LOG_ERROR("Failed to init field meta. table name=%s, field name: %s", name, attr_info.name.c_str());
             return rc;
         }
 
@@ -113,6 +107,7 @@ const char* TableMeta::name() const {
 const FieldMeta* TableMeta::null_field() const {
     return &fields_[0];
 }
+
 const std::pair<const FieldMeta*, int> TableMeta::trx_fields() const {
     return std::pair<const FieldMeta*, int>{fields_.data() + 1, trx_field_num()};
 }
@@ -268,8 +263,7 @@ int TableMeta::deserialize(std::istream& is) {
 
     const Json::Value& fields_value = table_value[FIELD_FIELDS];
     if (!fields_value.isArray() || fields_value.size() <= 0) {
-        LOG_ERROR("Invalid table meta. fields is not array, json value=%s",
-                  fields_value.toStyledString().c_str());
+        LOG_ERROR("Invalid table meta. fields is not array, json value=%s", fields_value.toStyledString().c_str());
         return -1;
     }
 
@@ -287,9 +281,7 @@ int TableMeta::deserialize(std::istream& is) {
         }
     }
 
-    auto comparator = [](const FieldMeta& f1, const FieldMeta& f2) {
-        return f1.offset() < f2.offset();
-    };
+    auto comparator = [](const FieldMeta& f1, const FieldMeta& f2) { return f1.offset() < f2.offset(); };
     std::sort(fields.begin(), fields.end(), comparator);
 
     table_id_ = table_id;
@@ -300,8 +292,7 @@ int TableMeta::deserialize(std::istream& is) {
     const Json::Value& indexes_value = table_value[FIELD_INDEXES];
     if (!indexes_value.empty()) {
         if (!indexes_value.isArray()) {
-            LOG_ERROR("Invalid table meta. indexes is not array, json value=%s",
-                      fields_value.toStyledString().c_str());
+            LOG_ERROR("Invalid table meta. indexes is not array, json value=%s", fields_value.toStyledString().c_str());
             return -1;
         }
         const int index_num = indexes_value.size();

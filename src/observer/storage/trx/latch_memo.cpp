@@ -144,7 +144,8 @@ void LatchMemo::release() {
 }
 
 void LatchMemo::release_to(int point) {
-    ASSERT(point >= 0 && point <= static_cast<int>(items_.size()), "invalid memo point. point=%d, items size=%d", point, static_cast<int>(items_.size()));
+    ASSERT(point >= 0 && point <= static_cast<int>(items_.size()), "invalid memo point. point=%d, items size=%d", point,
+           static_cast<int>(items_.size()));
 
     auto iter = items_.begin();
     for (int i = point - 1; i >= 0; i--, ++iter) {
