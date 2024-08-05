@@ -577,7 +577,7 @@ insert_value:
     {
       Value tmp;
       if(!exp2value($2, tmp)) {
-        yyerror(&@$, sql_string, sql_result, scanner, "error");
+        yyerror(&@$, sql_string, sql_result, scanner, "exp2value error");
         YYERROR;
       }
       if ($3 != nullptr) {
@@ -860,7 +860,10 @@ expression_list:
     }
     ;
 expression:
-    expression '+' expression {
+    /**/ {
+      $$ = nullptr;
+    }
+    |expression '+' expression {
       $$ = create_arithmetic_expression(ArithmeticExpr::Type::ADD, $1, $3, sql_string, &@$);
     }
     | expression '-' expression {
@@ -908,6 +911,11 @@ expression:
 aggr_func_expr:
     ID LBRACE expression RBRACE
     {
+      if($3 == nullptr) {
+        yyerror(&@$, sql_string, sql_result, scanner, "only support count(*)");
+        YYERROR;
+      }
+
       Expression* rhs = $3;
       if ($3->type() == ExprType::FIELD) {
         FieldExpr* field_expr = static_cast<FieldExpr*>($3);
@@ -923,6 +931,11 @@ aggr_func_expr:
       }
       $$ = new AggrFuncExpr(get_aggr_func_type($1), rhs);
       $$->set_name(token_name(sql_string, &@$));
+    }
+    | ID LBRACE expression_list RBRACE 
+    {
+        yyerror(&@$, sql_string, sql_result, scanner, "only support count(*)");
+        YYERROR;
     }
     ;
 sys_func_type:

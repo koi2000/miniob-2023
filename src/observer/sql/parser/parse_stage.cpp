@@ -52,6 +52,9 @@ RC ParseStage::handle_request(SQLStageEvent* sql_event) {
         if (sql_node->error.error_msg == "date invaid") {
             sql_result->set_return_code(RC::INTERNAL);
             return RC::INTERNAL;
+        } else if (sql_node->error.error_msg == "only support count(*)") {
+            sql_result->set_return_code(RC::INTERNAL);
+            return RC::INTERNAL;
         } else {
             // set error information to event
             rc = RC::SQL_SYNTAX;
