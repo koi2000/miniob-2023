@@ -2,8 +2,11 @@
 ./bin/observer -f ../etc/observer.ini -P cli
 ./bin/obclient -p 6789
 
+cmake -DDEBUG=ON .. && make -j32
+
 cd /home/koi/course/miniob/miniob-2023/src/observer/sql/parser && bash gen_parser.sh
 
 cd /home/koi/course/miniob/miniob-2023/test/case
 python3 miniob_test.py
 python3 miniob_test.py --test-cases=basic
+python3 /home/koi/course/miniob/miniob-2023/test/case/miniob_test.py --test-cases=primary-join-tables

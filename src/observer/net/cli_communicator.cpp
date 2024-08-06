@@ -23,7 +23,7 @@ See the Mulan PSL v2 for more details. */
 #    include "readline/readline.h"
 #endif
 
-#define MAX_MEM_BUFFER_SIZE 8192
+#define MAX_MEM_BUFFER_SIZE 8192 * 50
 #define PORT_DEFAULT 6789
 
 using namespace common;
@@ -85,7 +85,8 @@ bool is_exit_command(const char* cmd) {
 char* read_command() {
     const char* prompt_str = "miniob > ";
     char* input_command = nullptr;
-    for (input_command = my_readline(prompt_str); common::is_blank(input_command); input_command = my_readline(prompt_str)) {
+    for (input_command = my_readline(prompt_str); common::is_blank(input_command);
+         input_command = my_readline(prompt_str)) {
         free(input_command);
         input_command = nullptr;
     }

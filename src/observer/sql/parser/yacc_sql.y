@@ -860,7 +860,7 @@ expression_list:
     }
     ;
 expression:
-    /**/ {
+    /* */ {
       $$ = nullptr;
     }
     |expression '+' expression {
