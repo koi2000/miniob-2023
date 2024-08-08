@@ -34,6 +34,7 @@ public:
 public:
   DoubleWritePageKey key;
   int32_t            page_index = -1; /// 页面在double write buffer文件中的页索引
+  bool               valid = true; /// 表示页面是否有效，在页面被删除时，需要同时标记磁盘上的值。
   Page               page;
 
   static const int32_t SIZE;
@@ -55,10 +56,6 @@ DiskDoubleWriteBuffer::DiskDoubleWriteBuffer(BufferPoolManager &bp_manager, int 
 DiskDoubleWriteBuffer::~DiskDoubleWriteBuffer()
 {
   flush_page();
-
-  for (auto &node : dblwr_pages_) {
-    delete node.second;
-  }
   close(file_desc_);
 }
 
@@ -88,6 +85,8 @@ RC DiskDoubleWriteBuffer::flush_page()
     if (rc != RC::SUCCESS) {
       return rc;
     }
+    pair.second->valid = false;
+    write_page_internal(pair.second);
     delete pair.second;
   }
 
@@ -166,6 +165,12 @@ RC DiskDoubleWriteBuffer::write_page_internal(DoubleWritePage *page)
 RC DiskDoubleWriteBuffer::write_page(DoubleWritePage *dblwr_page)
 {
   DiskBufferPool *disk_buffer = nullptr;
+  // skip invalid page
+  if (!dblwr_page->valid) {
+    LOG_TRACE("double write buffer write page invalid. buffer_pool_id:%d,page_num:%d,lsn=%d",
+              dblwr_page->key.buffer_pool_id, dblwr_page->key.page_num, dblwr_page->page.lsn);
+    return RC::SUCCESS;
+  }
   RC rc = bp_manager_.get_buffer_pool(dblwr_page->key.buffer_pool_id, disk_buffer);
   ASSERT(OB_SUCC(rc) && disk_buffer != nullptr, "failed to get disk buffer pool of %d", dblwr_page->key.buffer_pool_id);
 
@@ -222,6 +227,8 @@ RC DiskDoubleWriteBuffer::clear_pages(DiskBufferPool *buffer_pool)
                buffer_pool->filename(), dbl_page->key.page_num, strrc(rc));
       break;
     }
+    dbl_page->valid = false;
+    write_page_internal(dbl_page);
   }
 
   for_each(spec_pages.begin(), spec_pages.end(), [](DoubleWritePage *dbl_page) { delete dbl_page; });
