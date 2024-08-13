@@ -200,7 +200,7 @@ RC LogicalPlanGenerator::create_plan(SelectStmt* select_stmt, unique_ptr<Logical
         std::vector<unique_ptr<OrderByUnit>> order_units;
         for (auto& expr : group_fields) {
             order_units.emplace_back(
-                std::make_unique<OrderByUnit>(expr->deep_copy().release(), true));  // 这里指针需要深拷贝一份给 order by
+                std::make_unique<OrderByUnit>(expr->deep_copy().release(), true));  //这里指针需要深拷贝一份给 order by
         }
 
         //  2 .需要将 groupy_oper 中的 field_expr ,和 groupby  后的expr  复制一份传递给 orderby 算子
@@ -339,6 +339,19 @@ RC LogicalPlanGenerator::create_plan(OrderByStmt* order_by_stmt, unique_ptr<Logi
     return RC::SUCCESS;
 }
 
+/*
+RC LogicalPlanGenerator::create_plan(
+    FilterUnit *filter_unit, unique_ptr<LogicalOperator> &logical_operator)
+{
+  std::vector<unique_ptr<Expression>> cmp_exprs;
+  ComparisonExpr *cmp_expr = new ComparisonExpr(filter_unit->comp(),  std::move(filter_unit->left()),
+std::move(filter_unit->right())); cmp_exprs.emplace_back(cmp_expr);
+
+  logical_operator = cmp_exprs2predicate_logic_oper(std::move(cmp_exprs));
+  return RC::SUCCESS;
+}
+*/
+
 RC LogicalPlanGenerator::create_plan(InsertStmt* insert_stmt, unique_ptr<LogicalOperator>& logical_operator) {
     Table* table = insert_stmt->table();
     vector<vector<Value>> values;
@@ -420,12 +433,14 @@ RC LogicalPlanGenerator::create_plan(UpdateStmt* update_stmt, unique_ptr<Logical
         return RC::SUCCESS;
     };
     for (auto& value : update_stmt->values()) {
+        rc = process_sub_query(value);
         if (RC::SUCCESS != rc) {
             return rc;
         }
     }
     unique_ptr<LogicalOperator> update_oper(
         new UpdateLogicalOperator(table, std::move(update_stmt->values()), update_stmt->update_fields()));
+
     if (predicate_oper) {
         predicate_oper->add_child(std::move(table_get_oper));
         update_oper->add_child(std::move(predicate_oper));

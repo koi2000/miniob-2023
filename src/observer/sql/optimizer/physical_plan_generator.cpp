@@ -105,7 +105,7 @@ RC PhysicalPlanGenerator::create(LogicalOperator& logical_operator, unique_ptr<P
 }
 
 RC PhysicalPlanGenerator::create_plan(TableGetLogicalOperator& table_get_oper, unique_ptr<PhysicalOperator>& oper) {
-    vector<unique_ptr<Expression>>& predicates = table_get_oper.predicates();  // 谓词下推这里才会有内容
+    vector<unique_ptr<Expression>>& predicates = table_get_oper.predicates();  //谓词下推这里才会有内容
     // 看看是否有可以用于索引查找的表达式
     Table* table = table_get_oper.table();
 

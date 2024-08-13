@@ -1,5 +1,7 @@
 常用命令
 ./bin/observer -f ../etc/observer.ini -P cli
+
+./bin/observer -f ../etc/observer.ini -p 6789
 ./bin/obclient -p 6789
 
 cmake -DDEBUG=ON .. && make -j32
