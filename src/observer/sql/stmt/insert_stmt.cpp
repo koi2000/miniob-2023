@@ -67,7 +67,6 @@ RC InsertStmt::check_full_rows(Table* table, const InsertSqlNode& inserts, std::
             LOG_WARN("schema mismatch. value num=%d, field num in schema=%d", value_num, field_num);
             return RC::SCHEMA_FIELD_MISSING;
         }
-
         // check fields type
         for (int i = 0; i < field_num; i++) {
             const FieldMeta* field_meta = table_meta.field(i + sys_field_num);
@@ -85,6 +84,8 @@ RC InsertStmt::check_full_rows(Table* table, const InsertSqlNode& inserts, std::
                 } else if (const_cast<Value&>(values[i]).typecast(field_type) != RC::SUCCESS) {
                     LOG_WARN("field type mismatch. table=%s, field=%s, field type=%d, value_type=%d", table->name(),
                              field_meta->name(), field_type, value_type);
+                    return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+                } else {
                     return RC::SCHEMA_FIELD_TYPE_MISMATCH;
                 }
             }

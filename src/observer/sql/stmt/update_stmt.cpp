@@ -13,7 +13,10 @@ See the Mulan PSL v2 for more details. */
 //
 
 #include "sql/stmt/update_stmt.h"
-
+#include "common/log/log.h"
+#include "sql/stmt/select_stmt.h"
+#include "storage/db/db.h"
+#include "storage/table/table.h"
 UpdateStmt::UpdateStmt(Table* table,
                        std::vector<FieldMeta> fields,
                        std::vector<std::unique_ptr<Expression>>&& values,
@@ -27,7 +30,7 @@ UpdateStmt::~UpdateStmt() {
     }
 }
 
-RC UpdateStmt::create(Db *db, UpdateSqlNode &update, Stmt *&stmt) {
+RC UpdateStmt::create(Db* db, UpdateSqlNode& update, Stmt*& stmt) {
     const char* table_name = update.relation_name.c_str();
     if (nullptr == db || nullptr == table_name) {
         LOG_WARN("invalid argument. db=%p, table_name=%p", db, table_name);
@@ -93,7 +96,7 @@ RC UpdateStmt::create(Db *db, UpdateSqlNode &update, Stmt *&stmt) {
                              update_field->name(), update_field->type(), val.attr_type());
                     return RC::SCHEMA_FIELD_TYPE_MISMATCH;
                 } else {
-                    valid = true;
+                    valid = false;
                 }
             } else {
                 if (RC rc = update.values[i]->traverse_check(check_field); RC::SUCCESS != rc) {

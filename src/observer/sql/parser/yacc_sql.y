@@ -119,6 +119,7 @@ AggrFuncType get_aggr_func_type(char *func_name)
         EXPLAIN
         IS
         NULL_T
+        NULLABLE
         INNER
         JOIN
         AS
@@ -486,7 +487,7 @@ attr_def:
 null_option:
     /* empty */
     {
-      $$ = true;
+      $$ = false;
     }
     | NULL_T
     {
