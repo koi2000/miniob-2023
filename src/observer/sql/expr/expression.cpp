@@ -297,7 +297,7 @@ RC ConjunctionExpr::get_value(const Tuple& tuple, Value& value) const {
 
     Value tmp_value;
     for (const unique_ptr<Expression>& expr : children_) {
-        rc = expr->get_value(tuple, tmp_value);  // 这边会进行表达式的计算
+        rc = expr->get_value(tuple, tmp_value);  //这边会进行表达式的计算
         if (rc != RC::SUCCESS) {
             LOG_WARN("failed to get value by child expression. rc=%s", strrc(rc));
             return rc;
@@ -462,7 +462,7 @@ RC FieldExpr::check_field(const std::unordered_map<std::string, Table*>& table_m
     const char* table_name = table_name_.c_str();
     const char* field_name = field_name_.c_str();
     Table* table = nullptr;
-    if (!common::is_blank(table_name)) {  // 表名不为空
+    if (!common::is_blank(table_name)) {  //表名不为空
         // check table
         auto iter = table_map.find(table_name);
         if (iter == table_map.end()) {
@@ -554,7 +554,7 @@ AttrType AggrFuncExpr::value_type() const {
 RC AggrFuncExpr::get_value(const Tuple& tuple, Value& cell) const {
     TupleCellSpec spec(name().c_str());
     // int index = 0;
-    //  spec.set_agg_type(get_aggr_func_type());
+    // spec.set_agg_type(get_aggr_func_type());
     if (is_first_) {
         bool& is_first_ref = const_cast<bool&>(is_first_);
         is_first_ref = false;
@@ -734,11 +734,11 @@ RC SysFuncExpr::check_param_type_and_number() const {
                 rc = RC::INVALID_ARGUMENT;
         } break;
         case SYS_FUNC_ROUND: {
-            // 参数可以为一个或两个,第一个参数的结果类型 必须为 floats 或 double
+            //参数可以为一个或两个,第一个参数的结果类型 必须为 floats 或 double
             if ((params_.size() != 1 && params_.size() != 2) ||
                 (params_[0]->value_type() != FLOATS && params_[0]->value_type() != DOUBLES))
                 rc = RC::INVALID_ARGUMENT;
-            // 如果有第二个参数，则类型必须为 INT
+            //如果有第二个参数，则类型必须为 INT
             if (params_.size() == 2) {
                 if (params_[1]->value_type() != INTS) {
                     rc = RC::INVALID_ARGUMENT;
