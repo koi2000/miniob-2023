@@ -96,7 +96,7 @@ RC UpdateStmt::create(Db* db, UpdateSqlNode& update, Stmt*& stmt) {
                              update_field->name(), update_field->type(), val.attr_type());
                     return RC::SCHEMA_FIELD_TYPE_MISMATCH;
                 } else {
-                    valid = false;
+                    valid = true;
                 }
             } else {
                 if (RC rc = update.values[i]->traverse_check(check_field); RC::SUCCESS != rc) {

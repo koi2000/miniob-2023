@@ -13,3 +13,35 @@ python3 miniob_test.py
 python3 miniob_test.py --test-cases=basic
 python3 /home/koi/course/miniob/miniob-2023/test/case/miniob_test.py --test-cases=primary-join-tables
 python3 /home/koi/course/miniob/miniob-2023/test/case/miniob_test.py --test-cases=primary-complex-sub-query
+
+UPDATE Update_select_t2 SET t_name=220,col1=874.12 WHERE id=1;
+- SUCCESS
++ FAILURE
+-- below are some requests executed before(partial) --
+-- init data
+CREATE TABLE Update_select_t1(id int, t_name char(10), col1 int, col2 int);
+CREATE TABLE Update_select_t2(id int, t_name char(10), col1 int, col2 int);
+insert into Update_select_t1 VALUES (9, 'BI5HODC', 9, 8);
+insert into Update_select_t1 VALUES (1, 'XFCLZZP', 3, 2);
+insert into Update_select_t1 VALUES (8, 'SG6QL', 8, 6);
+...
+-- update a row
+UPDATE Update_select_t1 SET t_name='OX2', col2=9 WHERE id=2;
+SELECT * FROM Update_select_t1;
+UPDATE Update_select_t1 SET col1=2, col2=(select Update_select_t2.col2 from Update_select_t2 where Update_select_t2.id=1) WHERE id=4;
+SELECT * FROM Update_select_t1;
+-- update rows
+UPDATE Update_select_t1 SET col1=7, col2=5 WHERE col2=6;
+SELECT * FROM Update_select_t1;
+-- update without condition
+UPDATE Update_select_t2 SET t_name=(select Update_select_t1.t_name from Update_select_t1 where Update_select_t1.id=2);
+SELECT * FROM Update_select_t2;
+UPDATE Update_select_t2 SET col1=5,col2=3;
+SELECT * FROM Update_select_t2;
+-- update in vain
+UPDATE Update_select_t2 SET t_name='VH7B',col1=276 where col1=105;
+-- aggregation
+UPDATE Update_select_t2 SET col1=(select max(Update_select_t1.col2) from Update_select_t1),col2=(select max(Update_select_t1.col1) from Update_select_t1) where id=2;
+SELECT * FROM Update_select_t2;
+UPDATE Update_select_t2 SET col1=(select Update_select_t1.col1 from Update_select_t1 where Update_select_t1.id=9),col2=(select Update_select_t1.col2 from Update_select_t1 where Update_select_t1.id=1) where id=1;
+SELECT * FROM Update_select_t2;
