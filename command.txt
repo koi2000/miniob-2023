@@ -12,3 +12,4 @@ cd /home/koi/course/miniob/miniob-2023/test/case
 python3 miniob_test.py
 python3 miniob_test.py --test-cases=basic
 python3 /home/koi/course/miniob/miniob-2023/test/case/miniob_test.py --test-cases=primary-join-tables
+python3 /home/koi/course/miniob/miniob-2023/test/case/miniob_test.py --test-cases=primary-complex-sub-query
