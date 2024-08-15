@@ -2069,7 +2069,7 @@ yyreduce:
   case 48:
 #line 491 "yacc_sql.y"
     {
-      (yyval.boolean) = false;
+      (yyval.boolean) = true;
     }
 #line 2075 "yacc_sql.cpp"
     break;

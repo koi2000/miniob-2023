@@ -489,7 +489,7 @@ attr_def:
 null_option:
     /* empty */
     {
-      $$ = false;
+      $$ = true;
     }
     | NULL_T
     {
