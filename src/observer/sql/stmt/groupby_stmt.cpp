@@ -7,8 +7,8 @@
 #include "storage/table/table.h"
 
 RC GroupByStmt::create(Db* db,
-                       Table* default_table,
-                       std::unordered_map<std::string, Table*>* tables,
+                       BaseTable* default_table,
+                       std::unordered_map<std::string, BaseTable*>* tables,
                        const std::vector<Expression*>& groupby_expr,
                        GroupByStmt*& stmt,
                        std::vector<std::unique_ptr<AggrFuncExpr>>&& agg_exprs,

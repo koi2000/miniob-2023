@@ -41,7 +41,7 @@ RC DescTableExecutor::execute(SQLStageEvent* sql_event) {
     const char* table_name = desc_table_stmt->table_name().c_str();
 
     Db* db = session->get_current_db();
-    Table* table = db->find_table(table_name);
+    BaseTable* table = db->find_base_table(table_name);
     if (table != nullptr) {
         TupleSchema tuple_schema;
         tuple_schema.append_cell(TupleCellSpec("", "Field", "Field"));

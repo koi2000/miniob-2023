@@ -13,15 +13,17 @@ See the Mulan PSL v2 for more details. */
 //
 
 #include "sql/stmt/filter_stmt.h"
+#include "common/lang/defer.h"
 #include "common/lang/string.h"
 #include "common/log/log.h"
 #include "common/rc.h"
+#include "sql/stmt/select_stmt.h"
 #include "storage/db/db.h"
 #include "storage/table/table.h"
 
 RC FilterStmt::create(Db* db,
-                      Table* default_table,
-                      std::unordered_map<std::string, Table*>* tables,
+                      BaseTable* default_table,
+                      std::unordered_map<std::string, BaseTable*>* tables,
                       Expression* condition,
                       FilterStmt*& stmt) {
     RC rc = RC::SUCCESS;

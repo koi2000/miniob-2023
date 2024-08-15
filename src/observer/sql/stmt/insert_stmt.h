@@ -17,6 +17,7 @@ See the Mulan PSL v2 for more details. */
 #include "common/rc.h"
 #include "sql/stmt/stmt.h"
 
+class BaseTable;
 class Table;
 class Db;
 
@@ -27,7 +28,7 @@ class Db;
 class InsertStmt : public Stmt {
   public:
     InsertStmt() = default;
-    InsertStmt(Table* table, std::vector<std::vector<Value>>& values, int value_amount);
+    InsertStmt(BaseTable* table, std::vector<std::vector<Value>>& values, int value_amount);
 
     StmtType type() const override {
         return StmtType::INSERT;
@@ -37,7 +38,7 @@ class InsertStmt : public Stmt {
     static RC create(Db* db, const InsertSqlNode& insert_sql, Stmt*& stmt);
 
   public:
-    Table* table() const {
+    BaseTable* base_table() const {
         return table_;
     }
     const std::vector<std::vector<Value>>& values() const {
@@ -49,13 +50,14 @@ class InsertStmt : public Stmt {
 
   private:
     // 未指定列名
-    static RC check_full_rows(Table* table, const InsertSqlNode& inserts, std::vector<std::vector<Value>>& rows);
+    static RC check_full_rows(BaseTable* table, const InsertSqlNode& inserts, std::vector<std::vector<Value>>& rows);
 
     // 指定了列名
-    static RC check_incomplete_rows(Table* table, const InsertSqlNode& inserts, std::vector<std::vector<Value>>& rows);
+    static RC
+    check_incomplete_rows(BaseTable* table, const InsertSqlNode& inserts, std::vector<std::vector<Value>>& rows);
 
   private:
-    Table* table_ = nullptr;
+    BaseTable* table_ = nullptr;
     const std::vector<std::vector<Value>> values_;
     int value_amount_ = 0;  // 一行有多少列
 };

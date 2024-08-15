@@ -17,7 +17,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/db/db.h"
 #include "storage/table/table.h"
 
-InsertStmt::InsertStmt(Table* table, std::vector<std::vector<Value>>& values, int value_amount)
+InsertStmt::InsertStmt(BaseTable* table, std::vector<std::vector<Value>>& values, int value_amount)
     : table_(table), values_(values), value_amount_(value_amount) {}
 
 RC InsertStmt::create(Db* db, const InsertSqlNode& inserts, Stmt*& stmt) {
@@ -30,7 +30,7 @@ RC InsertStmt::create(Db* db, const InsertSqlNode& inserts, Stmt*& stmt) {
     }
 
     // check whether the table exists
-    Table* table = db->find_table(table_name);
+    BaseTable* table = db->find_base_table(table_name);
     if (nullptr == table) {
         LOG_WARN("no such table. db=%s, table_name=%s", db->name(), table_name);
         return RC::SCHEMA_TABLE_NOT_EXIST;
@@ -53,7 +53,7 @@ RC InsertStmt::create(Db* db, const InsertSqlNode& inserts, Stmt*& stmt) {
     return RC::SUCCESS;
 }
 
-RC InsertStmt::check_full_rows(Table* table, const InsertSqlNode& inserts, std::vector<std::vector<Value>>& rows) {
+RC InsertStmt::check_full_rows(BaseTable* table, const InsertSqlNode& inserts, std::vector<std::vector<Value>>& rows) {
     RC rc = RC::SUCCESS;
 
     const TableMeta& table_meta = table->table_meta();
@@ -67,6 +67,7 @@ RC InsertStmt::check_full_rows(Table* table, const InsertSqlNode& inserts, std::
             LOG_WARN("schema mismatch. value num=%d, field num in schema=%d", value_num, field_num);
             return RC::SCHEMA_FIELD_MISSING;
         }
+
         // check fields type
         for (int i = 0; i < field_num; i++) {
             const FieldMeta* field_meta = table_meta.field(i + sys_field_num);
@@ -84,8 +85,6 @@ RC InsertStmt::check_full_rows(Table* table, const InsertSqlNode& inserts, std::
                 } else if (const_cast<Value&>(values[i]).typecast(field_type) != RC::SUCCESS) {
                     LOG_WARN("field type mismatch. table=%s, field=%s, field type=%d, value_type=%d", table->name(),
                              field_meta->name(), field_type, value_type);
-                    return RC::SCHEMA_FIELD_TYPE_MISMATCH;
-                } else {
                     return RC::SCHEMA_FIELD_TYPE_MISMATCH;
                 }
             }
@@ -110,7 +109,7 @@ RC InsertStmt::check_full_rows(Table* table, const InsertSqlNode& inserts, std::
     return rc;
 }
 
-RC InsertStmt::check_incomplete_rows(Table* table,
+RC InsertStmt::check_incomplete_rows(BaseTable* table,
                                      const InsertSqlNode& inserts,
                                      std::vector<std::vector<Value>>& rows) {
     RC rc = RC::SUCCESS;

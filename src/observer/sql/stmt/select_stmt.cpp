@@ -40,7 +40,7 @@ SelectStmt::~SelectStmt() {
     }
 }
 
-static void wildcard_fields(const Table* table,
+static void wildcard_fields(const BaseTable* table,
                             const std::string& alias,
                             std::vector<std::unique_ptr<Expression>>& projects,
                             bool is_single_table) {
@@ -63,9 +63,9 @@ static void wildcard_fields(const Table* table,
 }
 
 RC SelectStmt::process_from_clause(Db* db,
-                                   std::vector<Table*>& tables,
+                                   std::vector<BaseTable*>& tables,
                                    std::unordered_map<std::string, std::string>& table_alias_map,
-                                   std::unordered_map<std::string, Table*>& table_map,
+                                   std::unordered_map<std::string, BaseTable*>& table_map,
                                    std::vector<InnerJoinSqlNode>& from_relations,
                                    std::vector<JoinTables>& join_tables) {
     std::unordered_set<std::string> table_alias_set;  // 检测别名是否有重复
@@ -79,14 +79,14 @@ RC SelectStmt::process_from_clause(Db* db,
             return RC::INVALID_ARGUMENT;
         }
 
-        Table* table = db->find_table(src_name.c_str());
+        BaseTable* table = db->find_base_table(src_name.c_str());
         if (nullptr == table) {
             LOG_WARN("no such table. db=%s, table_name=%s", db->name(), src_name.c_str());
             return RC::SCHEMA_TABLE_NOT_EXIST;
         }
 
         tables.push_back(table);
-        table_map.insert(std::pair<std::string, Table*>(src_name, table));
+        table_map.insert(std::pair<std::string, BaseTable*>(src_name, table));
         if (!alias.empty()) {
             // 需要考虑别名重复的问题
             // NOTE: 这里不能用 table_map 因为其中有 parent table
@@ -95,7 +95,7 @@ RC SelectStmt::process_from_clause(Db* db,
             }
             table_alias_set.insert(alias);
             table_alias_map.insert(std::pair<std::string, std::string>(src_name, alias));
-            table_map.insert(std::pair<std::string, Table*>(alias, table));
+            table_map.insert(std::pair<std::string, BaseTable*>(alias, table));
         }
         return RC::SUCCESS;
     };
@@ -165,7 +165,7 @@ RC SelectStmt::process_from_clause(Db* db,
 RC SelectStmt::create(Db* db,
                       SelectSqlNode& select_sql,
                       Stmt*& stmt,
-                      const std::unordered_map<std::string, Table*>& parent_table_map) {
+                      const std::unordered_map<std::string, BaseTable*>& parent_table_map) {
     if (nullptr == db) {
         LOG_WARN("invalid argument. db is null");
         return RC::INVALID_ARGUMENT;
@@ -174,9 +174,10 @@ RC SelectStmt::create(Db* db,
     // 1. 先处理 from clause 收集表信息
     // from 中的 table 有两个层级 第一级是笛卡尔积 第二级是 INNER JOIN
     // e.g. (t1 inner join t2 inner join t3, t4) -> (t1, t2, t3), (t4)
-    std::vector<Table*> tables;                                    // 收集所有 table 主要用于解析 select *
+    std::vector<BaseTable*> tables;                                // 收集所有 table 主要用于解析 select *
     std::unordered_map<std::string, std::string> table_alias_map;  // <table src name, table alias name>
-    std::unordered_map<std::string, Table*> table_map = parent_table_map;  // 收集所有 table 包括所有祖先查询的 table
+    std::unordered_map<std::string, BaseTable*> table_map =
+        parent_table_map;  // 收集所有 table 包括所有祖先查询的 table
     std::vector<JoinTables> join_tables;
     RC rc = process_from_clause(db, tables, table_alias_map, table_map, select_sql.relations, join_tables);
     if (OB_FAIL(rc)) {
@@ -189,7 +190,7 @@ RC SelectStmt::create(Db* db,
     // 要处理 *, *.*, t1.* 这种情况
     // 要 check field 判断**所有** FieldExpr 是否合法：有一个唯一对应的 table 即合法 不能没有表 也不能出现歧义
     std::vector<std::unique_ptr<Expression>> projects;
-    Table* default_table = nullptr;
+    BaseTable* default_table = nullptr;
     bool is_single_table = (tables.size() == 1);
     if (is_single_table) {
         default_table = tables[0];
@@ -229,7 +230,7 @@ RC SelectStmt::create(Db* db,
                 if (tables.empty() || !field_expr->alias().empty()) {
                     return RC::INVALID_ARGUMENT;  // not allow: select *; select * as xxx;
                 }
-                for (const Table* table : tables) {
+                for (const BaseTable* table : tables) {
                     if (table_alias_map.count(table->name())) {
                         wildcard_fields(table, table_alias_map[table->name()], projects, is_single_table);
                     } else {
@@ -243,7 +244,7 @@ RC SelectStmt::create(Db* db,
                     LOG_WARN("no such table in from list: %s", table_name);
                     return RC::SCHEMA_FIELD_MISSING;
                 }
-                Table* table = iter->second;
+                BaseTable* table = iter->second;
                 if (table_alias_map.count(table->name())) {
                     wildcard_fields(table, table_alias_map[table->name()], projects, is_single_table);
                 } else {
@@ -285,7 +286,7 @@ RC SelectStmt::create(Db* db,
         // 1. 提取 AggrFuncExpr 以及不在 AggrFuncExpr 中的 FieldExpr
         std::vector<std::unique_ptr<AggrFuncExpr>> aggr_exprs;
         // select 子句中出现的所有 fieldexpr 都需要传递收集起来,
-        std::vector<std::unique_ptr<FieldExpr>> field_exprs;  // 这个 vector 需要传递给 order by 算子
+        std::vector<std::unique_ptr<FieldExpr>> field_exprs;  //这个 vector 需要传递给 order by 算子
         std::vector<std::unique_ptr<Expression>>
             field_exprs_not_aggr;  // select 后的所有非 aggrexpr 的 field_expr,用来判断语句是否合法
         // 用于从 project exprs 中提取所有 aggr func exprs. e.g. min(c1 + 1) + 1
@@ -310,17 +311,17 @@ RC SelectStmt::create(Db* db,
         };
         // do extract
         for (auto& project : projects) {
-            project->traverse(collect_aggr_exprs);  // 提取所有 aggexpr
-            project->traverse(collect_field_exprs);  // 提取 select clause 中的所有 field_expr,传递给groupby stmt
+            project->traverse(collect_aggr_exprs);   //提取所有 aggexpr
+            project->traverse(collect_field_exprs);  //提取 select clause 中的所有 field_expr,传递给groupby stmt
             // project->traverse(collect_field_exprs, [](const Expression* expr) { return expr->type() !=
             // ExprType::AGGRFUNCTION; });
 
-            // 提取所有不在 aggexpr 中的 field_expr，用于语义检查
+            //提取所有不在 aggexpr 中的 field_expr，用于语义检查
             project->traverse(collect_exprs_not_aggexpr,
                               [](const Expression* expr) { return expr->type() != ExprType::AGGRFUNCTION; });
         }
-        // 针对 having 后的表达式，需要做和上面相同的三个提取过程
-        //  select id, max(score) from t_group_by group by id having count(*)>5;
+        //针对 having 后的表达式，需要做和上面相同的三个提取过程
+        // select id, max(score) from t_group_by group by id having count(*)>5;
         if (select_sql.having_conditions != nullptr) {
             rc = FilterStmt::create(db, default_table, &table_map, select_sql.having_conditions, having_filter_stmt);
             if (rc != RC::SUCCESS) {
@@ -329,8 +330,8 @@ RC SelectStmt::create(Db* db,
             }
             // a. create filter stmt 中 ，having 子句中的已经内容进行 check_filed 了,并且 如果是 agg_expr，就先取出来
             auto& filter_expr = having_filter_stmt->condition();
-            filter_expr->traverse(collect_aggr_exprs);  // 提取所有 aggexpr
-            filter_expr->traverse(collect_field_exprs);  // 提取 select clause 中的所有 field_expr,传递给groupby stmt
+            filter_expr->traverse(collect_aggr_exprs);  //提取所有 aggexpr
+            filter_expr->traverse(collect_field_exprs);  //提取 select clause 中的所有 field_expr,传递给groupby stmt
             // project->traverse(collect_field_exprs, [](const Expression* expr) { return expr->type() !=
             // ExprType::AGGRFUNCTION; }); 提取所有不在 aggexpr 中的 field_expr，用于语义检查
             filter_expr->traverse(collect_exprs_not_aggexpr,
@@ -365,7 +366,7 @@ RC SelectStmt::create(Db* db,
             std::vector<Expression*>& groupby_exprs = select_sql.groupby_exprs;
             auto check_expr_in_groupby_exprs = [&groupby_exprs](std::unique_ptr<Expression>& expr) {
                 for (auto tmp : groupby_exprs) {
-                    if (expr->name() == tmp->name())  // 通过表达式的名称进行判断
+                    if (expr->name() == tmp->name())  //通过表达式的名称进行判断
                         return true;
                 }
                 return false;

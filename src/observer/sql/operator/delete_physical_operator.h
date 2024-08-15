@@ -25,7 +25,7 @@ class DeleteStmt;
  */
 class DeletePhysicalOperator : public PhysicalOperator {
   public:
-    DeletePhysicalOperator(Table* table) : table_(table) {}
+    DeletePhysicalOperator(BaseTable* table) : table_(table) {}
 
     virtual ~DeletePhysicalOperator() = default;
 
@@ -37,11 +37,14 @@ class DeletePhysicalOperator : public PhysicalOperator {
     RC next() override;
     RC close() override;
 
+    RC delete_from_table();
+    RC delete_from_view();
+
     Tuple* current_tuple() override {
         return nullptr;
     }
 
   private:
-    Table* table_ = nullptr;
+    BaseTable* table_ = nullptr;
     Trx* trx_ = nullptr;
 };
