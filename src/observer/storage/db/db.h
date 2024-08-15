@@ -50,8 +50,8 @@ class Db {
     RC create_table(const char* table_name, int attribute_count, const AttrInfoSqlNode* attributes);
 
     Table* find_table(const char* table_name) const;
-    BaseTable* find_base_table(const char* table_name) const;
     Table* find_table(int32_t table_id) const;
+    BaseTable* find_base_table(const char* table_name) const;
 
     const char* name() const;
 
@@ -65,6 +65,7 @@ class Db {
 
     RC drop_table(const char* table_name);
 
+    // view相关
     RC create_view(const char* view_name,
                    bool allow_write,
                    const std::vector<AttrInfoSqlNode> attr_infos,

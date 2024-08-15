@@ -86,46 +86,44 @@ extern int yydebug;
     OR = 292,
     SET = 293,
     ON = 294,
-    LOAD = 295,
-    DATA = 296,
-    INFILE = 297,
-    EXPLAIN = 298,
-    IS = 299,
-    NULL_T = 300,
-    NULLABLE = 301,
-    INNER = 302,
-    JOIN = 303,
-    AS = 304,
-    IN = 305,
-    EXISTS = 306,
-    EQ = 307,
-    LT = 308,
-    GT = 309,
-    LE = 310,
-    GE = 311,
-    NE = 312,
-    NOT = 313,
-    LIKE = 314,
-    UNIQUE = 315,
-    AGGR_MAX = 316,
-    AGGR_MIN = 317,
-    AGGR_SUM = 318,
-    AGGR_AVG = 319,
-    AGGR_COUNT = 320,
-    LENGTH = 321,
-    ROUND = 322,
-    DATE_FORMAT = 323,
-    ORDER = 324,
-    GROUP = 325,
-    BY = 326,
-    ASC = 327,
-    HAVING = 328,
-    NUMBER = 329,
-    FLOAT = 330,
-    ID = 331,
-    SSS = 332,
-    DATE_STR = 333,
-    UMINUS = 334
+    LOAD_DATA = 295,
+    INFILE = 296,
+    EXPLAIN = 297,
+    IS = 298,
+    NULL_T = 299,
+    INNER = 300,
+    JOIN = 301,
+    AS = 302,
+    IN = 303,
+    EXISTS = 304,
+    EQ = 305,
+    LT = 306,
+    GT = 307,
+    LE = 308,
+    GE = 309,
+    NE = 310,
+    NOT = 311,
+    LIKE = 312,
+    UNIQUE = 313,
+    AGGR_MAX = 314,
+    AGGR_MIN = 315,
+    AGGR_SUM = 316,
+    AGGR_AVG = 317,
+    AGGR_COUNT = 318,
+    LENGTH = 319,
+    ROUND = 320,
+    DATE_FORMAT = 321,
+    ORDER = 322,
+    GROUP = 323,
+    BY = 324,
+    ASC = 325,
+    HAVING = 326,
+    NUMBER = 327,
+    FLOAT = 328,
+    ID = 329,
+    SSS = 330,
+    DATE_STR = 331,
+    UMINUS = 332
   };
 #endif
 
@@ -133,7 +131,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 153 "yacc_sql.y"
+#line 152 "yacc_sql.y"
 
   ParsedSqlNode *                   sql_node;
   Value *                           value;
@@ -158,7 +156,7 @@ union YYSTYPE
   float                             floats;
   bool                              boolean;
 
-#line 162 "yacc_sql.hpp"
+#line 160 "yacc_sql.hpp"
 
 };
 typedef union YYSTYPE YYSTYPE;

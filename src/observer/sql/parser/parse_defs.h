@@ -206,6 +206,15 @@ struct DropIndexSqlNode {
 };
 
 /**
+ * @brief 描述一个create view语句
+ * @ingroup SQLParser
+ */
+struct CreateViewSqlNode {
+    std::string view_name;
+    std::vector<std::string> col_names;  // view列到原始表的映射
+};
+
+/**
  * @brief 描述一个show index语句
  * @ingroup SQLParser
  */
@@ -220,15 +229,6 @@ struct ShowIndexSqlNode {
  */
 struct DescTableSqlNode {
     std::string relation_name;
-};
-
-/**
- * @brief 描述一个create view语句
- * @ingroup SQLParser
- */
-struct CreateViewSqlNode {
-    std::string view_name;
-    std::vector<std::string> col_names;  // view列到原始表的映射
 };
 
 /**
@@ -321,9 +321,9 @@ class ParsedSqlNode {
     UpdateSqlNode update;
     CreateTableSqlNode create_table;
     DropTableSqlNode drop_table;
-    CreateViewSqlNode create_view;
     CreateIndexSqlNode create_index;
     DropIndexSqlNode drop_index;
+    CreateViewSqlNode create_view;
     ShowIndexSqlNode show_index;
     DescTableSqlNode desc_table;
     LoadDataSqlNode load_data;

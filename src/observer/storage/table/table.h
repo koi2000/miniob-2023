@@ -48,9 +48,9 @@ class Table : public BaseTable {
      * @param attributes 字段
      */
     RC create(int32_t table_id,
-              const char* path,
-              const char* name,
-              const char* base_dir,
+              const char* path,      // .table
+              const char* name,      // table_name
+              const char* base_dir,  // db/sys/
               int attribute_count,
               const AttrInfoSqlNode attributes[]);
 
@@ -81,7 +81,7 @@ class Table : public BaseTable {
     RC visit_record(const RID& rid, bool readonly, std::function<void(Record&)> visitor);
     RC get_record(const RID& rid, Record& record);
 
-    // 将该record的attr_name列更新为 value
+    //将该record的attr_name列更新为 value
     RC update_record(Record& record, const char* attr_name, Value* value);
     RC update_record(Record& record, const std::vector<std::string>& attr_names, const std::vector<Value*>& values);
     RC update_record(Record& old_record, Record& new_record);
@@ -105,8 +105,8 @@ class Table : public BaseTable {
         return table_meta_.table_id();
     }
     virtual const char* name() const;
-
     virtual const TableMeta& table_meta() const;
+
     const std::vector<Index*>& indexes() const {
         return indexes_;
     }
