@@ -34,7 +34,8 @@ RC FieldExpr::get_value(const Tuple& tuple, Value& value) const {
     if (is_first_) {
         bool& is_first_ref = const_cast<bool&>(is_first_);
         is_first_ref = false;
-        return tuple.find_cell(TupleCellSpec(table_name(), field_name()), value, const_cast<int&>(index_));
+        return tuple.find_cell(TupleCellSpec(table_name(), field_name(), alias().c_str()), value,
+                               const_cast<int&>(index_));
     } else {
         return tuple.cell_at(index_, value);
     }
@@ -478,8 +479,9 @@ RC FieldExpr::check_field(const std::unordered_map<std::string, BaseTable*>& tab
         table = default_table ? default_table : tables[0];
     }
     ASSERT(nullptr != table, "ERROR!");
+    std::string tn_bak = std::string(table_name);
     // set table_name
-    table_name = table->name();
+    const_cast<std::string&>(table_name_) = std::string(table->name());
     // check field
     const FieldMeta* field_meta = table->table_meta().field(field_name);
     if (nullptr == field_meta) {
@@ -500,12 +502,13 @@ RC FieldExpr::check_field(const std::unordered_map<std::string, BaseTable*>& tab
         if (is_single_table) {
             set_alias(field_name_);
         } else {
-            auto iter = table_alias_map.find(table_name_);
-            if (iter != table_alias_map.end()) {
-                set_alias(iter->second + "." + field_name_);
-            } else {
-                set_alias(table_name_ + "." + field_name_);
-            }
+            set_alias(std::string(tn_bak) + "." + field_name_);
+            // auto iter = table_alias_map.find(table_name_);
+            // if (iter != table_alias_map.end()) {
+            //   set_alias(iter->second + "." + field_name_);
+            // } else {
+            //   set_alias(table_name_ + "." + field_name_);
+            // }
         }
     }
     return RC::SUCCESS;

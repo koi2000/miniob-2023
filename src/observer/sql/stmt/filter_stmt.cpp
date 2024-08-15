@@ -23,7 +23,8 @@ See the Mulan PSL v2 for more details. */
 
 RC FilterStmt::create(Db* db,
                       BaseTable* default_table,
-                      std::unordered_map<std::string, BaseTable*>* tables,
+                      std::unordered_map<std::string, BaseTable*>* table_map,
+                      const std::vector<BaseTable*>& tables,
                       Expression* condition,
                       FilterStmt*& stmt) {
     RC rc = RC::SUCCESS;
@@ -32,7 +33,7 @@ RC FilterStmt::create(Db* db,
         return rc;
     }
 
-    auto check_condition_expr = [&db, &tables, &default_table](Expression* expr) {
+    auto check_condition_expr = [&db, &table_map, &tables, &default_table](Expression* expr) {
         // TODO 聚集函数会出现在 having condition 中
         if (expr->type() == ExprType::SYSFUNCTION) {
             SysFuncExpr* sysfunc_expr = static_cast<SysFuncExpr*>(expr);
@@ -40,14 +41,13 @@ RC FilterStmt::create(Db* db,
         }
         if (expr->type() == ExprType::FIELD) {
             FieldExpr* field_expr = static_cast<FieldExpr*>(expr);
-            // default_table 是有效的 所以 table* vector 可以为空
             // 条件表达式检查时可以不用 table_alias_map 因为不需要设置它的 alias
-            return field_expr->check_field(*tables, {}, default_table, {});
+            return field_expr->check_field(*table_map, tables, default_table, {});
         }
         if (expr->type() == ExprType::SUBQUERY) {
             // 条件表达式里才有子查询
             SubQueryExpr* subquery_expr = static_cast<SubQueryExpr*>(expr);
-            return subquery_expr->generate_select_stmt(db, *tables);
+            return subquery_expr->generate_select_stmt(db, *table_map);
         }
         if (expr->type() == ExprType::COMPARISON) {
             ComparisonExpr* cmp_expr = static_cast<ComparisonExpr*>(expr);

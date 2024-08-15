@@ -42,7 +42,8 @@ class FilterStmt {
   public:
     static RC create(Db* db,
                      BaseTable* default_table,
-                     std::unordered_map<std::string, BaseTable*>* tables,
+                     std::unordered_map<std::string, BaseTable*>* table_map,
+                     const std::vector<BaseTable*>& tables,
                      Expression* condition,
                      FilterStmt*& stmt);
 
