@@ -517,7 +517,7 @@ create_view_stmt:
     {
         $$ = $5;
         $$->flag = SCF_CREATE_VIEW;
-        $$->create_view_stmt.view_name = $3;
+        $$->create_view.view_name = $3;
         free($3);
     }
     | CREATE VIEW ID LBRACE ID idx_col_list RBRACE AS select_stmt
