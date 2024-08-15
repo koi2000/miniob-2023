@@ -9,7 +9,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details. */
 
 //
-// Created by Wangyunlai on 2023/6/14.
+// Created by Wangyunlai on 2023/6/13.
 //
 
 #pragma once
@@ -22,7 +22,7 @@ See the Mulan PSL v2 for more details. */
 class Db;
 
 /**
- * @brief 描述表的语句
+ * @brief 表示删除表的语句
  * @ingroup Statement
  * @details 虽然解析成了stmt，但是与原始的SQL解析后的数据也差不多
  */
@@ -39,7 +39,7 @@ class DropTableStmt : public Stmt {
         return table_name_;
     }
 
-    static RC create(Db* db, const DropTableSqlNode& desc_table, Stmt*& stmt);
+    static RC create(Db* db, const DropTableSqlNode& create_table, Stmt*& stmt);
 
   private:
     std::string table_name_;

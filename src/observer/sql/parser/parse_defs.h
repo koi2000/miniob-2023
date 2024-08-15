@@ -70,6 +70,8 @@ enum CompOp {
 struct OrderBySqlNode {
     Expression* expr = nullptr;
     bool is_asc;  // true 为升序
+
+    void deep_copy(const OrderBySqlNode& src);
 };
 
 /**
@@ -81,6 +83,8 @@ struct InnerJoinSqlNode {
     std::pair<std::string, std::string> base_relation;
     std::vector<std::pair<std::string, std::string>> join_relations;
     std::vector<Expression*> conditions;
+
+    void deep_copy(const InnerJoinSqlNode& src);
 };
 
 /**
@@ -98,6 +102,8 @@ struct SelectSqlNode {
     std::vector<OrderBySqlNode> orderbys;     ///< attributes in order clause
     std::vector<Expression*> groupby_exprs;   ///< groupby
     Expression* having_conditions = nullptr;  ///< groupby having
+
+    void deep_copy(const SelectSqlNode& src);
 };
 
 /**
@@ -200,6 +206,15 @@ struct DropIndexSqlNode {
 };
 
 /**
+ * @brief 描述一个create view语句
+ * @ingroup SQLParser
+ */
+struct CreateViewSqlNode {
+    std::string view_name;
+    std::vector<std::string> col_names;  // view列到原始表的映射
+};
+
+/**
  * @brief 描述一个show index语句
  * @ingroup SQLParser
  */
@@ -276,6 +291,7 @@ enum SqlCommandFlag {
     SCF_DROP_TABLE,
     SCF_CREATE_INDEX,
     SCF_DROP_INDEX,
+    SCF_CREATE_VIEW,
     SCF_SYNC,
     SCF_SHOW_INDEX,
     SCF_SHOW_TABLES,
@@ -307,6 +323,7 @@ class ParsedSqlNode {
     DropTableSqlNode drop_table;
     CreateIndexSqlNode create_index;
     DropIndexSqlNode drop_index;
+    CreateViewSqlNode create_view;
     ShowIndexSqlNode show_index;
     DescTableSqlNode desc_table;
     LoadDataSqlNode load_data;

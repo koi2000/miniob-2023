@@ -18,6 +18,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/parser/parse.h"
 #include <vector>
 
+class BaseTable;
 class InsertStmt;
 
 /**
@@ -26,7 +27,7 @@ class InsertStmt;
  */
 class InsertPhysicalOperator : public PhysicalOperator {
   public:
-    InsertPhysicalOperator(Table* table, std::vector<std::vector<Value>>&& values);
+    InsertPhysicalOperator(BaseTable* base_table, std::vector<std::vector<Value>>&& values);
 
     virtual ~InsertPhysicalOperator() = default;
 
@@ -43,6 +44,11 @@ class InsertPhysicalOperator : public PhysicalOperator {
     }
 
   private:
-    Table* table_ = nullptr;
+    RC insert_into_table(Trx* trx);
+    RC insert_into_view(Trx* trx);
+    RC construct_row_values();
+
+  private:
+    BaseTable* base_table_ = nullptr;
     std::vector<std::vector<Value>> values_;
 };

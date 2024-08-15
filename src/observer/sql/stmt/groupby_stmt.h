@@ -42,8 +42,8 @@ class GroupByStmt : Stmt {
 
   public:
     static RC create(Db* db,
-                     Table* default_table,
-                     std::unordered_map<std::string, Table*>* tables,
+                     BaseTable* default_table,
+                     std::unordered_map<std::string, BaseTable*>* tables,
                      const std::vector<Expression*>& groupby_expr,
                      GroupByStmt*& stmt,
                      std::vector<std::unique_ptr<AggrFuncExpr>>&& agg_exprs,
@@ -53,4 +53,6 @@ class GroupByStmt : Stmt {
     std::vector<std::unique_ptr<Expression>> groupby_fields_;  // group by clause
     std::vector<std::unique_ptr<AggrFuncExpr>> agg_exprs_;     // 聚集函数表达式
     std::vector<std::unique_ptr<FieldExpr>> field_exprs_;  // 非聚集函数中的字段表达式,需要传递给下层的 order by 算子
+
+    // select min(c1) ,c2+c3 from t1 group by c2+c3,c3+c4;
 };

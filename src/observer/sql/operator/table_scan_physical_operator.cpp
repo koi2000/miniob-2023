@@ -21,7 +21,7 @@ using namespace std;
 RC TableScanPhysicalOperator::open(Trx* trx) {
     RC rc = table_->get_record_scanner(record_scanner_, trx, readonly_);
     if (rc == RC::SUCCESS) {
-        tuple_.set_schema(table_);
+        tuple_.set_schema(table_, alias_);
     }
     trx_ = trx;
     return rc;

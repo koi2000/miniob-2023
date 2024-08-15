@@ -34,7 +34,8 @@ RC FieldExpr::get_value(const Tuple& tuple, Value& value) const {
     if (is_first_) {
         bool& is_first_ref = const_cast<bool&>(is_first_);
         is_first_ref = false;
-        return tuple.find_cell(TupleCellSpec(table_name(), field_name()), value, const_cast<int&>(index_));
+        return tuple.find_cell(TupleCellSpec(table_name(), field_name(), alias().c_str()), value,
+                               const_cast<int&>(index_));
     } else {
         return tuple.cell_at(index_, value);
     }
@@ -454,14 +455,14 @@ RC ArithmeticExpr::try_get_value(Value& value) const {
 // table_map 有表名检查表名(可能是别名) 没表名只能有一个 table 或者用 default table 检查列名
 // table_alias_map 是为了设置 name alias 的时候用
 // NOTE: 是针对 projects 中的 FieldExpr 写的 conditions 中的也可以用 但是处理之后的 name alias 是无用的
-RC FieldExpr::check_field(const std::unordered_map<std::string, Table*>& table_map,
-                          const std::vector<Table*>& tables,
-                          Table* default_table,
+RC FieldExpr::check_field(const std::unordered_map<std::string, BaseTable*>& table_map,
+                          const std::vector<BaseTable*>& tables,
+                          BaseTable* default_table,
                           const std::unordered_map<std::string, std::string>& table_alias_map) {
     ASSERT(field_name_ != "*", "ERROR!");
     const char* table_name = table_name_.c_str();
     const char* field_name = field_name_.c_str();
-    Table* table = nullptr;
+    BaseTable* table = nullptr;
     if (!common::is_blank(table_name)) {  //表名不为空
         // check table
         auto iter = table_map.find(table_name);
@@ -478,8 +479,9 @@ RC FieldExpr::check_field(const std::unordered_map<std::string, Table*>& table_m
         table = default_table ? default_table : tables[0];
     }
     ASSERT(nullptr != table, "ERROR!");
+    std::string tn_bak = std::string(table_name);
     // set table_name
-    table_name = table->name();
+    const_cast<std::string&>(table_name_) = std::string(table->name());
     // check field
     const FieldMeta* field_meta = table->table_meta().field(field_name);
     if (nullptr == field_meta) {
@@ -500,12 +502,13 @@ RC FieldExpr::check_field(const std::unordered_map<std::string, Table*>& table_m
         if (is_single_table) {
             set_alias(field_name_);
         } else {
-            auto iter = table_alias_map.find(table_name_);
-            if (iter != table_alias_map.end()) {
-                set_alias(iter->second + "." + field_name_);
-            } else {
-                set_alias(table_name_ + "." + field_name_);
-            }
+            set_alias(std::string(tn_bak) + "." + field_name_);
+            // auto iter = table_alias_map.find(table_name_);
+            // if (iter != table_alias_map.end()) {
+            //   set_alias(iter->second + "." + field_name_);
+            // } else {
+            //   set_alias(table_name_ + "." + field_name_);
+            // }
         }
     }
     return RC::SUCCESS;
@@ -762,7 +765,7 @@ SubQueryExpr::SubQueryExpr(const SelectSqlNode& sql_node) {
 
 SubQueryExpr::~SubQueryExpr() = default;
 
-RC SubQueryExpr::generate_select_stmt(Db* db, const std::unordered_map<std::string, Table*>& tables) {
+RC SubQueryExpr::generate_select_stmt(Db* db, const std::unordered_map<std::string, BaseTable*>& tables) {
     Stmt* select_stmt = nullptr;
     if (RC rc = SelectStmt::create(db, *sql_node_.get(), select_stmt, tables); OB_FAIL(rc)) {
         return rc;
@@ -828,5 +831,14 @@ AttrType SubQueryExpr::value_type() const {
 }
 
 std::unique_ptr<Expression> SubQueryExpr::deep_copy() const {
-    return {};
+    SelectSqlNode new_select_sql;
+    new_select_sql.deep_copy(*sql_node_);
+    auto new_expr = std::make_unique<SubQueryExpr>(new_select_sql);
+    new_expr->set_name(name());
+    new_expr->set_alias(alias());
+    // TODO 这里不考虑其他
+    if (stmt_ || logical_oper_ || physical_oper_) {
+        LOG_ERROR("ERROR! in subquery expr deep copy");
+    }
+    return new_expr;
 }

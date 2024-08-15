@@ -14,6 +14,7 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
+#include "storage/table/base_table.h"
 #include "storage/table/table_meta.h"
 #include <functional>
 
@@ -33,7 +34,7 @@ class Trx;
  * @brief 表
  *
  */
-class Table {
+class Table : public BaseTable {
   public:
     Table() = default;
     ~Table();
@@ -47,9 +48,9 @@ class Table {
      * @param attributes 字段
      */
     RC create(int32_t table_id,
-              const char* path,
-              const char* name,
-              const char* base_dir,
+              const char* path,      // .table
+              const char* name,      // table_name
+              const char* base_dir,  // db/sys/
               int attribute_count,
               const AttrInfoSqlNode attributes[]);
 
@@ -80,7 +81,7 @@ class Table {
     RC visit_record(const RID& rid, bool readonly, std::function<void(Record&)> visitor);
     RC get_record(const RID& rid, Record& record);
 
-    // 将该record的attr_name列更新为 value
+    //将该record的attr_name列更新为 value
     RC update_record(Record& record, const char* attr_name, Value* value);
     RC update_record(Record& record, const std::vector<std::string>& attr_names, const std::vector<Value*>& values);
     RC update_record(Record& old_record, Record& new_record);
@@ -100,12 +101,12 @@ class Table {
     RC read_text(int64_t offset, int64_t length, char* data) const;
 
   public:
-    int32_t table_id() const {
+    virtual int32_t table_id() const {
         return table_meta_.table_id();
     }
-    const char* name() const;
+    virtual const char* name() const;
+    virtual const TableMeta& table_meta() const;
 
-    const TableMeta& table_meta() const;
     const std::vector<Index*>& indexes() const {
         return indexes_;
     }

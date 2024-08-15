@@ -9,16 +9,14 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details. */
 
 //
-// Created by Wangyunlai on 2023/6/14.
+// Created by Wangyunlai on 2023/6/13.
 //
 
 #include "sql/stmt/drop_table_stmt.h"
-#include "storage/db/db.h"
+#include "event/sql_debug.h"
 
-RC DropTableStmt::create(Db* db, const DropTableSqlNode& desc_table, Stmt*& stmt) {
-    if (db->find_table(desc_table.relation_name.c_str()) == nullptr) {
-        return RC::SCHEMA_TABLE_NOT_EXIST;
-    }
-    stmt = new DropTableStmt(desc_table.relation_name);
+RC DropTableStmt::create(Db* db, const DropTableSqlNode& drop_table, Stmt*& stmt) {
+    stmt = new DropTableStmt(drop_table.relation_name);
+    sql_debug("drop table statement: table name %s", drop_table.relation_name.c_str());
     return RC::SUCCESS;
 }
