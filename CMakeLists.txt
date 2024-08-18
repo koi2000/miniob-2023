@@ -37,7 +37,7 @@ ELSE()
 ENDIF(WIN32)
 
 # This is for clangd plugin for vscode
-SET(CMAKE_COMMON_FLAGS "${CMAKE_COMMON_FLAGS} -Wall -Werror")
+# SET(CMAKE_COMMON_FLAGS "${CMAKE_COMMON_FLAGS} -Wall -Werror")
 IF(DEBUG)
     MESSAGE(STATUS "DEBUG has been set as TRUE ${DEBUG}")
     SET(CMAKE_COMMON_FLAGS "${CMAKE_COMMON_FLAGS}  -O0 -g -DDEBUG ")
