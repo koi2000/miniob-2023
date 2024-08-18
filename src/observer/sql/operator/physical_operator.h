@@ -35,65 +35,64 @@ class Trx;
  * @brief 物理算子类型
  * @ingroup PhysicalOperator
  */
-enum class PhysicalOperatorType {
-    CREATE_TABLE,
-    TABLE_SCAN,
-    INDEX_SCAN,
-    VIEW_SCAN,
-    NESTED_LOOP_JOIN,
-    EXPLAIN,
-    PREDICATE,
-    PROJECT,
-    DUAL_TABLE_SCAN,
-    CALC,
-    STRING_LIST,
-    DELETE,
-    INSERT,
-    UPDATE,
-    GROUPBY,
-    ORDERBY,
+enum class PhysicalOperatorType
+{
+  CREATE_TABLE,
+  TABLE_SCAN,
+  INDEX_SCAN,
+  VIEW_SCAN,
+  NESTED_LOOP_JOIN,
+  EXPLAIN,
+  PREDICATE,
+  PROJECT,
+  DUAL_TABLE_SCAN,
+  CALC,
+  STRING_LIST,
+  DELETE,
+  INSERT,
+  UPDATE,
+  GROUPBY,
+  ORDERBY,
 };
 
 /**
  * @brief 与LogicalOperator对应，物理算子描述执行计划将如何执行
  * @ingroup PhysicalOperator
  */
-class PhysicalOperator {
-  public:
-    PhysicalOperator() = default;
+class PhysicalOperator
+{
+public:
+  PhysicalOperator() = default;
 
-    virtual ~PhysicalOperator();
+  virtual ~PhysicalOperator();
 
-    /**
-     * 这两个函数是为了打印时使用的，比如在explain中
-     */
-    virtual std::string name() const;
-    virtual std::string param() const;
+  /**
+   * 这两个函数是为了打印时使用的，比如在explain中
+   */
+  virtual std::string name() const;
+  virtual std::string param() const;
 
-    virtual PhysicalOperatorType type() const = 0;
+  virtual PhysicalOperatorType type() const = 0;
 
-    virtual RC open(Trx* trx) = 0;
-    virtual RC next() = 0;
-    virtual RC close() = 0;
+  virtual RC open(Trx *trx) = 0;
+  virtual RC next()         = 0;
+  virtual RC close()        = 0;
 
-    virtual Tuple* current_tuple() = 0;
+  virtual Tuple *current_tuple() = 0;
 
-    void add_child(std::unique_ptr<PhysicalOperator> oper) {
-        children_.emplace_back(std::move(oper));
+  void add_child(std::unique_ptr<PhysicalOperator> oper) { children_.emplace_back(std::move(oper)); }
+
+  std::vector<std::unique_ptr<PhysicalOperator>> &children() { return children_; }
+
+  void set_parent_tuple(const Tuple *tuple)
+  {
+    parent_tuple_ = tuple;
+    for (auto &child : children_) {
+      child->set_parent_tuple(tuple);
     }
+  }
 
-    std::vector<std::unique_ptr<PhysicalOperator>>& children() {
-        return children_;
-    }
-
-    void set_parent_tuple(const Tuple* tuple) {
-        parent_tuple_ = tuple;
-        for (auto& child : children_) {
-            child->set_parent_tuple(tuple);
-        }
-    }
-
-  protected:
-    std::vector<std::unique_ptr<PhysicalOperator>> children_;
-    const Tuple* parent_tuple_ = nullptr;
+protected:
+  std::vector<std::unique_ptr<PhysicalOperator>> children_;
+  const Tuple                                   *parent_tuple_ = nullptr;
 };

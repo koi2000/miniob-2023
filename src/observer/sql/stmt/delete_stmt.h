@@ -25,26 +25,21 @@ class FilterStmt;
  * @brief Delete 语句
  * @ingroup Statement
  */
-class DeleteStmt : public Stmt {
-  public:
-    DeleteStmt(BaseTable* table, FilterStmt* filter_stmt);
-    ~DeleteStmt() override;
+class DeleteStmt : public Stmt
+{
+public:
+  DeleteStmt(BaseTable *table, FilterStmt *filter_stmt);
+  ~DeleteStmt() override;
 
-    BaseTable* table() const {
-        return table_;
-    }
-    FilterStmt* filter_stmt() const {
-        return filter_stmt_;
-    }
+  BaseTable  *table() const { return table_; }
+  FilterStmt *filter_stmt() const { return filter_stmt_; }
 
-    StmtType type() const override {
-        return StmtType::DELETE;
-    }
+  StmtType type() const override { return StmtType::DELETE; }
 
-  public:
-    static RC create(Db* db, const DeleteSqlNode& delete_sql, Stmt*& stmt);
+public:
+  static RC create(Db *db, const DeleteSqlNode &delete_sql, Stmt *&stmt);
 
-  private:
-    BaseTable* table_ = nullptr;
-    FilterStmt* filter_stmt_ = nullptr;
+private:
+  BaseTable  *table_       = nullptr;
+  FilterStmt *filter_stmt_ = nullptr;
 };

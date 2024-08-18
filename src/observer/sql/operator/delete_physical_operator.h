@@ -23,28 +23,25 @@ class DeleteStmt;
  * @brief 物理算子，删除
  * @ingroup PhysicalOperator
  */
-class DeletePhysicalOperator : public PhysicalOperator {
-  public:
-    DeletePhysicalOperator(BaseTable* table) : table_(table) {}
+class DeletePhysicalOperator : public PhysicalOperator
+{
+public:
+  DeletePhysicalOperator(BaseTable *table) : table_(table) {}
 
-    virtual ~DeletePhysicalOperator() = default;
+  virtual ~DeletePhysicalOperator() = default;
 
-    PhysicalOperatorType type() const override {
-        return PhysicalOperatorType::DELETE;
-    }
+  PhysicalOperatorType type() const override { return PhysicalOperatorType::DELETE; }
 
-    RC open(Trx* trx) override;
-    RC next() override;
-    RC close() override;
+  RC open(Trx *trx) override;
+  RC next() override;
+  RC close() override;
 
-    RC delete_from_table();
-    RC delete_from_view();
+  RC delete_from_table();
+  RC delete_from_view();
 
-    Tuple* current_tuple() override {
-        return nullptr;
-    }
+  Tuple *current_tuple() override { return nullptr; }
 
-  private:
-    BaseTable* table_ = nullptr;
-    Trx* trx_ = nullptr;
+private:
+  BaseTable *table_ = nullptr;
+  Trx       *trx_   = nullptr;
 };

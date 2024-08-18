@@ -29,24 +29,19 @@ class FieldMeta;
  * @brief Filter/谓词/过滤语句
  * @ingroup Statement
  */
-class FilterStmt {
-  public:
-    FilterStmt() = default;
-    virtual ~FilterStmt() = default;
+class FilterStmt
+{
+public:
+  FilterStmt()          = default;
+  virtual ~FilterStmt() = default;
 
-  public:
-    std::unique_ptr<Expression>& condition() {
-        return condition_;
-    }
+public:
+  std::unique_ptr<Expression> &condition() { return condition_; }
 
-  public:
-    static RC create(Db* db,
-                     BaseTable* default_table,
-                     std::unordered_map<std::string, BaseTable*>* table_map,
-                     const std::vector<BaseTable*>& tables,
-                     Expression* condition,
-                     FilterStmt*& stmt);
+public:
+  static RC create(Db *db, BaseTable *default_table, std::unordered_map<std::string, BaseTable *> *table_map,
+      const std::vector<BaseTable *> &tables, Expression *condition, FilterStmt *&stmt);
 
-  private:
-    std::unique_ptr<Expression> condition_;
+private:
+  std::unique_ptr<Expression> condition_;
 };

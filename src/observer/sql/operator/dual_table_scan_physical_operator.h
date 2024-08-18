@@ -19,13 +19,10 @@ See the Mulan PSL v2 for more details. */
 class DualTableScanPhysicalOperator : public PhysicalOperator
 {
 public:
-  DualTableScanPhysicalOperator() = default;
+  DualTableScanPhysicalOperator()          = default;
   virtual ~DualTableScanPhysicalOperator() = default;
 
-  PhysicalOperatorType type() const override
-  {
-    return PhysicalOperatorType::DUAL_TABLE_SCAN;
-  }
+  PhysicalOperatorType type() const override { return PhysicalOperatorType::DUAL_TABLE_SCAN; }
 
   RC open(Trx *trx) override { return RC::SUCCESS; }
 
@@ -43,6 +40,6 @@ public:
   Tuple *current_tuple() override { return &tuple_; }
 
 private:
-  bool is_first_ = true;
+  bool       is_first_ = true;
   EmptyTuple tuple_;
 };

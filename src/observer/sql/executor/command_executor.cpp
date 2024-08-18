@@ -28,75 +28,76 @@ See the Mulan PSL v2 for more details. */
 #include "sql/executor/trx_end_executor.h"
 #include "sql/stmt/stmt.h"
 
-RC CommandExecutor::execute(SQLStageEvent* sql_event) {
-    Stmt* stmt = sql_event->stmt();
+RC CommandExecutor::execute(SQLStageEvent *sql_event)
+{
+  Stmt *stmt = sql_event->stmt();
 
-    switch (stmt->type()) {
-        case StmtType::CREATE_INDEX: {
-            CreateIndexExecutor executor;
-            return executor.execute(sql_event);
-        } break;
+  switch (stmt->type()) {
+    case StmtType::CREATE_INDEX: {
+      CreateIndexExecutor executor;
+      return executor.execute(sql_event);
+    } break;
 
-        case StmtType::CREATE_TABLE: {
-            CreateTableExecutor executor;
-            return executor.execute(sql_event);
-        } break;
+    case StmtType::CREATE_TABLE: {
+      CreateTableExecutor executor;
+      return executor.execute(sql_event);
+    } break;
 
-        case StmtType::DROP_TABLE: {
-            DropTableExecutor executor;
-            return executor.execute(sql_event);
-        } break;
+    case StmtType::DROP_TABLE: {
+      DropTableExecutor executor;
+      return executor.execute(sql_event);
+    } break;
 
-        case StmtType::CREATE_VIEW: {
-            CreateViewExecutor executor;
-            return executor.execute(sql_event);
-        } break;
+    case StmtType::CREATE_VIEW: {
+      CreateViewExecutor executor;
+      return executor.execute(sql_event);
+    } break;
 
-        case StmtType::DESC_TABLE: {
-            DescTableExecutor executor;
-            return executor.execute(sql_event);
-        }
-
-        case StmtType::HELP: {
-            HelpExecutor executor;
-            return executor.execute(sql_event);
-        }
-
-        case StmtType::SHOW_TABLES: {
-            ShowTablesExecutor executor;
-            return executor.execute(sql_event);
-        }
-
-        case StmtType::BEGIN: {
-            TrxBeginExecutor executor;
-            return executor.execute(sql_event);
-        }
-
-        case StmtType::COMMIT:
-        case StmtType::ROLLBACK: {
-            TrxEndExecutor executor;
-            return executor.execute(sql_event);
-        }
-
-        case StmtType::SET_VARIABLE: {
-            SetVariableExecutor executor;
-            return executor.execute(sql_event);
-        }
-
-        case StmtType::LOAD_DATA: {
-            LoadDataExecutor executor;
-            return executor.execute(sql_event);
-        }
-
-        case StmtType::EXIT: {
-            return RC::SUCCESS;
-        }
-
-        default: {
-            LOG_ERROR("unknown command: %d", static_cast<int>(stmt->type()));
-            return RC::UNIMPLENMENT;
-        }
+    case StmtType::DESC_TABLE: {
+      DescTableExecutor executor;
+      return executor.execute(sql_event);
     }
 
-    return RC::INTERNAL;
+    case StmtType::HELP: {
+      HelpExecutor executor;
+      return executor.execute(sql_event);
+    }
+
+    case StmtType::SHOW_TABLES: {
+      ShowTablesExecutor executor;
+      return executor.execute(sql_event);
+    }
+
+    case StmtType::BEGIN: {
+      TrxBeginExecutor executor;
+      return executor.execute(sql_event);
+    }
+
+    case StmtType::COMMIT:
+    case StmtType::ROLLBACK: {
+      TrxEndExecutor executor;
+      return executor.execute(sql_event);
+    }
+
+    case StmtType::SET_VARIABLE: {
+      SetVariableExecutor executor;
+      return executor.execute(sql_event);
+    }
+
+    case StmtType::LOAD_DATA: {
+      LoadDataExecutor executor;
+      return executor.execute(sql_event);
+    }
+
+    case StmtType::EXIT: {
+      return RC::SUCCESS;
+    }
+
+    default: {
+      LOG_ERROR("unknown command: %d", static_cast<int>(stmt->type()));
+      return RC::UNIMPLENMENT;
+    }
+  }
+
+  return RC::INTERNAL;
 }

@@ -25,26 +25,19 @@ class BaseTable;
  * @brief 插入逻辑算子
  * @ingroup LogicalOperator
  */
-class InsertLogicalOperator : public LogicalOperator {
-  public:
-    InsertLogicalOperator(BaseTable* table, std::vector<std::vector<Value>> values);
-    virtual ~InsertLogicalOperator() = default;
+class InsertLogicalOperator : public LogicalOperator
+{
+public:
+  InsertLogicalOperator(BaseTable *table, std::vector<std::vector<Value>> values);
+  virtual ~InsertLogicalOperator() = default;
 
-    LogicalOperatorType type() const override {
-        return LogicalOperatorType::INSERT;
-    }
+  LogicalOperatorType type() const override { return LogicalOperatorType::INSERT; }
 
-    BaseTable* table() const {
-        return table_;
-    }
-    const std::vector<std::vector<Value>>& values() const {
-        return values_;
-    }
-    std::vector<std::vector<Value>>& values() {
-        return values_;
-    }
+  BaseTable                             *table() const { return table_; }
+  const std::vector<std::vector<Value>> &values() const { return values_; }
+  std::vector<std::vector<Value>>       &values() { return values_; }
 
-  private:
-    BaseTable* table_ = nullptr;
-    std::vector<std::vector<Value>> values_;
+private:
+  BaseTable                      *table_ = nullptr;
+  std::vector<std::vector<Value>> values_;
 };
