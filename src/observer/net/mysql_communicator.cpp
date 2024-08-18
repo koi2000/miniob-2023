@@ -348,7 +348,7 @@ struct HandshakeV10 : public BasePacket
 
     char *buf = net_packet.data();
     int   pos = 0;
-    pos += 3; // skip packet length
+    pos += 3;  // skip packet length
 
     pos += store_int1(buf + pos, packet_header.sequence_id);
     pos += store_int1(buf + pos, protocol);
@@ -398,7 +398,7 @@ struct OkPacket : public BasePacket
     char *buf = net_packet.data();
     int   pos = 0;
 
-    pos += 3; // skip packet length
+    pos += 3;  // skip packet length
     pos += store_int1(buf + pos, packet_header.sequence_id);
     pos += store_int1(buf + pos, header);
     pos += store_lenenc_int(buf + pos, affected_rows);

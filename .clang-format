@@ -1,5 +1,4 @@
 ---
-# find src/* -name "*.cpp" -exec clang-format-20 -i {} +
 Language: Cpp
 # BasedOnStyle:	LLVM
 SortIncludes: false
@@ -77,4 +76,9 @@ SpaceBeforeAssignmentOperators: true
 SpacesBeforeTrailingComments: 2
 ContinuationIndentWidth: 4
 CommentPragmas:  '^lint'
-MacroBlockBegin: "END_CATCH_ERROR$"
+MacroBlockBegin: "
+
+END_CATCH_ERROR$"
+...
+
+
