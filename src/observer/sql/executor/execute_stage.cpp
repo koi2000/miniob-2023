@@ -20,7 +20,6 @@ See the Mulan PSL v2 for more details. */
 #include "common/log/log.h"
 #include "event/session_event.h"
 #include "event/sql_event.h"
-#include "event/storage_event.h"
 #include "session/session.h"
 #include "sql/executor/command_executor.h"
 #include "sql/operator/calc_physical_operator.h"

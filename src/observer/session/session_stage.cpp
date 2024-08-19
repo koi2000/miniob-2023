@@ -21,7 +21,6 @@ See the Mulan PSL v2 for more details. */
 #include "common/lang/mutex.h"
 #include "common/lang/string.h"
 #include "common/log/log.h"
-#include "common/seda/callback.h"
 #include "event/session_event.h"
 #include "event/sql_event.h"
 #include "net/communicator.h"
