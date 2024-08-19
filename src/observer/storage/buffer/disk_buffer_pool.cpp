@@ -571,6 +571,8 @@ RC DiskBufferPool::get_data(int64_t offset, int64_t length, char *data)
                   file_name_.c_str(), file_desc_, strerror(errno), ret, file_header_->allocated_pages);
     return RC::IOERR_READ;
   }
+}
+
 RC DiskBufferPool::write_page(Page &page)
 {
   scoped_lock lock_guard(wr_lock_);
