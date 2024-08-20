@@ -13,13 +13,11 @@ See the Mulan PSL v2 for more details. */
 //
 
 #pragma once
+#include <span>
 
 #include "storage/table/base_table.h"
 #include "storage/table/table_meta.h"
 #include <functional>
-#include <span>
-
-#include "storage/table/table_meta.h"
 #include "common/types.h"
 
 struct RID;
@@ -53,11 +51,8 @@ public:
    * @param attribute_count 字段个数
    * @param attributes 字段
    */
-  RC create(int32_t table_id,
-      const char   *path,      // .table
-      const char   *name,      // table_name
-      const char   *base_dir,  // db/sys/
-      int attribute_count, const AttrInfoSqlNode attributes[]);
+  RC create(Db *db, int32_t table_id, const char *path, const char *name, const char *base_dir,
+      std::span<const AttrInfoSqlNode> attributes);
 
   /**
    * 打开一个表
@@ -84,6 +79,7 @@ public:
   RC insert_records(std::vector<Record> &records);
   RC delete_record(const Record &record);
   RC delete_record(const RID &rid);
+  RC visit_record(const RID &rid, std::function<bool(Record &)> visitor);
   RC get_record(const RID &rid, Record &record);
 
   // 将该record的attr_name列更新为 value
@@ -107,6 +103,7 @@ public:
   virtual int32_t          table_id() const { return table_meta_.table_id(); }
   virtual const char      *name() const;
   virtual const TableMeta &table_meta() const;
+  Db *db() const { return db_; }
 
   const std::vector<Index *> &indexes() const { return indexes_; }
 

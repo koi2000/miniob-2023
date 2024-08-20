@@ -18,7 +18,7 @@ public:
   View()  = default;
   ~View() = default;
 
-  RC   create(int32_t table_id, bool allow_write,
+  RC   create(Db *db, int32_t table_id, bool allow_write,
         const char                         *path,      // .view文件路径、名称
         const char                         *name,      // view_name
         const char                         *base_dir,  // db/sys

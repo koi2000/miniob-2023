@@ -40,7 +40,7 @@ RC VacuousTrx::insert_records(Table *table, std::vector<Record> &records) { retu
 
 RC VacuousTrx::delete_record(Table *table, Record &record) { return table->delete_record(record); }
 
-RC VacuousTrx::visit_record(Table *table, Record &record, ReadWriteMode) { return RC::SUCCESS; }
+RC VacuousTrx::visit_record(Table *table, Record &record, ReadWriteMode mode) { return RC::SUCCESS; }
 
 RC VacuousTrx::start_if_need() { return RC::SUCCESS; }
 

@@ -18,7 +18,7 @@ RC CreateTablePhysicalOperator::open(Trx *trx)
   }
 
   const int attr_count = attr_infos_.size();
-  rc                   = db_->create_table(table_name_.c_str(), attr_count, attr_infos_.data());
+  rc                   = db_->create_table(table_name_.c_str(), attr_infos_);
   if (RC::SUCCESS != rc) {
     LOG_WARN("failed to create table %s, rc=%s", table_name_.c_str(), strrc(rc));
     return rc;

@@ -134,10 +134,10 @@ RC LogicalPlanGenerator::create_plan(SelectStmt *select_stmt, unique_ptr<Logical
         unique_ptr<LogicalOperator> table_get_oper;
         if (table->is_table()) {
           unique_ptr<LogicalOperator> table_get(
-              new TableGetLogicalOperator(static_cast<Table *>(table), fields, true /*readonly*/, alias));
+              new TableGetLogicalOperator(static_cast<Table *>(table), fields, ReadWriteMode::READ_ONLY, alias));
           table_get_oper = std::move(table_get);
         } else {
-          unique_ptr<LogicalOperator> view_get(new ViewGetLogicalOperator(static_cast<View *>(table), fields, true));
+          unique_ptr<LogicalOperator> view_get(new ViewGetLogicalOperator(static_cast<View *>(table), fields, ReadWriteMode::READ_ONLY));
           table_get_oper = std::move(view_get);
         }
         unique_ptr<LogicalOperator> predicate_oper;
@@ -399,11 +399,11 @@ RC LogicalPlanGenerator::create_plan(DeleteStmt *delete_stmt, unique_ptr<Logical
   unique_ptr<LogicalOperator> table_get_oper;
   if (table->is_table()) {
     unique_ptr<LogicalOperator> table_get(
-        new TableGetLogicalOperator(static_cast<Table *>(table), fields, false /*readonly*/));
+        new TableGetLogicalOperator(static_cast<Table *>(table), fields, ReadWriteMode::READ_WRITE));
     table_get_oper = std::move(table_get);
   } else {
     unique_ptr<LogicalOperator> view_get(
-        new ViewGetLogicalOperator(static_cast<View *>(table), fields, false /*readonly*/));
+        new ViewGetLogicalOperator(static_cast<View *>(table), fields, ReadWriteMode::READ_WRITE));
     table_get_oper = std::move(view_get);
   }
 
@@ -454,11 +454,11 @@ RC LogicalPlanGenerator::create_plan(UpdateStmt *update_stmt, unique_ptr<Logical
   unique_ptr<LogicalOperator> base_table_get_oper;
   if (table->is_table()) {
     unique_ptr<LogicalOperator> table_get_oper(
-        new TableGetLogicalOperator(static_cast<Table *>(table), fields, false /*readonly*/));
+        new TableGetLogicalOperator(static_cast<Table *>(table), fields, ReadWriteMode::READ_WRITE));
     base_table_get_oper = std::move(table_get_oper);
   } else {
     unique_ptr<LogicalOperator> view_get_oper(
-        new ViewGetLogicalOperator(static_cast<View *>(table), fields, false /*readonly*/));
+        new ViewGetLogicalOperator(static_cast<View *>(table), fields, ReadWriteMode::READ_WRITE));
     base_table_get_oper = std::move(view_get_oper);
   }
 

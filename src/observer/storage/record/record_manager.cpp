@@ -12,6 +12,7 @@ See the Mulan PSL v2 for more details. */
 // Created by Meiyi & Longda on 2021/4/13.
 //
 #include "storage/record/record_manager.h"
+#include "common/lang/bitmap.h"
 #include "common/log/log.h"
 #include "storage/common/condition_filter.h"
 #include "storage/trx/trx.h"
@@ -242,7 +243,7 @@ RC RecordPageHandler::insert_record(const char *data, RID *rid)
 
 RC RecordPageHandler::update_record(Record *rec)
 {
-  ASSERT(readonly_ == false, "cannot update record into page while the page is readonly");
+  ASSERT(rw_mode_ == ReadWriteMode::READ_WRITE, "cannot update record into page while the page is readonly");
 
   // 1.合法性检查
   if (rec->rid().slot_num >= page_header_->record_capacity) {
@@ -318,9 +319,44 @@ RC RecordPageHandler::delete_record(const RID *rid)
 
 RC RecordPageHandler::update_record(const RID &rid, const char *data)
 {
-  if (rid->slot_num >= page_header_->record_capacity) {
-    LOG_ERROR("Invalid slot_num:%d, exceed page's record capacity, page_num %d.", rid->slot_num,
-                  frame_->page_num());
+  ASSERT(rw_mode_ != ReadWriteMode::READ_ONLY, "cannot delete record from page while the page is readonly");
+
+  if (rid.slot_num >= page_header_->record_capacity) {
+    LOG_ERROR("Invalid slot_num %d, exceed page's record capacity, frame=%s, page_header=%s",
+              rid.slot_num, frame_->to_string().c_str(), page_header_->to_string().c_str());
+    return RC::INVALID_ARGUMENT;
+  }
+
+  Bitmap bitmap(bitmap_, page_header_->record_capacity);
+  if (bitmap.get_bit(rid.slot_num)) {
+    frame_->mark_dirty();
+
+    char *record_data = get_record_data(rid.slot_num);
+    if (record_data == data) {
+      // nothing to do
+    } else {
+      memcpy(record_data, data, page_header_->record_real_size);
+    }
+
+    RC rc = log_handler_.update_record(frame_, rid, data);
+    if (OB_FAIL(rc)) {
+      LOG_ERROR("Failed to update record. page_num %d:%d. rc=%s", 
+                disk_buffer_pool_->file_desc(), frame_->page_num(), strrc(rc));
+      // return rc; // ignore errors
+    }
+
+    return RC::SUCCESS;
+  } else {
+    LOG_DEBUG("Invalid slot_num %d, slot is empty, page_num %d.", rid.slot_num, frame_->page_num());
+    return RC::RECORD_NOT_EXIST;
+  }
+}
+
+RC RecordPageHandler::get_record(const RID &rid, Record &record)
+{
+  if (rid.slot_num >= page_header_->record_capacity) {
+    LOG_ERROR("Invalid slot_num %d, exceed page's record capacity, frame=%s, page_header=%s",
+              rid.slot_num, frame_->to_string().c_str(), page_header_->to_string().c_str());
     return RC::RECORD_INVALID_RID;
   }
 
@@ -476,7 +512,7 @@ RC RecordFileHandler::update_record(Record *rec)
 
   RecordPageHandler record_page_handler;
 
-  ret = record_page_handler.init(*disk_buffer_pool_, rec->rid().page_num, false /*readonly*/);
+  ret = record_page_handler.init(*disk_buffer_pool_, *log_handler_, rec->rid().page_num, ReadWriteMode::READ_WRITE /*readonly*/);
   if (ret != RC::SUCCESS) {
     LOG_WARN("failed to init record page handler. page num=%d, rc=%s", rec->rid().page_num, strrc(ret));
     return ret;

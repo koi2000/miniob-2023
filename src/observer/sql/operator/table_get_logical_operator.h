@@ -25,13 +25,15 @@ See the Mulan PSL v2 for more details. */
 class TableGetLogicalOperator : public LogicalOperator
 {
 public:
-  TableGetLogicalOperator(Table *table, const std::vector<Field> &fields, bool readonly, const std::string &alias = "");
+  TableGetLogicalOperator(Table *table, const std::vector<Field> &fields, ReadWriteMode mode, const std::string &alias = "");
   virtual ~TableGetLogicalOperator() = default;
 
   LogicalOperatorType type() const override { return LogicalOperatorType::TABLE_GET; }
 
   Table        *table() const { return table_; }
   ReadWriteMode read_write_mode() const { return mode_; }
+
+  bool readonly() { return mode_ == ReadWriteMode::READ_ONLY; }
 
   void                                      set_predicates(std::vector<std::unique_ptr<Expression>> &&exprs);
   std::vector<std::unique_ptr<Expression>> &predicates() { return predicates_; }

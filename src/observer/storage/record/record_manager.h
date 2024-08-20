@@ -13,7 +13,6 @@ See the Mulan PSL v2 for more details. */
 // Created by Meiyi & Longda on 2021/4/13.
 //
 #pragma once
-
 #include <limits>
 #include <sstream>
 
@@ -26,7 +25,6 @@ See the Mulan PSL v2 for more details. */
 class LogHandler;
 class ConditionFilter;
 class RecordPageHandler;
-class LogHandler;
 class Trx;
 class Table;
 
@@ -248,8 +246,9 @@ protected:
 
 protected:
   DiskBufferPool *disk_buffer_pool_ = nullptr;  ///< 当前操作的buffer pool(文件)
+  RecordLogHandler log_handler_;                 ///< 当前操作的日志处理器
   Frame          *frame_            = nullptr;  ///< 当前操作页面关联的frame(frame的更多概念可以参考buffer pool和frame)
-  bool            readonly_         = false;    ///< 当前的操作是否都是只读的
+  ReadWriteMode rw_mode_     = ReadWriteMode::READ_WRITE;  ///< 当前的操作是否都是只读的
   PageHeader     *page_header_      = nullptr;  ///< 当前页面上页面头
   char           *bitmap_           = nullptr;  ///< 当前页面上record分配状态信息bitmap内存起始位置
 
@@ -380,6 +379,7 @@ private:
 
 private:
   DiskBufferPool             *disk_buffer_pool_ = nullptr;
+  LogHandler                 *log_handler_      = nullptr;  ///< 记录日志的处理器
   std::unordered_set<PageNum> free_pages_;  ///< 没有填充满的页面集合
   common::Mutex               lock_;        ///< 当编译时增加-DCONCURRENCY=ON 选项时，才会真正的支持并发
 };

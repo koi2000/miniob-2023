@@ -66,14 +66,14 @@ void Frame::write_latch(intptr_t xid)
   {
     scoped_lock debug_lock(debug_lock_);
     ASSERT(pin_count_.load() > 0,
-               "frame lock. write lock failed while pin count is invalid. "
-               "this=%p, pin=%d, pageNum=%d, fd=%d, xid=%lx, lbt=%s",
-               this, pin_count_.load(), page_.page_num, file_desc_, xid, lbt());
+        "frame lock. write lock failed while pin count is invalid. "
+        "this=%p, pin=%d, frameId=%s, xid=%lx, lbt=%s",
+        this, pin_count_.load(), frame_id_.to_string().c_str(), xid, lbt());
 
     ASSERT(read_lockers_.find(xid) == read_lockers_.end(),
-               "frame lock write while holding the read lock."
-               "this=%p, pin=%d, pageNum=%d, fd=%d, xid=%lx, lbt=%s",
-               this, pin_count_.load(), page_.page_num, file_desc_, xid, lbt());
+        "frame lock write while holding the read lock."
+        "this=%p, pin=%d, frameId=%s, xid=%lx, lbt=%s",
+        this, pin_count_.load(), frame_id_.to_string().c_str(), xid, lbt());
   }
 
   lock_.lock();
@@ -95,14 +95,14 @@ void Frame::write_unlatch(intptr_t xid)
   debug_lock_.lock();
 
   ASSERT(pin_count_.load() > 0,
-           "frame lock. write unlock failed while pin count is invalid."
-           "this=%p, pin=%d, pageNum=%d, fd=%d, xid=%lx, lbt=%s",
-           this, pin_count_.load(), page_.page_num, file_desc_, xid, lbt());
+      "frame lock. write unlock failed while pin count is invalid."
+      "this=%p, pin=%d, frameId=%s, xid=%lx, lbt=%s",
+      this, pin_count_.load(), frame_id_.to_string().c_str(), xid, lbt());
 
   ASSERT(write_locker_ == xid,
-           "frame unlock write while not the owner."
-           "write_locker=%lx, this=%p, pin=%d, pageNum=%d, fd=%d, xid=%lx, lbt=%s",
-           write_locker_, this, pin_count_.load(), page_.page_num, file_desc_, xid, lbt());
+      "frame unlock write while not the owner."
+      "write_locker=%lx, this=%p, pin=%d, frameId=%s, xid=%lx, lbt=%s",
+      write_locker_, this, pin_count_.load(), frame_id_.to_string().c_str(), xid, lbt());
 
   TRACE("frame write unlock success. this=%p, pin=%d, frameId=%s, xid=%lx, lbt=%s",
         this, pin_count_.load(), frame_id_.to_string().c_str(), xid, lbt());
@@ -122,14 +122,14 @@ void Frame::read_latch(intptr_t xid)
   {
     std::scoped_lock debug_lock(debug_lock_);
     ASSERT(pin_count_ > 0,
-               "frame lock. read lock failed while pin count is invalid."
-               "this=%p, pin=%d, pageNum=%d, fd=%d, xid=%lx, lbt=%s",
-               this, pin_count_.load(), page_.page_num, file_desc_, xid, lbt());
+        "frame lock. read lock failed while pin count is invalid."
+        "this=%p, pin=%d, frameId=%s, xid=%lx, lbt=%s",
+        this, pin_count_.load(), frame_id_.to_string().c_str(), xid, lbt());
 
     ASSERT(xid != write_locker_,
-               "frame lock read while holding the write lock."
-               "this=%p, pin=%d, pageNum=%d, fd=%d, xid=%lx, lbt=%s",
-               this, pin_count_.load(), page_.page_num, file_desc_, xid, lbt());
+        "frame lock read while holding the write lock."
+        "this=%p, pin=%d, frameId=%s, xid=%lx, lbt=%s",
+        this, pin_count_.load(), frame_id_.to_string().c_str(), xid, lbt());
   }
 
   lock_.lock_shared();
@@ -151,14 +151,14 @@ bool Frame::try_read_latch()
   {
     std::scoped_lock debug_lock(debug_lock_);
     ASSERT(pin_count_ > 0,
-               "frame try lock. read lock failed while pin count is invalid."
-               "this=%p, pin=%d, pageNum=%d, fd=%d, xid=%lx, lbt=%s",
-               this, pin_count_.load(), page_.page_num, file_desc_, xid, lbt());
+        "frame try lock. read lock failed while pin count is invalid."
+        "this=%p, pin=%d, frameId=%s, xid=%lx, lbt=%s",
+        this, pin_count_.load(), frame_id_.to_string().c_str(), xid, lbt());
 
     ASSERT(xid != write_locker_,
-               "frame try to lock read while holding the write lock."
-               "this=%p, pin=%d, pageNum=%d, fd=%d, xid=%lx, lbt=%s",
-               this, pin_count_.load(), page_.page_num, file_desc_, xid, lbt());
+        "frame try to lock read while holding the write lock."
+        "this=%p, pin=%d, frameId=%s, xid=%lx, lbt=%s",
+        this, pin_count_.load(), frame_id_.to_string().c_str(), xid, lbt());
   }
 
   bool ret = lock_.try_lock_shared();
@@ -183,17 +183,17 @@ void Frame::read_unlatch(intptr_t xid)
   {
     std::scoped_lock debug_lock(debug_lock_);
     ASSERT(pin_count_.load() > 0,
-               "frame lock. read unlock failed while pin count is invalid."
-               "this=%p, pin=%d, pageNum=%d, fd=%d, xid=%lx, lbt=%s",
-               this, pin_count_.load(), page_.page_num, file_desc_, xid, lbt());
+        "frame lock. read unlock failed while pin count is invalid."
+        "this=%p, pin=%d, frameId=%s, xid=%lx, lbt=%s",
+        this, pin_count_.load(), frame_id_.to_string().c_str(), xid, lbt());
 
 #ifdef DEBUG
     auto read_lock_iter  = read_lockers_.find(xid);
     int  recursive_count = read_lock_iter != read_lockers_.end() ? read_lock_iter->second : 0;
     ASSERT(recursive_count > 0,
-               "frame unlock while not holding read lock."
-               "this=%p, pin=%d, pageNum=%d, fd=%d, xid=%lx, recursive=%d, lbt=%s",
-               this, pin_count_.load(), page_.page_num, file_desc_, xid, recursive_count, lbt());
+        "frame unlock while not holding read lock."
+        "this=%p, pin=%d, frameId=%s, xid=%lx, recursive=%d, lbt=%s",
+        this, pin_count_.load(), frame_id_.to_string().c_str(), xid, recursive_count, lbt());
 
     if (1 == recursive_count) {
       read_lockers_.erase(xid);
@@ -226,9 +226,9 @@ int Frame::unpin()
   [[maybe_unused]] intptr_t xid = get_default_debug_xid();
 
   ASSERT(pin_count_.load() > 0,
-           "try to unpin a frame that pin count <= 0."
-           "this=%p, pin=%d, pageNum=%d, fd=%d, xid=%lx, lbt=%s",
-           this, pin_count_.load(), page_.page_num, file_desc_, xid, lbt());
+      "try to unpin a frame that pin count <= 0."
+      "this=%p, pin=%d, frameId=%s, xid=%lx, lbt=%s",
+      this, pin_count_.load(), frame_id_.to_string().c_str(), xid, lbt());
 
   std::scoped_lock debug_lock(debug_lock_);
 

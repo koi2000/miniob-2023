@@ -336,55 +336,10 @@ public:
   RC close_file(const char *file_name);
 
   RC flush_page(Frame &frame);
+  RC remove_file(const char* file_name);
 
   BPFrameManager    &get_frame_manager() { return frame_manager_; }
-  DoubleWriteBuffer *get_dblwr_buffer() { return dblwr_buffer_; }
-
-  RC remove_file(const char *file_name);
-
-public:
-  static void               set_instance(BufferPoolManager *bpm);  // TODO 优化全局变量的表示方法
-  static BufferPoolManager &instance();
-
-private:
-  BPFrameManager     frame_manager_{"BufPool"};
-  DoubleWriteBuffer *dblwr_buffer_ = nullptr;
-
-  common::Mutex                                     lock_;
-  std::unordered_map<std::string, DiskBufferPool *> buffer_pools_;
-  std::unordered_map<int, DiskBufferPool *>         fd_buffer_pools_;
-};
-
-static constexpr const int FILE_NAME_SIZE = (1 << 10);
-static constexpr const int DW_PAGE_SIZE   = FILE_NAME_SIZE + BP_PAGE_SIZE;
-class DoubleWritePage
-{
-public:
-  DoubleWritePage(){};
-  DoubleWritePage(PageNum page_num, const std::string &file_name, Page &page) : page_(page)
-  {
-    snprintf(file_name_, FILE_NAME_SIZE, "%s", file_name.c_str());
-  }
-
-  const char *get_file_name() { return file_name_; }
-
-  Page &get_page() { return page_; }
-
-private:
-  char file_name_[FILE_NAME_SIZE];
-  Page page_;
-};
-
-struct DoubleWriteBufferHeader
-{
-  int32_t page_cnt;
-};
-
-class DoubleWriteBuffer
-{
-public:
-  DoubleWriteBuffer(BufferPoolManager &bp_manager);
-  ~DoubleWriteBuffer();
+  DoubleWriteBuffer *get_dblwr_buffer() { return dblwr_buffer_.get(); }
 
   /**
    * @brief 根据ID获取对应的BufferPool对象

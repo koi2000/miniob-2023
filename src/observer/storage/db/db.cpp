@@ -178,7 +178,7 @@ RC Db::create_view(const char *view_name, bool allow_write, const std::vector<At
   View       *view           = new View();
   int32_t     table_id       = next_table_id_++;
   std::string view_file_path = view_meta_file(path_.c_str(), view_name);
-  rc                         = view->create(
+  rc                         = view->create(this,
       table_id, allow_write, view_file_path.c_str(), view_name, path_.c_str(), attr_infos, map_fields, select_sql);
   if (rc != RC::SUCCESS) {
     LOG_ERROR("Failed to create table %s.", view_name);
@@ -314,7 +314,7 @@ RC Db::recover()
     LOG_ERROR("Failed to create trx log replayer.");
     return RC::INTERNAL;
   }
-
+}
 RC Db::drop_table(const char *table_name)
 {
   RC     rc    = RC::SUCCESS;
@@ -335,7 +335,47 @@ RC Db::drop_table(const char *table_name)
   return rc;
 }
 
-RC Db::init_dblwr_buffer()
+// RC Db::init_dblwr_buffer()
+// {
+//   filesystem::path db_meta_file_path = db_meta_file(path_.c_str(), name_.c_str());
+//   if (!filesystem::exists(db_meta_file_path)) {
+//     check_point_lsn_ = 0;
+//     LOG_INFO("Db meta file not exist. db=%s, file=%s", name_.c_str(), db_meta_file_path.c_str());
+//     return RC::SUCCESS;
+//   }
+
+//   RC  rc = RC::SUCCESS;
+//   int fd = open(db_meta_file_path.c_str(), O_RDONLY);
+//   if (fd < 0) {
+//     LOG_ERROR("Failed to open db meta file. db=%s, file=%s, errno=%s", 
+//               name_.c_str(), db_meta_file_path.c_str(), strerror(errno));
+//     return RC::IOERR_READ;
+//   }
+
+//   char buffer[1024];
+//   int  n = read(fd, buffer, sizeof(buffer));
+//   if (n < 0) {
+//     LOG_ERROR("Failed to read db meta file. db=%s, file=%s, errno=%s", 
+//               name_.c_str(), db_meta_file_path.c_str(), strerror(errno));
+//     rc = RC::IOERR_READ;
+//   } else {
+//     if (n >= static_cast<int>(sizeof(buffer))) {
+//       LOG_WARN("Db meta file is too large. db=%s, file=%s, buffer size=%ld", 
+//                name_.c_str(), db_meta_file_path.c_str(), sizeof(buffer));
+//       return RC::IOERR_TOO_LONG;
+//     }
+
+//     buffer[n]        = '\0';
+//     check_point_lsn_ = atoll(buffer);  // 当前元数据就这一个数字
+//     LOG_INFO("Successfully read db meta file. db=%s, file=%s, check_point_lsn=%ld", 
+//              name_.c_str(), db_meta_file_path.c_str(), check_point_lsn_);
+//   }
+//   close(fd);
+
+//   return rc;
+// }
+
+RC Db::init_meta()
 {
   filesystem::path db_meta_file_path = db_meta_file(path_.c_str(), name_.c_str());
   if (!filesystem::exists(db_meta_file_path)) {

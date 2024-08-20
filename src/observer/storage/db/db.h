@@ -18,6 +18,7 @@ See the Mulan PSL v2 for more details. */
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <span>
 
 #include "common/rc.h"
 #include "sql/parser/parse_defs.h"
@@ -29,7 +30,9 @@ class View;
 class Table;
 class Field;
 class BaseTable;
-class CLogManager;
+class LogHandler;
+class TrxKit;
+class BufferPoolManager;
 
 /**
  * @brief 一个DB实例负责管理一批表
@@ -111,10 +114,12 @@ private:
   RC init_dblwr_buffer();
 
 private:
-  std::string                                  name_;
-  std::string                                  path_;
-  std::unordered_map<std::string, BaseTable *> opened_tables_;
-  std::unique_ptr<CLogManager>                 clog_manager_;
+  std::string                              name_;                 ///< 数据库名称
+  std::string                              path_;                 ///< 数据库文件存放的目录
+  std::unordered_map<std::string, BaseTable *> opened_tables_;        ///< 当前所有打开的表
+  std::unique_ptr<BufferPoolManager>       buffer_pool_manager_;  ///< 当前数据库的buffer pool管理器
+  std::unique_ptr<LogHandler>              log_handler_;          ///< 当前数据库的日志处理器
+  std::unique_ptr<TrxKit>                  trx_kit_;              ///< 当前数据库的事务管理器
 
   /// 给每个table都分配一个ID，用来记录日志。这里假设所有的DDL都不会并发操作，所以相关的数据都不上锁
   int32_t next_table_id_ = 0;

@@ -80,11 +80,6 @@ RC DeletePhysicalOperator::delete_from_table()
   return RC::SUCCESS;
 }
 
-RC DeletePhysicalOperator::next()
-{
-  return RC::RECORD_EOF;
-}
-
 RC DeletePhysicalOperator::delete_from_view()
 {
   RC rc = RC::SUCCESS;

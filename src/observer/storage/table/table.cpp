@@ -19,6 +19,7 @@ See the Mulan PSL v2 for more details. */
 #include "common/defs.h"
 #include "common/lang/defer.h"
 #include "common/lang/string.h"
+#include "storage/db/db.h"
 #include "common/log/log.h"
 #include "event/sql_debug.h"
 #include "storage/buffer/disk_buffer_pool.h"
@@ -71,9 +72,8 @@ RC Table::create(Db *db, int32_t table_id, const char *path, const char *name, c
   }
   LOG_INFO("Begin to create table %s:%s", base_dir, name);
 
-  if (attribute_count <= 0 || nullptr == attributes) {
-    LOG_WARN("Invalid arguments. table_name=%s, attribute_count=%d, attributes=%p", name, attribute_count,
-                 attributes);
+  if (attributes.size() == 0) {
+    LOG_WARN("Invalid arguments. table_name=%s, attribute_count=%d", name, attributes.size());
     return RC::INVALID_ARGUMENT;
   }
 
@@ -214,7 +214,7 @@ RC Table::open(Db *db, const char *meta_file, const char *base_dir)
 
     BplusTreeIndex *index      = new BplusTreeIndex();
     std::string     index_file = table_index_file(base_dir, name(), index_meta->name());
-    rc                         = index->open(index_file.c_str(), *index_meta, field_metas);
+    rc                         = index->open(this, index_file.c_str(), *index_meta, field_metas);
     if (rc != RC::SUCCESS) {
       delete index;
       LOG_ERROR("Failed to open index. table=%s, index=%s, file=%s, rc=%s", name(), index_meta->name(),
@@ -296,7 +296,7 @@ RC Table::insert_records(std::vector<Record> &records)
   return rc;
 }
 
-RC Table::visit_record(const RID &rid, bool readonly, std::function<void(Record &)> visitor)
+RC Table::visit_record(const RID &rid, std::function<bool(Record &)> visitor)
 {
   return record_handler_->visit_record(rid, visitor);
 }
@@ -447,7 +447,7 @@ RC Table::init_record_handler(const char *base_dir)
   }
 
   record_handler_ = new RecordFileHandler();
-  rc              = record_handler_->init(data_buffer_pool_);
+  rc              = record_handler_->init(*data_buffer_pool_, db_->log_handler());
   if (rc != RC::SUCCESS) {
     LOG_ERROR("Failed to init record handler. rc=%s", strrc(rc));
     data_buffer_pool_->close_file();
@@ -472,7 +472,8 @@ RC Table::init_text_handler(const char *base_dir)
   close(fd);
 
   if (exist) {
-    rc = BufferPoolManager::instance().open_file(text_file.c_str(), text_buffer_pool_);
+    BufferPoolManager &bpm = db_->buffer_pool_manager();
+    rc = bpm.open_file(db_->log_handler(), text_file.c_str(), text_buffer_pool_);
     if (rc != RC::SUCCESS) {
       LOG_ERROR("Failed to open disk buffer pool for file:%s. rc=%d:%s", text_file.c_str(), rc, strrc(rc));
       return rc;
@@ -480,9 +481,10 @@ RC Table::init_text_handler(const char *base_dir)
   }
   return rc;
 }
-RC Table::get_record_scanner(RecordFileScanner &scanner, Trx *trx, bool readonly)
+
+RC Table::get_record_scanner(RecordFileScanner &scanner, Trx *trx, ReadWriteMode mode)
 {
-  RC rc = scanner.open_scan(this, *data_buffer_pool_, trx, db_->log_handler(), mode, nullptr);
+  RC rc = scanner.open_scan(this, *data_buffer_pool_, trx,db_->log_handler(), mode, nullptr);
   if (rc != RC::SUCCESS) {
     LOG_ERROR("failed to open scanner. rc=%s", strrc(rc));
   }
@@ -532,7 +534,7 @@ RC Table::create_index(Trx *trx, bool unique, const std::vector<const FieldMeta 
   // 创建索引相关数据
   BplusTreeIndex *index      = new BplusTreeIndex();
   std::string     index_file = table_index_file(base_dir_.c_str(), name(), index_name);
-  rc                         = index->create(index_file.c_str(), unique, new_index_meta, field_ids, field_metas);
+  rc                         = index->create(this, index_file.c_str(), unique, new_index_meta, field_ids, field_metas);
   if (rc != RC::SUCCESS) {
     delete index;
     LOG_ERROR("Failed to create bplus tree index. file name=%s, rc=%d:%s", index_file.c_str(), rc, strrc(rc));
@@ -549,18 +551,11 @@ RC Table::create_index(Trx *trx, bool unique, const std::vector<const FieldMeta 
   }
 
   Record record;
-  while (scanner.has_next()) {
-    rc = scanner.next(record);
-    if (rc != RC::SUCCESS) {
-      LOG_WARN("failed to scan records while creating index. table=%s, index=%s, rc=%s", name(), index_name,
-                     strrc(rc));
-      return rc;
-    }
+  while (OB_SUCC(rc = scanner.next(record))) {
     rc = index->insert_entry(record.data(), &record.rid());
     if (rc != RC::SUCCESS) {
-      // TODO: 插入失败，应该删除索引
-      LOG_WARN("failed to insert record into index while creating index. table=%s, index=%s, rc=%s", name(),
-                     index_name, strrc(rc));
+      LOG_WARN("failed to insert record into index while creating index. table=%s, index=%s, rc=%s",
+               name(), index_name, strrc(rc));
       return rc;
     }
   }
@@ -903,8 +898,8 @@ RC Table::drop(const char *dir)
     record_handler_ = nullptr;
     // 3.destroy buffer pool and remove data file
     std::string        data_file = table_data_file(dir, name());
-    BufferPoolManager &bpm       = BufferPoolManager::instance();
-    rc                           = bpm.remove_file(data_file.c_str());
+    BufferPoolManager &bpm = db_->buffer_pool_manager();  
+    rc        = bpm.remove_file(data_file.c_str());
 
     // 4.destroy text handler
     // 5.destory buffer pool and remove text fild

@@ -2,14 +2,16 @@
 #include <fcntl.h>
 #include <fstream>
 
+#include "storage/db/db.h"
 #include "common/log/log.h"
 #include "sql/parser/parse.h"
 #include "storage/field/field.h"
 #include "storage/field/field_meta.h"
 #include "storage/table/view.h"
 #include "json/json.h"
+#include "storage/trx/trx.h"
 
-RC View::create(int32_t table_id, bool allow_write,
+RC View::create(Db *db, int32_t table_id, bool allow_write,
     const char                         *path,      // .view文件路径、名称
     const char                         *name,      // view_name
     const char                         *base_dir,  // db/sys
@@ -34,7 +36,9 @@ RC View::create(int32_t table_id, bool allow_write,
   allow_write_ = allow_write;
   map_fields_  = map_fields;
   select_sql_.deep_copy(*select_sql);
-  if ((rc = table_meta_.init(table_id, name, attr_infos.size(), attr_infos.data())) != RC::SUCCESS) {
+  const std::vector<FieldMeta> *trx_fields = db->trx_kit().trx_fields();
+  db_ = db;
+  if ((rc = table_meta_.init(table_id, name, trx_fields,attr_infos)) != RC::SUCCESS) {
     LOG_ERROR("Failed to init table meta. name:%s, ret:%d", name, rc);
     return rc;  // delete table file
   }

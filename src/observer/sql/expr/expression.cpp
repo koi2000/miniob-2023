@@ -219,12 +219,12 @@ RC ComparisonExpr::get_value(const Tuple &tuple, Value &value) const
   SubQueryExpr *left_subquery_expr  = nullptr;
   SubQueryExpr *right_subquery_expr = nullptr;
   // TODO(wbj) 为啥不能传两个参数
-  DEFER([&left_subquery_expr]() {
+  DEFER_FUNC([&left_subquery_expr]() {
     if (nullptr != left_subquery_expr) {
       left_subquery_expr->close();
     }
   });
-  DEFER([&right_subquery_expr]() {
+  DEFER_FUNC([&right_subquery_expr]() {
     if (nullptr != right_subquery_expr) {
       right_subquery_expr->close();
     }

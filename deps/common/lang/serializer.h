@@ -16,7 +16,7 @@ See the Mulan PSL v2 for more details. */
 
 #include <vector>
 #include <span>
-
+#include <cstdint>
 namespace common {
 
 /**
