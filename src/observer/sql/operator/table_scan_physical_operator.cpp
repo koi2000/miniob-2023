@@ -18,83 +18,79 @@ See the Mulan PSL v2 for more details. */
 
 using namespace std;
 
-RC TableScanPhysicalOperator::open(Trx* trx) {
-    RC rc = table_->get_record_scanner(record_scanner_, trx, readonly_);
-    if (rc == RC::SUCCESS) {
-        tuple_.set_schema(table_, alias_);
-    }
-    trx_ = trx;
-    return rc;
+RC TableScanPhysicalOperator::open(Trx *trx)
+{
+  RC rc = table_->get_record_scanner(record_scanner_, trx, mode_);
+  if (rc == RC::SUCCESS) {
+    tuple_.set_schema(table_, alias_);
+  }
+  trx_ = trx;
+  return rc;
 }
 
-RC TableScanPhysicalOperator::next() {
-    if (!record_scanner_.has_next()) {
-        return RC::RECORD_EOF;
-    }
+RC TableScanPhysicalOperator::next()
+{
+  RC rc = RC::SUCCESS;
 
-    RC rc = RC::SUCCESS;
-    bool filter_result = false;
-    while (record_scanner_.has_next()) {
-        rc = record_scanner_.next(current_record_);
-        if (rc != RC::SUCCESS) {
-            return rc;
-        }
-
-        tuple_.set_record(&current_record_);
-        rc = filter(tuple_, filter_result);
-        if (rc != RC::SUCCESS) {
-            return rc;
-        }
-
-        if (filter_result) {
-            // sql_debug("get a tuple: %s", tuple_.to_string().c_str());
-            break;
-        } else {
-            // sql_debug("a tuple is filtered: %s", tuple_.to_string().c_str());
-            rc = RC::RECORD_EOF;
-        }
-    }
-    return rc;
-}
-
-RC TableScanPhysicalOperator::close() {
-    return record_scanner_.close_scan();
-}
-
-Tuple* TableScanPhysicalOperator::current_tuple() {
+  bool filter_result = false;
+  while (OB_SUCC(rc = record_scanner_.next(current_record_))) {
+    LOG_TRACE("got a record. rid=%s", current_record_.rid().to_string().c_str());
+    
     tuple_.set_record(&current_record_);
-    return &tuple_;
-}
-
-string TableScanPhysicalOperator::param() const {
-    return table_->name();
-}
-
-void TableScanPhysicalOperator::set_predicates(vector<unique_ptr<Expression>>&& exprs) {
-    predicates_ = std::move(exprs);
-}
-
-RC TableScanPhysicalOperator::filter(RowTuple& tuple, bool& result) {
-    RC rc = RC::SUCCESS;
-    Value value;
-    Tuple* tp = &tuple;
-    JoinedTuple jt(&tuple, const_cast<Tuple*>(parent_tuple_));
-    if (parent_tuple_) {
-        tp = &jt;
-    }
-    for (unique_ptr<Expression>& expr : predicates_) {
-        rc = expr->get_value(*tp, value);
-        if (rc != RC::SUCCESS) {
-            return rc;
-        }
-
-        bool tmp_result = value.get_boolean();
-        if (!tmp_result) {
-            result = false;
-            return rc;
-        }
+    rc = filter(tuple_, filter_result);
+    if (rc != RC::SUCCESS) {
+      LOG_TRACE("record filtered failed=%s", strrc(rc));
+      return rc;
     }
 
-    result = true;
-    return rc;
+    if (filter_result) {
+      // sql_debug("get a tuple: %s", tuple_.to_string().c_str());
+      break;
+    } else {
+      // sql_debug("a tuple is filtered: %s", tuple_.to_string().c_str());
+      rc = RC::RECORD_EOF;
+    }
+  }
+  return rc;
+}
+
+RC TableScanPhysicalOperator::close() { return record_scanner_.close_scan(); }
+
+Tuple *TableScanPhysicalOperator::current_tuple()
+{
+  tuple_.set_record(&current_record_);
+  return &tuple_;
+}
+
+string TableScanPhysicalOperator::param() const { return table_->name(); }
+
+void TableScanPhysicalOperator::set_predicates(vector<unique_ptr<Expression>> &&exprs)
+{
+  predicates_ = std::move(exprs);
+}
+
+RC TableScanPhysicalOperator::filter(RowTuple &tuple, bool &result)
+{
+  RC          rc = RC::SUCCESS;
+  Value       value;
+  Tuple      *tp = &tuple;
+  JoinedTuple jt(&tuple, const_cast<Tuple *>(parent_tuple_));
+  if (parent_tuple_) {
+    tp = &jt;
+  }
+  for (unique_ptr<Expression> &expr : predicates_) {
+    rc = expr->get_value(*tp, value);
+    if (rc != RC::SUCCESS) {
+      return rc;
+    }
+
+    bool tmp_result = value.get_boolean();
+    if (!tmp_result) {
+      result = false;
+      return rc;
+    }
+  }
+
+  result = true;
+  return rc;
 }

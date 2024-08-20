@@ -20,103 +20,100 @@ See the Mulan PSL v2 for more details. */
 #include "storage/table/view.h"
 #include "storage/trx/trx.h"
 
-RC DeletePhysicalOperator::open(Trx* trx) {
-    if (children_.empty()) {
-        return RC::SUCCESS;
-    }
-
-    std::unique_ptr<PhysicalOperator>& child = children_[0];
-    RC rc = child->open(trx);
-    if (rc != RC::SUCCESS) {
-        LOG_WARN("failed to open child operator: %s", strrc(rc));
-        return rc;
-    }
-
-    trx_ = trx;
-
+RC DeletePhysicalOperator::open(Trx *trx)
+{
+  if (children_.empty()) {
     return RC::SUCCESS;
-}
+  }
 
-RC DeletePhysicalOperator::next() {
-    RC rc = RC::SUCCESS;
-    if (children_.empty()) {
-        return RC::RECORD_EOF;
-    }
+  std::unique_ptr<PhysicalOperator> &child = children_[0];
 
-    if (table_->is_table()) {
-        rc = delete_from_table();
-    } else {
-        rc = delete_from_view();
-    }
-
+  RC rc = child->open(trx);
+  if (rc != RC::SUCCESS) {
+    LOG_WARN("failed to open child operator: %s", strrc(rc));
     return rc;
-}
+  }
 
-RC DeletePhysicalOperator::delete_from_table() {
-    RC rc = RC::SUCCESS;
-
-    Table* table = static_cast<Table*>(table_);
-    PhysicalOperator* child = children_[0].get();
-    while (RC::SUCCESS == (rc = child->next())) {
-        Tuple* tuple = child->current_tuple();
-        if (nullptr == tuple) {
-            LOG_WARN("failed to get current record: %s", strrc(rc));
-            return rc;
-        }
-
-        RowTuple* row_tuple = static_cast<RowTuple*>(tuple);
-        Record& record = row_tuple->record();
-        rc = trx_->delete_record(table, record);
-        if (rc != RC::SUCCESS) {
-            LOG_WARN("failed to delete record: %s", strrc(rc));
-            return rc;
-        }
-    }
-
+  trx_ = trx;
+  if (children_.empty()) {
     return RC::RECORD_EOF;
+  }
+
+  if (table_->is_table()) {
+    rc = delete_from_table();
+  } else {
+    rc = delete_from_view();
+  }
+  return RC::SUCCESS;
 }
 
-RC DeletePhysicalOperator::delete_from_view() {
-    RC rc = RC::SUCCESS;
+RC DeletePhysicalOperator::next()
+{
+  return RC::RECORD_EOF;
+}
 
-    PhysicalOperator* child = children_[0].get();
-    while (RC::SUCCESS == (rc = child->next())) {
-        Tuple* tuple = child->current_tuple();
-        if (nullptr == tuple) {
-            LOG_WARN("failed to get current record: %s", strrc(rc));
-            return rc;
-        }
+RC DeletePhysicalOperator::delete_from_table()
+{
+  RC rc = RC::SUCCESS;
 
-        RowTuple* row_tuple = static_cast<RowTuple*>(tuple);
-        std::unordered_map<const BaseTable*, RID> table_rid = row_tuple->get_table_rid_map();
-        for (auto iter : table_rid) {
-            Record record;
-            if (!iter.first->is_table()) {
-                LOG_ERROR("unexpect map_relation from view to view");
-                return RC::INTERNAL;
-            }
+  Table            *table = static_cast<Table *>(table_);
+  PhysicalOperator *child = children_[0].get();
+  while (RC::SUCCESS == (rc = child->next())) {
+    Tuple *tuple = child->current_tuple();
+    if (nullptr == tuple) {
+      LOG_WARN("failed to get current record: %s", strrc(rc));
+      return rc;
+    }
 
-            Table* table = const_cast<Table*>(static_cast<const Table*>(iter.first));
-            rc = table->get_record(iter.second, record);
-            if (RC::SUCCESS != rc) {
-                LOG_WARN("failed to get record from table:%s, rid:%ld-%ld", table->name(), iter.second.page_num,
+    RowTuple *row_tuple = static_cast<RowTuple *>(tuple);
+    Record   &record    = row_tuple->record();
+    rc                  = trx_->delete_record(table, record);
+    if (rc != RC::SUCCESS) {
+      LOG_WARN("failed to delete record: %s", strrc(rc));
+      return rc;
+    }
+  }
+
+  return RC::SUCCESS;
+}
+
+RC DeletePhysicalOperator::delete_from_view()
+{
+  RC rc = RC::SUCCESS;
+
+  PhysicalOperator *child = children_[0].get();
+  while (RC::SUCCESS == (rc = child->next())) {
+    Tuple *tuple = child->current_tuple();
+    if (nullptr == tuple) {
+      LOG_WARN("failed to get current record: %s", strrc(rc));
+      return rc;
+    }
+
+    RowTuple                                  *row_tuple = static_cast<RowTuple *>(tuple);
+    std::unordered_map<const BaseTable *, RID> table_rid = row_tuple->get_table_rid_map();
+    for (auto iter : table_rid) {
+      Record record;
+      if (!iter.first->is_table()) {
+        LOG_ERROR("unexpect map_relation from view to view");
+        return RC::INTERNAL;
+      }
+
+      Table *table = const_cast<Table *>(static_cast<const Table *>(iter.first));
+      rc           = table->get_record(iter.second, record);
+      if (RC::SUCCESS != rc) {
+        LOG_WARN("failed to get record from table:%s, rid:%ld-%ld", table->name(), iter.second.page_num,
                          iter.second.slot_num);
-                return rc;
-            }
+        return rc;
+      }
 
-            rc = trx_->delete_record(table, record);
-            if (rc != RC::SUCCESS) {
-                LOG_WARN("failed to delete record: %s", strrc(rc));
-                return rc;
-            }
-        }  // end delete one record from tables
-    }
-    return rc;
+      rc = trx_->delete_record(table, record);
+      if (rc != RC::SUCCESS) {
+        LOG_WARN("failed to delete record: %s", strrc(rc));
+        return rc;
+      }
+    }  // end delete one record from tables
+  }
+  return rc;
 }
 
-RC DeletePhysicalOperator::close() {
-    if (!children_.empty()) {
-        children_[0]->close();
-    }
-    return RC::SUCCESS;
-}
+RC DeletePhysicalOperator::close() { return RC::SUCCESS; }

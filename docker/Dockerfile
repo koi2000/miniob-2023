@@ -2,7 +2,7 @@
 # use docker build: docker build -t miniob .
 # use docker compose: docker compose up -d --build
 # make sure docker has been installed
-FROM ubuntu:latest
+FROM ubuntu:22.04
 
 # ENV LANG=en_US.UTF-8
 # locale
@@ -11,7 +11,9 @@ RUN apt-get update && apt-get install -y locales apt-utils && rm -rf /var/lib/ap
 ENV LANG en_US.utf8
 
 # dev tools
-RUN apt-get update && apt-get install -y build-essential gdb cmake git wget flex texinfo libreadline-dev diffutils bison
+RUN apt-get update \
+    && apt-get install -y build-essential gdb cmake git wget flex texinfo libreadline-dev diffutils bison \
+    && apt-get install -y clang-format vim
 
 # install openssh
 RUN apt-get install -y openssh-server

@@ -25,30 +25,27 @@ class InsertStmt;
  * @brief 插入物理算子
  * @ingroup PhysicalOperator
  */
-class InsertPhysicalOperator : public PhysicalOperator {
-  public:
-    InsertPhysicalOperator(BaseTable* base_table, std::vector<std::vector<Value>>&& values);
+class InsertPhysicalOperator : public PhysicalOperator
+{
+public:
+  InsertPhysicalOperator(BaseTable *base_table, std::vector<std::vector<Value>> &&values);
 
-    virtual ~InsertPhysicalOperator() = default;
+  virtual ~InsertPhysicalOperator() = default;
 
-    PhysicalOperatorType type() const override {
-        return PhysicalOperatorType::INSERT;
-    }
+  PhysicalOperatorType type() const override { return PhysicalOperatorType::INSERT; }
 
-    RC open(Trx* trx) override;
-    RC next() override;
-    RC close() override;
+  RC open(Trx *trx) override;
+  RC next() override;
+  RC close() override;
 
-    Tuple* current_tuple() override {
-        return nullptr;
-    }
+  Tuple *current_tuple() override { return nullptr; }
 
-  private:
-    RC insert_into_table(Trx* trx);
-    RC insert_into_view(Trx* trx);
-    RC construct_row_values();
+private:
+  RC insert_into_table(Trx *trx);
+  RC insert_into_view(Trx *trx);
+  RC construct_row_values();
 
-  private:
-    BaseTable* base_table_ = nullptr;
-    std::vector<std::vector<Value>> values_;
+private:
+  BaseTable                      *base_table_ = nullptr;
+  std::vector<std::vector<Value>> values_;
 };

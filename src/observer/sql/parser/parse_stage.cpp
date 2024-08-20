@@ -27,44 +27,45 @@ See the Mulan PSL v2 for more details. */
 
 using namespace common;
 
-RC ParseStage::handle_request(SQLStageEvent* sql_event) {
-    RC rc = RC::SUCCESS;
+RC ParseStage::handle_request(SQLStageEvent *sql_event)
+{
+  RC rc = RC::SUCCESS;
 
-    SqlResult* sql_result = sql_event->session_event()->sql_result();
-    const std::string& sql = sql_event->sql();
+  SqlResult         *sql_result = sql_event->session_event()->sql_result();
+  const std::string &sql        = sql_event->sql();
 
-    ParsedSqlResult parsed_sql_result;
+  ParsedSqlResult parsed_sql_result;
 
-    parse(sql.c_str(), &parsed_sql_result);
-    if (parsed_sql_result.sql_nodes().empty()) {
-        sql_result->set_return_code(RC::SUCCESS);
-        sql_result->set_state_string("");
-        return RC::INTERNAL;
+  parse(sql.c_str(), &parsed_sql_result);
+  if (parsed_sql_result.sql_nodes().empty()) {
+    sql_result->set_return_code(RC::SUCCESS);
+    sql_result->set_state_string("");
+    return RC::INTERNAL;
+  }
+
+  if (parsed_sql_result.sql_nodes().size() > 1) {
+    LOG_WARN("got multi sql commands but only 1 will be handled");
+  }
+
+  std::unique_ptr<ParsedSqlNode> sql_node = std::move(parsed_sql_result.sql_nodes().front());
+  if (sql_node->flag == SCF_ERROR) {
+    // 不应该在parse阶段检查date
+    if (sql_node->error.error_msg == "date invaid") {
+      sql_result->set_return_code(RC::INTERNAL);
+      return RC::INTERNAL;
+    } else if (sql_node->error.error_msg == "only support count(*)") {
+      sql_result->set_return_code(RC::INTERNAL);
+      return RC::INTERNAL;
+    } else {
+      // set error information to event
+      rc = RC::SQL_SYNTAX;
+      sql_result->set_return_code(rc);
+      sql_result->set_state_string("Failed to parse sql");
+      return rc;
     }
+  }
 
-    if (parsed_sql_result.sql_nodes().size() > 1) {
-        LOG_WARN("got multi sql commands but only 1 will be handled");
-    }
+  sql_event->set_sql_node(std::move(sql_node));
 
-    std::unique_ptr<ParsedSqlNode> sql_node = std::move(parsed_sql_result.sql_nodes().front());
-    if (sql_node->flag == SCF_ERROR) {
-        // 不应该在parse阶段检查date
-        if (sql_node->error.error_msg == "date invaid") {
-            sql_result->set_return_code(RC::INTERNAL);
-            return RC::INTERNAL;
-        } else if (sql_node->error.error_msg == "only support count(*)") {
-            sql_result->set_return_code(RC::INTERNAL);
-            return RC::INTERNAL;
-        } else {
-            // set error information to event
-            rc = RC::SQL_SYNTAX;
-            sql_result->set_return_code(rc);
-            sql_result->set_state_string("Failed to parse sql");
-            return rc;
-        }
-    }
-
-    sql_event->set_sql_node(std::move(sql_node));
-
-    return RC::SUCCESS;
+  return RC::SUCCESS;
 }

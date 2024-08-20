@@ -11,7 +11,14 @@ SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 
 OPTION(ENABLE_ASAN "Enable build with address sanitizer" ON)
+OPTION(ENABLE_TSAN "Build with thread sanitizer" OFF)
+OPTION(ENABLE_UBSAN "Build with undefined behavior sanitizer" OFF)
 OPTION(WITH_UNIT_TESTS "Compile miniob with unit tests" ON)
+OPTION(WITH_BENCHMARK "Compile benchmark" OFF)
+# TODO: support MemTracer with sanitizers, currently MemTracer doesn't work with sanitizers.
+OPTION(WITH_MEMTRACER "Compile memtracer" ON)
+OPTION(ENABLE_COVERAGE "Enable unittest coverage" OFF)
+OPTION(ENABLE_NOPIE "Enable no pie" OFF)
 OPTION(CONCURRENCY "Support concurrency operations" OFF)
 OPTION(STATIC_STDLIB "Link std library static or dynamic, such as libgcc, libstdc++, libasan" OFF)
 
@@ -35,7 +42,12 @@ ELSE()
 ENDIF(WIN32)
 
 # This is for clangd plugin for vscode
-SET(CMAKE_COMMON_FLAGS "${CMAKE_COMMON_FLAGS} -Wall -Werror")
+# SET(CMAKE_COMMON_FLAGS "${CMAKE_COMMON_FLAGS} -Wall -Werror")
+IF (ENABLE_NOPIE)
+    SET(CMAKE_COMMON_FLAGS "${CMAKE_COMMON_FLAGS} -no-pie")
+    ADD_LINK_OPTIONS(-no-pie)
+ENDIF (ENABLE_NOPIE)
+
 IF(DEBUG)
     MESSAGE(STATUS "DEBUG has been set as TRUE ${DEBUG}")
     SET(CMAKE_COMMON_FLAGS "${CMAKE_COMMON_FLAGS}  -O0 -g -DDEBUG ")
@@ -61,11 +73,44 @@ IF ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND ${STATIC_STDLIB})
 ENDIF()
 
 IF (ENABLE_ASAN)
-    SET(CMAKE_COMMON_FLAGS "${CMAKE_COMMON_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
+    MESSAGE(STATUS "Instrumenting with Address Sanitizer")
+    SET(CMAKE_COMMON_FLAGS "${CMAKE_COMMON_FLAGS} -fno-omit-frame-pointer -fsanitize=address -fsanitize-address-use-after-scope")
     IF ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND ${STATIC_STDLIB})
         ADD_LINK_OPTIONS(-static-libasan)
     ENDIF()
 ENDIF()
+
+IF (ENABLE_TSAN)
+    # supported flags
+    # https://github.com/google/sanitizers/wiki/ThreadSanitizerFlags
+    MESSAGE(STATUS "Instrumenting with Thread Sanitizer")
+    SET(TSAN_FLAGS "-fno-omit-frame-pointer -fsanitize=thread")
+    SET(TSAN_CCFLAGS "${TSAN_CCFLAGS} -mllvm -tsan-instrument-memory-accesses=0")
+    SET(TSAN_CCFLAGS "${TSAN_CCFLAGS} -mllvm -tsan-instrument-atomics=0")
+    SET(TSAN_CCFLAGS "${TSAN_CCFLAGS} -mllvm -tsan-instrument-func-entry-exit=1")
+    SET(CMAKE_COMMON_FLAGS "${CMAKE_COMMON_FLAGS} ${TSAN_FLAGS} ${TSAN_CCFLAGS}")
+    # -Qunused-arguments 有些编译器不支持，所以先删掉
+    IF ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND ${STATIC_STDLIB})
+        ADD_LINK_OPTIONS(-static-libtsan)
+    ENDIF()
+    SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${TSAN_FLAGS}")
+    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${TSAN_FLAGS}")
+ENDIF (ENABLE_TSAN)
+
+IF (ENABLE_UBSAN)
+    # Only success on Mac Clang
+    MESSAGE(STATUS "Instrumenting with Undefined Behavior Sanitizer")
+    SET(UBSAN_FLAGS "${UBSAN_FLAGS} -fno-omit-frame-pointer")
+    SET(UBSAN_FLAGS "${UBSAN_FLAGS} -fsanitize=undefined")
+    SET(UBSAN_FLAGS "${UBSAN_FLAGS} -fsanitize=implicit-conversion")
+    SET(UBSAN_FLAGS "${UBSAN_FLAGS} -fsanitize=implicit-integer-truncation")
+    SET(UBSAN_FLAGS "${UBSAN_FLAGS} -fsanitize=integer")
+    SET(UBSAN_FLAGS "${UBSAN_FLAGS} -fsanitize=nullability")
+    SET(UBSAN_FLAGS "${UBSAN_FLAGS} -fsanitize=vptr")
+    SET(CMAKE_COMMON_FLAGS "${CMAKE_COMMON_FLAGS} ${UBSAN_FLAGS}")
+    SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${UBSAN_FLAGS}")
+    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${UBSAN_FLAGS}")
+ENDIF (ENABLE_UBSAN)
 
 IF (CMAKE_INSTALL_PREFIX)
     MESSAGE(STATUS "CMAKE_INSTALL_PREFIX has been set as " ${CMAKE_INSTALL_PREFIX} )
@@ -92,13 +137,25 @@ ENDIF ()
 
 INCLUDE_DIRECTORIES(. ${PROJECT_SOURCE_DIR}/deps /usr/local/include)
 
+# IF(WITH_UNIT_TESTS)
+#     SET(CMAKE_COMMON_FLAGS "${CMAKE_COMMON_FLAGS} -fprofile-arcs -ftest-coverage")
+#     enable_testing()
+# ENDIF(WITH_UNIT_TESTS)
+
+# SET(CMAKE_CXX_FLAGS ${CMAKE_COMMON_FLAGS})
+# SET(CMAKE_C_FLAGS ${CMAKE_COMMON_FLAGS})
+# MESSAGE(STATUS "CMAKE_CXX_FLAGS is " ${CMAKE_CXX_FLAGS})
+
 # ADD_SUBDIRECTORY(src bin)  bin 为目标目录， 可以省略
 ADD_SUBDIRECTORY(deps)
 ADD_SUBDIRECTORY(src/obclient)
 ADD_SUBDIRECTORY(src/observer)
 ADD_SUBDIRECTORY(test/perf)
-ADD_SUBDIRECTORY(benchmark)
 ADD_SUBDIRECTORY(tools)
+
+IF (WITH_BENCHMARK)
+    ADD_SUBDIRECTORY(benchmark)
+ENDIF(WITH_BENCHMARK)
 
 IF(WITH_UNIT_TESTS)
     SET(CMAKE_COMMON_FLAGS "${CMAKE_COMMON_FLAGS} -fprofile-arcs -ftest-coverage")
@@ -132,3 +189,4 @@ INSTALL(CODE "MESSAGE(\"Sample install message.\")")
 #IF(not LS_RVALUE)
 #    MESSAGE(STATUS "ls result: " ${LS_OUTPUT})
 #ENDIF(not LS_RVALUE)
+

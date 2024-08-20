@@ -24,36 +24,24 @@ See the Mulan PSL v2 for more details. */
  * @brief 更新逻辑算子
  * @ingroup LogicalOperator
  */
-class UpdateLogicalOperator : public LogicalOperator {
-  public:
-    UpdateLogicalOperator(BaseTable* table,
-                          std::vector<std::unique_ptr<Expression>>&& values,
-                          std::vector<FieldMeta>& fields);
-    virtual ~UpdateLogicalOperator() = default;
+class UpdateLogicalOperator : public LogicalOperator
+{
+public:
+  UpdateLogicalOperator(
+      BaseTable *table, std::vector<std::unique_ptr<Expression>> &&values, std::vector<FieldMeta> &fields);
+  virtual ~UpdateLogicalOperator() = default;
 
-    LogicalOperatorType type() const override {
-        return LogicalOperatorType::UPDATE;
-    }
+  LogicalOperatorType type() const override { return LogicalOperatorType::UPDATE; }
 
-    BaseTable* table() const {
-        return table_;
-    }
-    const std::vector<std::unique_ptr<Expression>>& values() const {
-        return values_;
-    }
-    std::vector<std::unique_ptr<Expression>>& values() {
-        return values_;
-    }
+  BaseTable                                      *table() const { return table_; }
+  const std::vector<std::unique_ptr<Expression>> &values() const { return values_; }
+  std::vector<std::unique_ptr<Expression>>       &values() { return values_; }
 
-    const std::vector<FieldMeta>& fields() const {
-        return fields_;
-    }
-    std::vector<FieldMeta>& fields() {
-        return fields_;
-    }
+  const std::vector<FieldMeta> &fields() const { return fields_; }
+  std::vector<FieldMeta>       &fields() { return fields_; }
 
-  private:
-    BaseTable* table_ = nullptr;
-    std::vector<std::unique_ptr<Expression>> values_;
-    std::vector<FieldMeta> fields_;
+private:
+  BaseTable                               *table_ = nullptr;
+  std::vector<std::unique_ptr<Expression>> values_;
+  std::vector<FieldMeta>                   fields_;
 };

@@ -3,9 +3,9 @@
 #include "storage/db/db.h"
 #include "storage/table/table.h"
 
-RC ShowIndexStmt::create(Db *db, const ShowIndexSqlNode &show_index_sql,  Stmt *&stmt)
+RC ShowIndexStmt::create(Db *db, const ShowIndexSqlNode &show_index_sql, Stmt *&stmt)
 {
-  RC rc = RC::SUCCESS;
+  RC          rc         = RC::SUCCESS;
   const char *table_name = show_index_sql.relation_name.c_str();
 
   if (nullptr == db || nullptr == table_name) {
@@ -16,6 +16,6 @@ RC ShowIndexStmt::create(Db *db, const ShowIndexSqlNode &show_index_sql,  Stmt *
   } else {
     stmt = new ShowIndexStmt(table_name);
   }
-  
+
   return rc;
 }

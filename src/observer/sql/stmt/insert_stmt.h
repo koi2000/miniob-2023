@@ -25,39 +25,32 @@ class Db;
  * @brief 插入语句
  * @ingroup Statement
  */
-class InsertStmt : public Stmt {
-  public:
-    InsertStmt() = default;
-    InsertStmt(BaseTable* table, std::vector<std::vector<Value>>& values, int value_amount);
+class InsertStmt : public Stmt
+{
+public:
+  InsertStmt() = default;
+  InsertStmt(BaseTable *table, std::vector<std::vector<Value>> &values, int value_amount);
 
-    StmtType type() const override {
-        return StmtType::INSERT;
-    }
+  StmtType type() const override { return StmtType::INSERT; }
 
-  public:
-    static RC create(Db* db, const InsertSqlNode& insert_sql, Stmt*& stmt);
+public:
+  static RC create(Db *db, const InsertSqlNode &insert_sql, Stmt *&stmt);
 
-  public:
-    BaseTable* base_table() const {
-        return table_;
-    }
-    const std::vector<std::vector<Value>>& values() const {
-        return values_;
-    }
-    const int value_amount() const {
-        return value_amount_;
-    }
+public:
+  BaseTable                             *base_table() const { return table_; }
+  const std::vector<std::vector<Value>> &values() const { return values_; }
+  const int                              value_amount() const { return value_amount_; }
 
-  private:
-    // 未指定列名
-    static RC check_full_rows(BaseTable* table, const InsertSqlNode& inserts, std::vector<std::vector<Value>>& rows);
+private:
+  // 未指定列名
+  static RC check_full_rows(BaseTable *table, const InsertSqlNode &inserts, std::vector<std::vector<Value>> &rows);
 
-    // 指定了列名
-    static RC
-    check_incomplete_rows(BaseTable* table, const InsertSqlNode& inserts, std::vector<std::vector<Value>>& rows);
+  // 指定了列名
+  static RC check_incomplete_rows(
+      BaseTable *table, const InsertSqlNode &inserts, std::vector<std::vector<Value>> &rows);
 
-  private:
-    BaseTable* table_ = nullptr;
-    const std::vector<std::vector<Value>> values_;
-    int value_amount_ = 0;  // 一行有多少列
+private:
+  BaseTable                            *table_ = nullptr;
+  const std::vector<std::vector<Value>> values_;
+  int                                   value_amount_ = 0;  // 一行有多少列
 };

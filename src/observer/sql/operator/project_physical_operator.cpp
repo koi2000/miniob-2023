@@ -17,39 +17,44 @@ See the Mulan PSL v2 for more details. */
 #include "storage/record/record.h"
 #include "storage/table/table.h"
 
-RC ProjectPhysicalOperator::open(Trx* trx) {
-    if (children_.empty()) {
-        return RC::SUCCESS;
-    }
-
-    PhysicalOperator* child = children_[0].get();
-    RC rc = child->open(trx);
-    if (rc != RC::SUCCESS) {
-        LOG_WARN("failed to open child operator: %s", strrc(rc));
-        return rc;
-    }
-
+RC ProjectPhysicalOperator::open(Trx *trx)
+{
+  if (children_.empty()) {
     return RC::SUCCESS;
+  }
+
+  PhysicalOperator *child = children_[0].get();
+  RC                rc    = child->open(trx);
+  if (rc != RC::SUCCESS) {
+    LOG_WARN("failed to open child operator: %s", strrc(rc));
+    return rc;
+  }
+
+  return RC::SUCCESS;
 }
 
-RC ProjectPhysicalOperator::next() {
-    if (children_.empty()) {
-        return RC::RECORD_EOF;
-    }
-    return children_[0]->next();
+RC ProjectPhysicalOperator::next()
+{
+  if (children_.empty()) {
+    return RC::RECORD_EOF;
+  }
+  return children_[0]->next();
 }
 
-RC ProjectPhysicalOperator::close() {
-    if (!children_.empty()) {
-        children_[0]->close();
-    }
-    return RC::SUCCESS;
+RC ProjectPhysicalOperator::close()
+{
+  if (!children_.empty()) {
+    children_[0]->close();
+  }
+  return RC::SUCCESS;
 }
-Tuple* ProjectPhysicalOperator::current_tuple() {
-    tuple_.set_tuple(children_[0]->current_tuple());
-    return &tuple_;
+Tuple *ProjectPhysicalOperator::current_tuple()
+{
+  tuple_.set_tuple(children_[0]->current_tuple());
+  return &tuple_;
 }
 
-void ProjectPhysicalOperator::add_projection(std::unique_ptr<Expression>&& project) {
-    tuple_.add_expr(std::move(project));
+void ProjectPhysicalOperator::add_projection(std::unique_ptr<Expression> &&project)
+{
+  tuple_.add_expr(std::move(project));
 }

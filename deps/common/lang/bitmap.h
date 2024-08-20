@@ -16,27 +16,28 @@ See the Mulan PSL v2 for more details. */
 
 namespace common {
 
-class Bitmap {
-  public:
-    Bitmap();
-    Bitmap(char* bitmap, int size);
+class Bitmap
+{
+public:
+  Bitmap();
+  Bitmap(char *bitmap, int size);
 
-    void init(char* bitmap, int size);
-    bool get_bit(int index);
-    bool get_bit(int index) const;
-    void set_bit(int index);
-    void clear_bit(int index);
-    void clear_bits();
+  void init(char *bitmap, int size);
+  bool get_bit(int index);
+  bool get_bit(int index) const;
+  void set_bit(int index);
+  void clear_bit(int index);
+  void clear_bits();
 
-    /**
-     * @param start 从哪个位开始查找，start是包含在内的
-     */
-    int next_unsetted_bit(int start);
-    int next_setted_bit(int start);
+  /**
+   * @param start 从哪个位开始查找，start是包含在内的
+   */
+  int next_unsetted_bit(int start);
+  int next_setted_bit(int start);
 
-  private:
-    char* bitmap_;
-    int size_;
+private:
+  char *bitmap_;
+  int   size_;
 };
 
 }  // namespace common

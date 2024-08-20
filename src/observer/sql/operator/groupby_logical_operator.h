@@ -12,28 +12,20 @@
  * @brief 逻辑算子
  * @ingroup LogicalOperator
  */
-class GroupByLogicalOperator : public LogicalOperator {
-  public:
-    GroupByLogicalOperator(std::vector<std::unique_ptr<Expression>>&& groupby_fields,
-                           std::vector<std::unique_ptr<AggrFuncExpr>>&& agg_exprs,
-                           std::vector<std::unique_ptr<FieldExpr>>&& field_exprs);
-    virtual ~GroupByLogicalOperator() = default;
+class GroupByLogicalOperator : public LogicalOperator
+{
+public:
+  GroupByLogicalOperator(std::vector<std::unique_ptr<Expression>> &&groupby_fields,
+      std::vector<std::unique_ptr<AggrFuncExpr>> &&agg_exprs, std::vector<std::unique_ptr<FieldExpr>> &&field_exprs);
+  virtual ~GroupByLogicalOperator() = default;
 
-    LogicalOperatorType type() const override {
-        return LogicalOperatorType::GROUPBY;
-    }
-    std::vector<std::unique_ptr<Expression>>& groupby_fields() {
-        return groupby_fields_;
-    }
-    std::vector<std::unique_ptr<AggrFuncExpr>>& agg_exprs() {
-        return agg_exprs_;
-    }
-    std::vector<std::unique_ptr<FieldExpr>>& field_exprs() {
-        return field_exprs_;
-    }
+  LogicalOperatorType                         type() const override { return LogicalOperatorType::GROUPBY; }
+  std::vector<std::unique_ptr<Expression>>   &groupby_fields() { return groupby_fields_; }
+  std::vector<std::unique_ptr<AggrFuncExpr>> &agg_exprs() { return agg_exprs_; }
+  std::vector<std::unique_ptr<FieldExpr>>    &field_exprs() { return field_exprs_; }
 
-  private:
-    std::vector<std::unique_ptr<Expression>> groupby_fields_;
-    std::vector<std::unique_ptr<AggrFuncExpr>> agg_exprs_;
-    std::vector<std::unique_ptr<FieldExpr>> field_exprs_;
+private:
+  std::vector<std::unique_ptr<Expression>>   groupby_fields_;
+  std::vector<std::unique_ptr<AggrFuncExpr>> agg_exprs_;
+  std::vector<std::unique_ptr<FieldExpr>>    field_exprs_;
 };
