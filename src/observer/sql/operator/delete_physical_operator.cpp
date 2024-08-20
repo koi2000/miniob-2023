@@ -35,13 +35,6 @@ RC DeletePhysicalOperator::open(Trx *trx)
   }
 
   trx_ = trx;
-
-  return RC::SUCCESS;
-}
-
-RC DeletePhysicalOperator::next()
-{
-  RC rc = RC::SUCCESS;
   if (children_.empty()) {
     return RC::RECORD_EOF;
   }
@@ -51,8 +44,12 @@ RC DeletePhysicalOperator::next()
   } else {
     rc = delete_from_view();
   }
+  return RC::SUCCESS;
+}
 
-  return rc;
+RC DeletePhysicalOperator::next()
+{
+  return RC::RECORD_EOF;
 }
 
 RC DeletePhysicalOperator::delete_from_table()
@@ -119,7 +116,4 @@ RC DeletePhysicalOperator::delete_from_view()
   return rc;
 }
 
-RC DeletePhysicalOperator::close()
-{
-  return RC::SUCCESS;
-}
+RC DeletePhysicalOperator::close() { return RC::SUCCESS; }
