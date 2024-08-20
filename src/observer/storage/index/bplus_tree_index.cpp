@@ -30,7 +30,7 @@ RC BplusTreeIndex::create(Table *table, const char *file_name, const bool unique
 
   Index::init(index_meta, field_metas);
   BufferPoolManager &bpm = table->db()->buffer_pool_manager();
-  RC rc = index_handler_.create(table->db()->log_handler(), bpm, file_name, unique, field_ids, field_metas);
+  RC rc = index_handler_.create(table->db()->log_handler(), bpm,file_name, unique, field_ids, field_metas);
   if (RC::SUCCESS != rc) {
     LOG_WARN("Failed to create index_handler, file_name:%s, index:%s, field:%s, rc:%s", file_name,
                  index_meta.name(), index_meta.field(), strrc(rc));
@@ -55,7 +55,7 @@ RC BplusTreeIndex::open(
   Index::init(index_meta, field_metas);
 
   BufferPoolManager &bpm = table->db()->buffer_pool_manager();
-  RC                 rc  = index_handler_.open(table->db()->log_handler(), bpm, file_name);
+  RC rc = index_handler_.open(table->db()->log_handler(), bpm, file_name);
   if (RC::SUCCESS != rc) {
     LOG_WARN("Failed to open index_handler, file_name:%s, index:%s, field:%s, rc:%s", file_name, index_meta.name(),
                  index_meta.field(), strrc(rc));

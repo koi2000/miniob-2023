@@ -851,7 +851,7 @@ RC BplusTreeHandler::create(LogHandler &log_handler,
   file_header->root_page         = BP_INVALID_PAGE_NUM;
 
   header_frame->mark_dirty();
-
+  log_handler_      = &log_handler;
   disk_buffer_pool_ = bp;
 
   memcpy(&file_header_, pdata, sizeof(file_header_));
@@ -937,6 +937,7 @@ RC BplusTreeHandler::create(LogHandler &log_handler, BufferPoolManager &bpm, con
   header_frame->mark_dirty();
 
   disk_buffer_pool_ = bp;
+  log_handler_ = &log_handler;
 
   memcpy(&file_header_, pdata, sizeof(file_header_));
   header_dirty_ = false;

@@ -33,7 +33,9 @@ using namespace bplus_tree;
 // class BplusTreeLogger
 BplusTreeLogger::BplusTreeLogger(LogHandler &log_handler, int32_t buffer_pool_id)
     : log_handler_(log_handler), buffer_pool_id_(buffer_pool_id)
-{}
+{
+    int j = 0;
+}
 
 BplusTreeLogger::~BplusTreeLogger() { commit(); }
 

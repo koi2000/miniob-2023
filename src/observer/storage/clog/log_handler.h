@@ -104,4 +104,6 @@ private:
    * @details 子类应该重现实现这个函数
    */
   virtual RC _append(LSN &lsn, LogModule module, std::vector<char> &&data) = 0;
+
+  int test_data = 0;
 };

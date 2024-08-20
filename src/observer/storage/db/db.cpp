@@ -314,7 +314,30 @@ RC Db::recover()
     LOG_ERROR("Failed to create trx log replayer.");
     return RC::INTERNAL;
   }
+
+  IntegratedLogReplayer log_replayer(*buffer_pool_manager_, unique_ptr<LogReplayer>(trx_log_replayer));
+  RC                    rc = log_handler_->replay(log_replayer, check_point_lsn_ /*start_lsn*/);
+  if (OB_FAIL(rc)) {
+    LOG_WARN("failed to replay log. rc=%s", strrc(rc));
+    return rc;
+  }
+
+  rc = log_handler_->start();
+  if (OB_FAIL(rc)) {
+    LOG_WARN("failed to start log handler. rc=%s", strrc(rc));
+    return rc;
+  }
+
+  rc = log_replayer.on_done();
+  if (OB_FAIL(rc)) {
+    LOG_WARN("failed to on_done. rc=%s", strrc(rc));
+    return rc;
+  }
+
+  LOG_INFO("Successfully recover db. db=%s checkpoint_lsn=%d", name_.c_str(), check_point_lsn_);
+  return rc;
 }
+
 RC Db::drop_table(const char *table_name)
 {
   RC     rc    = RC::SUCCESS;
