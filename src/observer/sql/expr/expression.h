@@ -324,6 +324,61 @@ class CastExpr : public Expression {
 };
 
 /**
+ * @brief 向量表达式
+ * @ingroup Expression
+ */
+class VectorExpr : public Expression {
+  public:
+    VectorExpr(VectorExpressionType expr_type, Expression* left, Expression* right);
+    VectorExpr(VectorExpressionType expr_type, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right);
+
+    virtual ~VectorExpr();
+
+    ExprType type() const override {
+        return ExprType::COMPARISON;
+    }
+
+    RC get_value(const Tuple& tuple, Value& value) const override;
+
+    AttrType value_type() const override {
+        return AttrType::DOUBLES;
+    }
+
+    VectorExpressionType comp() const {
+        return comp_type_;
+    }
+
+    std::unique_ptr<Expression>& left() {
+        return left_;
+    }
+    std::unique_ptr<Expression>& right() {
+        return right_;
+    }
+
+    /**
+     * 尝试在没有tuple的情况下获取当前表达式的值
+     * 在优化的时候，可能会使用到
+     */
+    RC try_get_value(Value& value) const override;
+
+    std::unique_ptr<Expression> deep_copy() const override {
+        std::unique_ptr<Expression> new_left = left_->deep_copy();
+        std::unique_ptr<Expression> new_right;
+        if (right_) {  // NOTE: not has_rhs
+            new_right = right_->deep_copy();
+        }
+        auto new_expr = std::make_unique<VectorExpr>(comp_type_, std::move(new_left), std::move(new_right));
+        new_expr->set_name(name());
+        return new_expr;
+    }
+
+  private:
+    VectorExpressionType comp_type_;
+    std::unique_ptr<Expression> left_;
+    std::unique_ptr<Expression> right_;
+};
+
+/**
  * @brief 比较表达式
  * @ingroup Expression
  */

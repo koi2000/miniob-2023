@@ -65,6 +65,8 @@ DIGIT            [0-9]+
 ID               [A-Za-z_]+[A-Za-z0-9_]*
 DOT              \.
 QUOTE            [\'\"]
+LCBRACE           \{
+ECBRACE           \}
 %x STR
 
 /* 规则匹配的优先级：*/
@@ -113,11 +115,12 @@ INT                                     RETURN_TOKEN(INT_T);
 CHAR                                    RETURN_TOKEN(STRING_T);
 FLOAT                                   RETURN_TOKEN(FLOAT_T);
 DATE                                    RETURN_TOKEN(DATE_T);
+VECTOR                                  RETURN_TOKEN(VECTOR_T);
 TEXT                                    RETURN_TOKEN(TEXT_T);
 LENGTH                                  RETURN_TOKEN(LENGTH);
 ROUND                                   RETURN_TOKEN(ROUND);
 DATE_FORMAT                             RETURN_TOKEN(DATE_FORMAT);
-LOAD" "DATA                                    RETURN_TOKEN(LOAD_DATA);
+LOAD" "DATA                             RETURN_TOKEN(LOAD_DATA);
 INFILE                                  RETURN_TOKEN(INFILE);
 EXPLAIN                                 RETURN_TOKEN(EXPLAIN);
 IS                                      RETURN_TOKEN(IS);
@@ -148,12 +151,14 @@ HAVING                                  RETURN_TOKEN(HAVING);
 "<"                                     RETURN_TOKEN(LT);
 ">="                                    RETURN_TOKEN(GE);
 ">"                                     RETURN_TOKEN(GT);
-
+"<->"                                   RETURN_TOKEN(ED);
+"<=>"                                   RETURN_TOKEN(CD);
 "+" | 
 "-" |
 "*" |
 "/"                                     { return yytext[0]; }
 {QUOTE}([0-9]{4})\-([0-9]|[0-9]{2})\-([0-9]|[0-9]{2}){QUOTE} yylval->string=strdup(yytext); RETURN_TOKEN(DATE_STR);
+{QUOTE}\{(\s*[+-]?([0-9]*[.])?[0-9]+\s*(,\s*[+-]?([0-9]*[.])?[0-9]+)*)\}{QUOTE} yylval->string=strdup(yytext); RETURN_TOKEN(VECTOR_STR);
 \"[^"]*\"                               yylval->string = strdup(yytext); RETURN_TOKEN(SSS);
 '[^']*\'                                yylval->string = strdup(yytext); RETURN_TOKEN(SSS);
 

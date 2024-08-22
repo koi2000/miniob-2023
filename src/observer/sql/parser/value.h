@@ -15,7 +15,8 @@ See the Mulan PSL v2 for more details. */
 #pragma once
 
 #include "common/rc.h"
-#include <string>
+#include "common/lang/string.h"
+// #include <string>
 
 static constexpr int MAX_TEXT_LENGTH = 65535;
 
@@ -34,6 +35,7 @@ enum AttrType {
     DATES,     ///< 日期类型
     LONGS,     ///< Int64
     TEXTS,     ///< text类型，最大65535字节
+    VECTOR,    ///< vector类型，
     NULLS,     ///< null类型
     BOOLEANS,  ///< boolean类型，当前不是由parser解析出来的，是程序内部使用的
 };
@@ -89,6 +91,7 @@ class Value {
     void set_date(int val);
     void set_boolean(bool val);
     void set_string(const char* s, int len = 0);
+    void set_vector(const std::vector<double>& vec);
     void set_value(const Value& value);
     std::string to_string() const;
 
@@ -177,7 +180,14 @@ class Value {
             case CHARS: {
                 std::string tmp = get_string();
                 set_string(tmp.c_str());
-            } break;
+            } break; 
+            case VECTOR:{
+                std::string tmp = get_string();
+                std::vector<double> tmpv;
+                common::str_to_vec(tmp,tmpv);
+                set_vector(tmpv);
+            }
+            break;
             default: break;
         }
         return RC::SUCCESS;
@@ -195,6 +205,7 @@ class Value {
     bool get_boolean() const;
     double get_double() const;
     int64_t get_long() const;
+    std::vector<double> get_vector() const;
 
   private:
     AttrType attr_type_ = UNDEFINED;
@@ -208,4 +219,5 @@ class Value {
         int64_t long_;
     } num_value_;
     std::string str_value_;
+    mutable std::vector<double> vec_value_;
 };

@@ -21,6 +21,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/optimizer/logical_plan_generator.h"
 #include "sql/optimizer/physical_plan_generator.h"
 #include "sql/stmt/select_stmt.h"
+#include <cmath>
 #include <iomanip>
 #include <regex>
 #include <string>
@@ -88,6 +89,138 @@ RC CastExpr::try_get_value(Value& value) const {
     }
 
     return cast(value, value);
+}
+////////////////////////////////////////////////////////////////////////////////
+static RC
+ComputeDistance(const Value& left_value, const Value& right_value, VectorExpressionType dist_fn, double& result) {
+    std::vector<double> left = left_value.get_vector();
+    std::vector<double> right = right_value.get_vector();
+    auto sz = left.size();
+    ASSERT(sz == right.size(), "vector length mismatched!");
+    if (sz != right.size()) {
+        return RC::VECTOR_LENGTH_MISMATCH;
+    }
+    switch (dist_fn) {
+        case VectorExpressionType::L2Dist: {
+            double dist = 0.0;
+            for (size_t i = 0; i < sz; i++) {
+                double diff = left[i] - right[i];
+                dist += diff * diff;
+            }
+            result = std::sqrt(dist);
+            break;
+        }
+        case VectorExpressionType::InnerProduct: {
+            double dist = 0.0;
+            for (size_t i = 0; i < sz; i++) {
+                dist += left[i] * right[i];
+            }
+            result = dist;
+            break;
+        }
+        case VectorExpressionType::CosineSimilarity: {
+            double dist = 0.0;
+            double norma = 0.0;
+            double normb = 0.0;
+            for (size_t i = 0; i < sz; i++) {
+                dist += left[i] * right[i];
+                norma += left[i] * left[i];
+                normb += right[i] * right[i];
+            }
+            auto similarity = dist / std::sqrt(norma * normb);
+            result = 1.0 - similarity;
+            break;
+        }
+        default: return RC::UNIMPLENMENT;
+    }
+    return RC::SUCCESS;
+}
+
+VectorExpr::VectorExpr(VectorExpressionType type, unique_ptr<Expression> left, unique_ptr<Expression> right)
+    : comp_type_(type), left_(std::move(left)), right_(std::move(right)) {}
+
+VectorExpr::VectorExpr(VectorExpressionType type, Expression* left, Expression* right)
+    : comp_type_(type), left_(left), right_(right) {}
+
+VectorExpr::~VectorExpr() {}
+
+RC VectorExpr::try_get_value(Value& cell) const {
+    ValueExpr* left_value_expr = static_cast<ValueExpr*>(left_.get());
+    ValueExpr* right_value_expr = static_cast<ValueExpr*>(right_.get());
+    const Value& left_cell = left_value_expr->get_value();
+    const Value& right_cell = right_value_expr->get_value();
+
+    double result = 0.0;
+    RC rc = ComputeDistance(left_cell, right_cell, comp_type_, result);
+    if (rc != RC::SUCCESS) {
+        LOG_WARN("failed to compare tuple cells. rc=%s", strrc(rc));
+    } else {
+        cell.set_double(result);
+    }
+    return rc;
+}
+
+RC VectorExpr::get_value(const Tuple& tuple, Value& value) const {
+    Value left_value;
+    Value right_value;
+
+    SubQueryExpr* left_subquery_expr = nullptr;
+    SubQueryExpr* right_subquery_expr = nullptr;
+    DEFER([&left_subquery_expr]() {
+        if (nullptr != left_subquery_expr) {
+            left_subquery_expr->close();
+        }
+    });
+    DEFER([&right_subquery_expr]() {
+        if (nullptr != right_subquery_expr) {
+            right_subquery_expr->close();
+        }
+    });
+
+    auto if_subquery_open = [](const std::unique_ptr<Expression>& expr) {
+        SubQueryExpr* sqexp = nullptr;
+        if (expr->type() == ExprType::SUBQUERY) {
+            sqexp = static_cast<SubQueryExpr*>(expr.get());
+            sqexp->open(nullptr);  // 暂时先 nullptr
+        }
+        return sqexp;
+    };
+    left_subquery_expr = if_subquery_open(left_);
+    right_subquery_expr = if_subquery_open(right_);
+
+    RC rc = RC::SUCCESS;
+    auto get_value = [&tuple](const std::unique_ptr<Expression>& expr, Value& value) {
+        RC rc = expr->get_value(tuple, value);
+        if (expr->type() == ExprType::SUBQUERY && RC::RECORD_EOF == rc) {
+            value.set_null();
+            rc = RC::SUCCESS;
+        }
+        return rc;
+    };
+    rc = get_value(left_, left_value);
+    if (rc != RC::SUCCESS) {
+        LOG_WARN("failed to get value of left expression. rc=%s", strrc(rc));
+        return rc;
+    }
+    if (left_subquery_expr && left_subquery_expr->has_more_row(tuple)) {
+        return RC::INVALID_ARGUMENT;
+    }
+
+    rc = get_value(right_, right_value);
+    if (rc != RC::SUCCESS) {
+        LOG_WARN("failed to get value of right expression. rc=%s", strrc(rc));
+        return rc;
+    }
+    if (right_subquery_expr && right_subquery_expr->has_more_row(tuple)) {
+        return RC::INVALID_ARGUMENT;
+    }
+
+    double result = 0.0;
+    rc = ComputeDistance(left_value, right_value, comp_type_, result);
+    if (rc == RC::SUCCESS) {
+        value.set_double(result);
+    }
+    return rc;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -298,7 +431,7 @@ RC ConjunctionExpr::get_value(const Tuple& tuple, Value& value) const {
 
     Value tmp_value;
     for (const unique_ptr<Expression>& expr : children_) {
-        rc = expr->get_value(tuple, tmp_value);  //这边会进行表达式的计算
+        rc = expr->get_value(tuple, tmp_value);  // 这边会进行表达式的计算
         if (rc != RC::SUCCESS) {
             LOG_WARN("failed to get value by child expression. rc=%s", strrc(rc));
             return rc;
@@ -463,7 +596,7 @@ RC FieldExpr::check_field(const std::unordered_map<std::string, BaseTable*>& tab
     const char* table_name = table_name_.c_str();
     const char* field_name = field_name_.c_str();
     BaseTable* table = nullptr;
-    if (!common::is_blank(table_name)) {  //表名不为空
+    if (!common::is_blank(table_name)) {  // 表名不为空
         // check table
         auto iter = table_map.find(table_name);
         if (iter == table_map.end()) {
@@ -737,11 +870,11 @@ RC SysFuncExpr::check_param_type_and_number() const {
                 rc = RC::INVALID_ARGUMENT;
         } break;
         case SYS_FUNC_ROUND: {
-            //参数可以为一个或两个,第一个参数的结果类型 必须为 floats 或 double
+            // 参数可以为一个或两个,第一个参数的结果类型 必须为 floats 或 double
             if ((params_.size() != 1 && params_.size() != 2) ||
                 (params_[0]->value_type() != FLOATS && params_[0]->value_type() != DOUBLES))
                 rc = RC::INVALID_ARGUMENT;
-            //如果有第二个参数，则类型必须为 INT
+            // 如果有第二个参数，则类型必须为 INT
             if (params_.size() == 2) {
                 if (params_[1]->value_type() != INTS) {
                     rc = RC::INVALID_ARGUMENT;

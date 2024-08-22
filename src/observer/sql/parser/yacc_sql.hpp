@@ -74,56 +74,60 @@ extern int yydebug;
     STRING_T = 280,
     FLOAT_T = 281,
     DATE_T = 282,
-    TEXT_T = 283,
-    HELP = 284,
-    EXIT = 285,
-    DOT = 286,
-    INTO = 287,
-    VALUES = 288,
-    FROM = 289,
-    WHERE = 290,
-    AND = 291,
-    OR = 292,
-    SET = 293,
-    ON = 294,
-    LOAD_DATA = 295,
-    INFILE = 296,
-    EXPLAIN = 297,
-    IS = 298,
-    NULL_T = 299,
-    INNER = 300,
-    JOIN = 301,
-    AS = 302,
-    IN = 303,
-    EXISTS = 304,
-    EQ = 305,
-    LT = 306,
-    GT = 307,
-    LE = 308,
-    GE = 309,
-    NE = 310,
-    NOT = 311,
-    LIKE = 312,
-    UNIQUE = 313,
-    AGGR_MAX = 314,
-    AGGR_MIN = 315,
-    AGGR_SUM = 316,
-    AGGR_AVG = 317,
-    AGGR_COUNT = 318,
-    LENGTH = 319,
-    ROUND = 320,
-    DATE_FORMAT = 321,
-    ORDER = 322,
-    GROUP = 323,
-    BY = 324,
-    ASC = 325,
-    HAVING = 326,
-    NUMBER = 327,
-    FLOAT = 328,
-    ID = 329,
-    SSS = 330,
-    DATE_STR = 331,
-    UMINUS = 332
+    VECTOR_T = 283,
+    TEXT_T = 284,
+    HELP = 285,
+    EXIT = 286,
+    DOT = 287,
+    INTO = 288,
+    VALUES = 289,
+    FROM = 290,
+    WHERE = 291,
+    AND = 292,
+    OR = 293,
+    SET = 294,
+    ON = 295,
+    LOAD_DATA = 296,
+    INFILE = 297,
+    EXPLAIN = 298,
+    IS = 299,
+    NULL_T = 300,
+    INNER = 301,
+    JOIN = 302,
+    AS = 303,
+    IN = 304,
+    EXISTS = 305,
+    EQ = 306,
+    LT = 307,
+    GT = 308,
+    LE = 309,
+    GE = 310,
+    NE = 311,
+    NOT = 312,
+    LIKE = 313,
+    UNIQUE = 314,
+    AGGR_MAX = 315,
+    AGGR_MIN = 316,
+    AGGR_SUM = 317,
+    AGGR_AVG = 318,
+    AGGR_COUNT = 319,
+    LENGTH = 320,
+    ROUND = 321,
+    DATE_FORMAT = 322,
+    ORDER = 323,
+    GROUP = 324,
+    BY = 325,
+    ASC = 326,
+    HAVING = 327,
+    NUMBER = 328,
+    FLOAT = 329,
+    ID = 330,
+    SSS = 331,
+    DATE_STR = 332,
+    VECTOR_STR = 333,
+    ED = 334,
+    CD = 335,
+    UMINUS = 336
   };
 #endif
 
@@ -131,11 +135,12 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 152 "yacc_sql.y"
+#line 164 "yacc_sql.y"
 
   ParsedSqlNode *                   sql_node;
   Value *                           value;
   enum CompOp                       comp;
+  enum VectorExpressionType         vector_op;
   RelAttrSqlNode *                  rel_attr;
   std::vector<AttrInfoSqlNode> *    attr_infos;
   AttrInfoSqlNode *                 attr_info;
@@ -156,7 +161,7 @@ union YYSTYPE
   float                             floats;
   bool                              boolean;
 
-#line 160 "yacc_sql.hpp"
+#line 165 "yacc_sql.hpp"
 
 };
 typedef union YYSTYPE YYSTYPE;

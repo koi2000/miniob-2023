@@ -1,0 +1,9 @@
+SELECT '{1.0, 1.0, 1.0}' <-> '{-1.0, -1.0, -1.0}' as distance;
+
+CREATE TABLE t1(v1 VECTOR(3), v2 int);
+
+INSERT INTO t1 VALUES ('{1.0, 1.0, 1.0}', 1);
+
+select v1 <-> '{1.0, 1.0, 1.0}' as dis from t1 where v2 = 1;
+
+select * from t1;

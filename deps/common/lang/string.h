@@ -31,6 +31,13 @@ See the Mulan PSL v2 for more details. */
 namespace common {
 
 /**
+ * 
+*/
+std::string vec_to_str(const std::vector<double> &vec);
+
+int str_to_vec(const std::string &str,std::vector<double>& vec);
+
+/**
  * remove all white space(like ' ', '\t', '\n') from string
  */
 void strip(std::string &str);

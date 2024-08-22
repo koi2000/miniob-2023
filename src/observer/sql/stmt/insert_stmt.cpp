@@ -82,6 +82,17 @@ RC InsertStmt::check_full_rows(BaseTable* table, const InsertSqlNode& inserts, s
                         LOG_WARN("Text length:%d, over max_length 65535", values[i].length());
                         return RC::INVALID_ARGUMENT;
                     }
+                } else if (VECTOR == field_type && CHARS == value_type) {
+                    if (const_cast<Value&>(values[i]).typecast(field_type) != RC::SUCCESS) {
+                        LOG_WARN("field type mismatch. table=%s, field=%s, field type=%d, value_type=%d", table->name(),
+                                 field_meta->name(), field_type, value_type);
+                        return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+                    }
+                    if (field_meta->len() != values[i].get_vector().size() * sizeof(double)) {
+                        LOG_WARN("vector type mismatch. table=%s, field=%s, field type=%d, value_type=%d", table->name(),
+                                 field_meta->name(), field_type, value_type);
+                        return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+                    }
                 } else if (const_cast<Value&>(values[i]).typecast(field_type) != RC::SUCCESS) {
                     LOG_WARN("field type mismatch. table=%s, field=%s, field type=%d, value_type=%d", table->name(),
                              field_meta->name(), field_type, value_type);

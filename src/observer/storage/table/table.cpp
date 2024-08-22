@@ -183,8 +183,8 @@ RC Table::open(const char* meta_file, const char* base_dir) {
     // 加载text数据
     rc = init_text_handler(base_dir);
     if (rc != RC::SUCCESS) {
-      LOG_ERROR("Failed to open table %s due to init text handler failed.", base_dir);
-      return rc;
+        LOG_ERROR("Failed to open table %s due to init text handler failed.", base_dir);
+        return rc;
     }
 
     base_dir_ = base_dir;
@@ -395,7 +395,11 @@ RC Table::make_record(int value_num, const Value* values, Record& record) {
                 copy_len = data_len + 1;
             }
         }
-        if (TEXTS == field->type()) {
+        if (field->type() == VECTOR) {
+            std::vector<double> vec = value.get_vector();
+            const size_t data_len = vec.size() * sizeof(double);
+            memcpy(record_data + field->offset(), vec.data(), data_len);
+        } else if (TEXTS == field->type()) {
             // 需要将value中的字符串插入到文件中，然后将offset、length写入record
             int64_t position[2];
             position[1] = value.length();

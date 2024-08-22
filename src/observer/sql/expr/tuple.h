@@ -14,6 +14,7 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
+#include <cstring>
 #include <memory>
 #include <string>
 #include <vector>
@@ -152,7 +153,7 @@ class RowTuple : public Tuple {
         ASSERT(nullptr != table, "RowTuple set_schema with a null table");
         table_ = static_cast<BaseTable*>(const_cast<Table*>(table));
         const std::vector<FieldMeta>* fields = table_->table_meta().field_metas();
-        this->speces_.clear();  //有的算子会 反复open close
+        this->speces_.clear();  // 有的算子会 反复open close
         this->speces_.reserve(fields->size());
         for (const FieldMeta& field : *fields) {
             speces_.push_back(new FieldExpr(table_, &field));
@@ -214,6 +215,22 @@ class RowTuple : public Tuple {
                 }
                 cell.set_data(text, length);
                 free(text);
+            } else if (VECTOR == field_meta->type()) {
+                if (!table_->is_table()) {
+                    LOG_WARN("can not read text from view");
+                    return RC::SCHEMA_FIELD_MISSING;
+                }
+                int64_t offset = field_meta->offset();
+                int64_t length = field_meta->len();
+                size_t num_elements = length / sizeof(double);
+                std::vector<double> result;
+                for (size_t i = 0; i < num_elements; ++i) {
+                    const char* ptr = record_->data() + offset + i * sizeof(double);
+                    double value;
+                    std::memcpy(&value, ptr, sizeof(double));
+                    result.push_back(value);
+                }
+                cell.set_vector(result);
             } else {
                 cell.set_type(field_meta->type());
                 cell.set_data(this->record_->data() + field_meta->offset(), field_meta->len());
@@ -880,6 +897,6 @@ class SplicedTuple : public Tuple {
 
   private:
     const std::vector<Value>* cells_ = nullptr;
-    //在 create order by stmt 之前提取的  select clause 后的 field_expr (非a gg_expr 中的)和 agg_expr
+    // 在 create order by stmt 之前提取的  select clause 后的 field_expr (非a gg_expr 中的)和 agg_expr
     std::vector<std::unique_ptr<Expression>> exprs_;
 };

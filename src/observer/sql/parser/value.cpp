@@ -18,10 +18,11 @@ See the Mulan PSL v2 for more details. */
 #include "common/log/log.h"
 #include "common/time/date.h"
 #include "storage/field/field.h"
+#include <cstring>
 #include <sstream>
 
-const char* ATTR_TYPE_NAME[] = {"undefined", "chars", "ints",  "floats", "doubles",
-                                "dates",     "long",  "texts", "nulls",  "booleans"};
+const char* ATTR_TYPE_NAME[] = {"undefined", "chars", "ints",   "floats", "doubles", "dates",
+                                "long",      "texts", "vector", "nulls",  "booleans"};
 
 const char* attr_type_to_string(AttrType type) {
     if (type >= UNDEFINED && type <= NULLS) {
@@ -88,6 +89,17 @@ void Value::set_data(char* data, int length) {
             num_value_.long_ = *(int64_t*)data;
             length_ = length;
         } break;
+        case VECTOR: {
+            vec_value_.clear();
+            size_t num_elements = length / sizeof(double);
+
+            for (size_t i = 0; i < num_elements; ++i) {
+                const char* ptr = data + i * sizeof(double);
+                double value;
+                std::memcpy(&value, ptr, sizeof(double));
+                vec_value_.push_back(value);
+            }
+        } break;
         default: {
             LOG_WARN("unknown data type: %d", attr_type_);
         } break;
@@ -134,6 +146,11 @@ void Value::set_string(const char* s, int len /*= 0*/) {
         str_value_.assign(s);
     }
     length_ = str_value_.length();
+}
+
+void Value::set_vector(const std::vector<double>& vec) {
+    attr_type_ = VECTOR;
+    vec_value_ = std::move(vec);
 }
 
 void Value::set_value(const Value& value) {
@@ -201,6 +218,9 @@ std::string Value::to_string() const {
         case NULLS: {
             os << "NULL";
         } break;
+        case VECTOR: {
+            os << common::vec_to_str(vec_value_);
+        }
         default: {
             LOG_WARN("unsupported attr type: %d", attr_type_);
         } break;
@@ -368,6 +388,14 @@ double Value::get_double() const {
 
 int64_t Value::get_long() const {
     return num_value_.long_;
+}
+
+std::vector<double> Value::get_vector() const {
+    int res = 0;
+    if (attr_type_ == AttrType::CHARS) {
+        res = common::str_to_vec(str_value_, vec_value_);
+    }
+    return vec_value_;
 }
 
 std::string Value::get_string() const {

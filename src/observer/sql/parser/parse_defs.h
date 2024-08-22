@@ -67,6 +67,8 @@ enum CompOp {
     NO_OP
 };
 
+enum VectorExpressionType { L2Dist, InnerProduct, CosineSimilarity };
+
 struct OrderBySqlNode {
     Expression* expr = nullptr;
     bool is_asc;  // true 为升序

@@ -43,6 +43,17 @@ ArithmeticExpr *create_arithmetic_expression(ArithmeticExpr::Type type,
   return expr;
 }
 
+VectorExpr *create_vector_expression(VectorExpressionType type,
+                                             Expression *left,
+                                             Expression *right,
+                                             const char *sql_string,
+                                             YYLTYPE *llocp)
+{
+  VectorExpr *expr = new VectorExpr(type, left, right);
+  expr->set_name(token_name(sql_string, llocp));
+  return expr;
+}
+
 AggrFuncType get_aggr_func_type(char *func_name)
 {
   int len = strlen(func_name);
@@ -102,6 +113,7 @@ AggrFuncType get_aggr_func_type(char *func_name)
         STRING_T
         FLOAT_T
         DATE_T
+        VECTOR_T
         TEXT_T
         HELP
         EXIT
@@ -153,6 +165,7 @@ AggrFuncType get_aggr_func_type(char *func_name)
   ParsedSqlNode *                   sql_node;
   Value *                           value;
   enum CompOp                       comp;
+  enum VectorExpressionType         vector_op;
   RelAttrSqlNode *                  rel_attr;
   std::vector<AttrInfoSqlNode> *    attr_infos;
   AttrInfoSqlNode *                 attr_info;
@@ -179,6 +192,7 @@ AggrFuncType get_aggr_func_type(char *func_name)
 %token <string> ID
 %token <string> SSS
 %token <string> DATE_STR
+%token <string> VECTOR_STR
 //非终结符
 
 /** type 定义了各种解析后的结果输出的是什么类型。类型对应了 union 中的定义的成员变量名称 **/
@@ -196,6 +210,7 @@ AggrFuncType get_aggr_func_type(char *func_name)
 %type <boolean>             as_option
 %type <comp>                comp_op
 %type <comp>                exists_op
+%type <vector_op>           vector_op
 %type <rel_attr>            rel_attr
 %type <attr_infos>          attr_def_list
 %type <attr_info>           attr_def
@@ -246,7 +261,8 @@ AggrFuncType get_aggr_func_type(char *func_name)
 
 %left OR
 %left AND
-%left EQ LT GT LE GE NE
+%left EQ LT GT LE GE NE 
+%left ED CD
 %left '+' '-'
 %left '*' '/'
 %nonassoc UMINUS
@@ -472,7 +488,11 @@ attr_def:
       $$ = new AttrInfoSqlNode;
       $$->type = (AttrType)$2;
       $$->name = $1;
-      $$->length = $4;
+      if ((AttrType)$2 == VECTOR) {
+        $$->length = $4 * 8; 
+      }else{
+        $$->length = $4;
+      }
       $$->nullable = $6;
       free($1);
     }
@@ -486,6 +506,7 @@ attr_def:
       free($1);
     }
     ;
+
 null_option:
     /* empty */
     {
@@ -544,6 +565,7 @@ type:
     | STRING_T { $$=CHARS; }
     | FLOAT_T  { $$=FLOATS; }
     | DATE_T   { $$=DATES;}
+    | VECTOR_T   { $$=VECTOR;}
     | TEXT_T   { $$=TEXTS; }
     ;
 insert_stmt:        /*insert   语句的语法解析树*/
@@ -663,6 +685,21 @@ value:
       }
       $$ = value;
       free(tmp);
+    }
+    | VECTOR_STR {
+      char *tmp = common::substr($1,1,strlen($1)-2);
+      std::string str(tmp);
+      Value * value = new Value();
+      std::vector<double> vec;
+      if(common::str_to_vec(str,vec) < 0) {
+          yyerror(&@$,sql_string,sql_result,scanner,"vector invaid",true);
+          YYERROR;
+      }
+      else {
+          value->set_vector(vec);
+      }
+      $$ = value;
+      free(tmp);  
     }
     |SSS {
       char *tmp = common::substr($1,1,strlen($1)-2);
@@ -902,6 +939,9 @@ expression:
     }
     | expression '/' expression {
       $$ = create_arithmetic_expression(ArithmeticExpr::Type::DIV, $1, $3, sql_string, &@$);
+    }
+    | expression vector_op expression {
+      $$ = create_vector_expression($2, $1, $3, sql_string, &@$);
     }
     | LBRACE expression_list RBRACE {
       if ($2->size() == 1) {
@@ -1147,6 +1187,11 @@ comp_op:
     | NOT LIKE {$$ = NOT_LIKE_OP;}
     | IN { $$ = IN_OP; }
     | NOT IN { $$ = NOT_IN_OP; }
+    ;
+
+vector_op:
+    ED { $$ = VectorExpressionType::L2Dist; }
+    | CD { $$ = VectorExpressionType::CosineSimilarity; }
     ;
 
 exists_op:

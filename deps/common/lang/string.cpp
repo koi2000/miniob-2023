@@ -28,6 +28,42 @@ See the Mulan PSL v2 for more details. */
 #include "common/log/log.h"
 namespace common {
 
+int str_to_vec(const std::string &str,std::vector<double>& vec) {
+    std::istringstream iss(str.substr(1, str.size() - 2)); // 去除首尾的花括号
+    double value;
+    char comma;
+
+    while (iss >> value) {
+        vec.push_back(value);
+        iss >> comma; // 读取逗号
+        if (comma != ',') {
+            if (!iss.eof()) {
+                return -1;
+            }
+            break;
+        }
+    }
+
+    if (iss.fail() && !iss.eof()) {
+        return -1;
+    }
+
+    return 0;
+}
+
+std::string vec_to_str(const std::vector<double> &vec) {
+    std::ostringstream oss;
+    oss << "{";
+    for (size_t i = 0; i < vec.size(); ++i) {
+        oss << vec[i];
+        if (i < vec.size() - 1) {
+            oss << ", ";
+        }
+    }
+    oss << "}";
+    return oss.str();
+}
+
 char *strip(char *str_)
 {
   if (str_ == NULL || *str_ == 0) {
