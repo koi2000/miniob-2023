@@ -378,7 +378,7 @@ RC Table::make_record(int value_num, const Value *values, Record &record)
   common::Bitmap   null_bitmap(record_data + null_field->offset(), table_meta_.field_num());
   null_bitmap.clear_bits();
 
-  for (int i = 0; i < value_num; i++) {
+  for (int i = 0; i < value_num && OB_SUCC(rc); i++) {
     const FieldMeta *field = table_meta_.field(i + normal_field_start_index);
     const Value     &value = values[i];
     if (value.is_null()) {
@@ -402,6 +402,11 @@ RC Table::make_record(int value_num, const Value *values, Record &record)
     } else {
       memcpy(record_data + field->offset(), value.data(), copy_len);
     }
+  }
+  if (OB_FAIL(rc)) {
+    LOG_WARN("failed to make record. table name:%s", table_meta_.name());
+    free(record_data);
+    return rc;
   }
 
   record.set_data_owner(record_data, record_size);
