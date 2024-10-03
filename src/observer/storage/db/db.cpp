@@ -38,15 +38,17 @@ using namespace common;
 
 Db::~Db()
 {
-  for (auto &iter : opened_tables_) {
-    delete iter.second;
+  if (buffer_pool_manager_) {
+    buffer_pool_manager_.reset();
   }
-
   if (log_handler_) {
     // 停止日志并等待写入完成
     log_handler_->stop();
     log_handler_->await_termination();
     log_handler_.reset();
+  }
+  for (auto &iter : opened_tables_) {
+    delete iter.second;
   }
   LOG_INFO("Db has been closed: %s", name_.c_str());
 }
@@ -74,11 +76,11 @@ RC Db::init(const char *name, const char *dbpath, const char *trx_kit_name, cons
   trx_kit_.reset(trx_kit);
 
   buffer_pool_manager_ = make_unique<BufferPoolManager>();
-  auto dblwr_buffer = make_unique<DiskDoubleWriteBuffer>(*buffer_pool_manager_);
+  auto dblwr_buffer    = make_unique<DiskDoubleWriteBuffer>(*buffer_pool_manager_);
 
-  const char *double_write_buffer_filename = "dblwr.db";
+  const char      *double_write_buffer_filename  = "dblwr.db";
   filesystem::path double_write_buffer_file_path = filesystem::path(dbpath) / double_write_buffer_filename;
-  rc = dblwr_buffer->open_file(double_write_buffer_file_path.c_str());
+  rc                                             = dblwr_buffer->open_file(double_write_buffer_file_path.c_str());
   if (OB_FAIL(rc)) {
     LOG_ERROR("Failed to open double write buffer file. file=%s, rc=%s",
               double_write_buffer_file_path.c_str(), strrc(rc));
@@ -91,15 +93,15 @@ RC Db::init(const char *name, const char *dbpath, const char *trx_kit_name, cons
     return rc;
   }
 
-  filesystem::path clog_path = filesystem::path(dbpath) / "clog";
-  LogHandler *tmp_log_handler = nullptr;
-  rc = LogHandler::create(log_handler_name, tmp_log_handler);
+  filesystem::path clog_path       = filesystem::path(dbpath) / "clog";
+  LogHandler      *tmp_log_handler = nullptr;
+  rc                               = LogHandler::create(log_handler_name, tmp_log_handler);
   if (OB_FAIL(rc)) {
     LOG_ERROR("Failed to create log handler: %s", log_handler_name);
     return rc;
   }
   log_handler_.reset(tmp_log_handler);
-  
+
   rc = log_handler_->init(clog_path.c_str());
   if (OB_FAIL(rc)) {
     LOG_WARN("failed to init log handler. dbpath=%s, rc=%s", dbpath, strrc(rc));
@@ -179,7 +181,14 @@ RC Db::create_view(const char *view_name, bool allow_write, const std::vector<At
   int32_t     table_id       = next_table_id_++;
   std::string view_file_path = view_meta_file(path_.c_str(), view_name);
   rc                         = view->create(this,
-      table_id, allow_write, view_file_path.c_str(), view_name, path_.c_str(), attr_infos, map_fields, select_sql);
+      table_id,
+      allow_write,
+      view_file_path.c_str(),
+      view_name,
+      path_.c_str(),
+      attr_infos,
+      map_fields,
+      select_sql);
   if (rc != RC::SUCCESS) {
     LOG_ERROR("Failed to create table %s.", view_name);
     delete view;
@@ -286,7 +295,7 @@ RC Db::sync()
   }
 
   auto dblwr_buffer = static_cast<DiskDoubleWriteBuffer *>(buffer_pool_manager_->get_dblwr_buffer());
-  rc = dblwr_buffer->flush_page();
+  rc                = dblwr_buffer->flush_page();
   LOG_INFO("double write buffer flush pages ret=%s", strrc(rc));
 
   /*
@@ -375,7 +384,7 @@ RC Db::drop_table(const char *table_name)
 //   RC  rc = RC::SUCCESS;
 //   int fd = open(db_meta_file_path.c_str(), O_RDONLY);
 //   if (fd < 0) {
-//     LOG_ERROR("Failed to open db meta file. db=%s, file=%s, errno=%s", 
+//     LOG_ERROR("Failed to open db meta file. db=%s, file=%s, errno=%s",
 //               name_.c_str(), db_meta_file_path.c_str(), strerror(errno));
 //     return RC::IOERR_READ;
 //   }
@@ -383,19 +392,19 @@ RC Db::drop_table(const char *table_name)
 //   char buffer[1024];
 //   int  n = read(fd, buffer, sizeof(buffer));
 //   if (n < 0) {
-//     LOG_ERROR("Failed to read db meta file. db=%s, file=%s, errno=%s", 
+//     LOG_ERROR("Failed to read db meta file. db=%s, file=%s, errno=%s",
 //               name_.c_str(), db_meta_file_path.c_str(), strerror(errno));
 //     rc = RC::IOERR_READ;
 //   } else {
 //     if (n >= static_cast<int>(sizeof(buffer))) {
-//       LOG_WARN("Db meta file is too large. db=%s, file=%s, buffer size=%ld", 
+//       LOG_WARN("Db meta file is too large. db=%s, file=%s, buffer size=%ld",
 //                name_.c_str(), db_meta_file_path.c_str(), sizeof(buffer));
 //       return RC::IOERR_TOO_LONG;
 //     }
 
 //     buffer[n]        = '\0';
 //     check_point_lsn_ = atoll(buffer);  // 当前元数据就这一个数字
-//     LOG_INFO("Successfully read db meta file. db=%s, file=%s, check_point_lsn=%ld", 
+//     LOG_INFO("Successfully read db meta file. db=%s, file=%s, check_point_lsn=%ld",
 //              name_.c_str(), db_meta_file_path.c_str(), check_point_lsn_);
 //   }
 //   close(fd);
@@ -491,7 +500,7 @@ RC Db::flush_meta()
 RC Db::init_dblwr_buffer()
 {
   auto dblwr_buffer = static_cast<DiskDoubleWriteBuffer *>(buffer_pool_manager_->get_dblwr_buffer());
-  RC rc = dblwr_buffer->recover();
+  RC   rc           = dblwr_buffer->recover();
   if (OB_FAIL(rc)) {
     LOG_ERROR("fail to recover in dblwr buffer");
     return rc;
