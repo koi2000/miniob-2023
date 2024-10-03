@@ -35,7 +35,7 @@ TEST(MvccTrxLog, wal)
   然后等所有日志都落地，将文件都复制到另一个目录。此时buffer pool 应该都没落地。
   使用新的目录初始化一个新的数据库，然后检查数据是否一致。
   */
-  filesystem::path test_directory("mvcc_trx_log_test");
+  filesystem::path test_directory("mvcc_trx_log_test1");
   filesystem::remove_all(test_directory);
   filesystem::create_directory(test_directory);
 
@@ -156,7 +156,7 @@ TEST(MvccTrxLog, wal2)
   pool都落地，然后再创建一批表后所有表插入一部分数据。 再等所有日志都落地，将文件都复制到另一个目录。此时buffer pool
   应该都没落地。 使用新的目录初始化一个新的数据库，然后检查数据是否一致。
   */
-  filesystem::path test_directory("mvcc_trx_log_test");
+  filesystem::path test_directory("mvcc_trx_log_test1");
   filesystem::remove_all(test_directory);
   filesystem::create_directory(test_directory);
 
@@ -341,7 +341,7 @@ TEST(MvccTrxLog, wal_rollback)
   然后等所有日志都落地，将文件都复制到另一个目录。此时buffer pool 应该都没落地。
   使用新的目录初始化一个新的数据库，然后检查数据是否一致。
   */
-  filesystem::path test_directory("mvcc_trx_log_test");
+  filesystem::path test_directory("mvcc_trx_log_test1");
   filesystem::remove_all(test_directory);
   filesystem::create_directory(test_directory);
 
@@ -465,7 +465,7 @@ TEST(MvccTrxLog, wal_rollback_half)
   然后等所有日志都落地，将文件都复制到另一个目录。此时buffer pool 应该都没落地。
   使用新的目录初始化一个新的数据库，然后检查数据是否一致。
   */
-  filesystem::path test_directory("mvcc_trx_log_test");
+  filesystem::path test_directory("mvcc_trx_log_test1");
   filesystem::remove_all(test_directory);
   filesystem::create_directory(test_directory);
 
@@ -594,7 +594,7 @@ TEST(MvccTrxLog, wal_rollback_abnormal)
   然后等所有日志都落地，将文件都复制到另一个目录。此时buffer pool 应该都没落地。
   使用新的目录初始化一个新的数据库，然后检查数据是否一致。
   */
-  filesystem::path test_directory("mvcc_trx_log_test");
+  filesystem::path test_directory("mvcc_trx_log_test1");
   filesystem::remove_all(test_directory);
   filesystem::create_directory(test_directory);
 

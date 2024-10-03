@@ -44,7 +44,7 @@ void TableMeta::swap(TableMeta &other) noexcept
 }
 
 RC TableMeta::init(int32_t table_id, const char *name, const std::vector<FieldMeta> *trx_fields,
-                   span<const AttrInfoSqlNode> attributes)
+    span<const AttrInfoSqlNode> attributes)
 {
   if (common::is_blank(name)) {
     LOG_ERROR("Name cannot be empty");
@@ -58,9 +58,9 @@ RC TableMeta::init(int32_t table_id, const char *name, const std::vector<FieldMe
 
   RC rc = RC::SUCCESS;
 
-  int                      field_offset  = 0;
-  int                      trx_field_num = 0;
-  
+  int field_offset  = 0;
+  int trx_field_num = 0;
+
   if (trx_fields != nullptr) {
     trx_field_num = static_cast<int>(trx_fields->size());
   }
@@ -73,6 +73,7 @@ RC TableMeta::init(int32_t table_id, const char *name, const std::vector<FieldMe
   field_offset += null_len;
 
   if (trx_fields != nullptr) {
+    trx_fields_ = *trx_fields;
     // trx_fields
     for (size_t i = 0; i < trx_fields->size(); i++) {
       const FieldMeta &field_meta = (*trx_fields)[i];
@@ -120,7 +121,7 @@ const FieldMeta *TableMeta::trx_field() const { return &fields_[1]; }
 
 span<const FieldMeta> TableMeta::trx_fields() const
 {
-  return span<const FieldMeta>(fields_.data(), sys_field_num());
+  return span<const FieldMeta>(fields_.data() + 1, 2);
 }
 
 const FieldMeta *TableMeta::field(int index) const { return &fields_[index]; }
@@ -158,10 +159,7 @@ const FieldMeta *TableMeta::find_field_by_offset(int offset) const
 }
 int TableMeta::field_num() const { return fields_.size(); }
 
-int TableMeta::trx_field_num() const
-{
-  return static_cast<int>(trx_fields_.size());
-}
+int TableMeta::trx_field_num() const { return static_cast<int>(trx_fields_.size()); }
 
 int TableMeta::sys_field_num() const
 {
