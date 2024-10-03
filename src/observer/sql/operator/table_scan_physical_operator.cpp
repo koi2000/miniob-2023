@@ -22,7 +22,7 @@ RC TableScanPhysicalOperator::open(Trx *trx)
 {
   RC rc = table_->get_record_scanner(record_scanner_, trx, mode_);
   if (rc == RC::SUCCESS) {
-    tuple_.set_schema(table_, table_->table_meta().field_metas());
+    tuple_.set_schema(table_, alias_);
   }
   trx_ = trx;
   return rc;
@@ -44,10 +44,11 @@ RC TableScanPhysicalOperator::next()
     }
 
     if (filter_result) {
-      sql_debug("get a tuple: %s", tuple_.to_string().c_str());
+      // sql_debug("get a tuple: %s", tuple_.to_string().c_str());
       break;
     } else {
-      sql_debug("a tuple is filtered: %s", tuple_.to_string().c_str());
+      // sql_debug("a tuple is filtered: %s", tuple_.to_string().c_str());
+      rc = RC::RECORD_EOF;
     }
   }
   return rc;
@@ -70,10 +71,15 @@ void TableScanPhysicalOperator::set_predicates(vector<unique_ptr<Expression>> &&
 
 RC TableScanPhysicalOperator::filter(RowTuple &tuple, bool &result)
 {
-  RC    rc = RC::SUCCESS;
-  Value value;
+  RC          rc = RC::SUCCESS;
+  Value       value;
+  Tuple      *tp = &tuple;
+  JoinedTuple jt(&tuple, const_cast<Tuple *>(parent_tuple_));
+  if (parent_tuple_) {
+    tp = &jt;
+  }
   for (unique_ptr<Expression> &expr : predicates_) {
-    rc = expr->get_value(tuple, value);
+    rc = expr->get_value(*tp, value);
     if (rc != RC::SUCCESS) {
       return rc;
     }

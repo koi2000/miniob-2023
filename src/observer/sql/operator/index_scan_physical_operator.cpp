@@ -57,7 +57,7 @@ RC IndexScanPhysicalOperator::open(Trx *trx)
   }
   index_scanner_ = index_scanner;
 
-  tuple_.set_schema(table_, table_->table_meta().field_metas());
+  tuple_.set_schema(table_);
 
   trx_ = trx;
   return RC::SUCCESS;
@@ -67,6 +67,8 @@ RC IndexScanPhysicalOperator::next()
 {
   RID rid;
   RC  rc = RC::SUCCESS;
+
+  record_page_handler_.cleanup();
 
   bool filter_result = false;
   while (RC::SUCCESS == (rc = index_scanner_->next_entry(&rid))) {

@@ -9,20 +9,15 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details. */
 
 //
-// Created by WangYunlai on 2024/05/30.
+// Created by Wangyunlai on 2023/6/13.
 //
 
-#include <memory>
+#include "sql/stmt/drop_table_stmt.h"
+#include "event/sql_debug.h"
 
-#include "common/log/log.h"
-#include "sql/operator/group_by_logical_operator.h"
-#include "sql/expr/expression.h"
-
-using namespace std;
-
-GroupByLogicalOperator::GroupByLogicalOperator(vector<unique_ptr<Expression>> &&group_by_exprs,
-                                               vector<Expression *> &&expressions)
+RC DropTableStmt::create(Db *db, const DropTableSqlNode &drop_table, Stmt *&stmt)
 {
-  group_by_expressions_ = std::move(group_by_exprs);
-  aggregate_expressions_ = std::move(expressions);
+  stmt = new DropTableStmt(drop_table.relation_name);
+  sql_debug("drop table statement: table name %s", drop_table.relation_name.c_str());
+  return RC::SUCCESS;
 }

@@ -33,7 +33,17 @@ string table_data_file(const char *base_dir, const char *table_name)
   return filesystem::path(base_dir) / (string(table_name) + TABLE_DATA_SUFFIX);
 }
 
+std::string table_text_file(const char *base_dir, const char *table_name)
+{
+  return filesystem::path(base_dir) / (string(table_name) + TABLE_TEXT_SUFFIX);
+}
+
 string table_index_file(const char *base_dir, const char *table_name, const char *index_name)
 {
   return filesystem::path(base_dir) / (string(table_name) + "-" + index_name + TABLE_INDEX_SUFFIX);
+}
+
+std::string view_meta_file(const char *base_dir, const char *view_name)
+{
+  return filesystem::path(base_dir) / (string(view_name) + view_name + VIEW_META_SUFFIX);
 }

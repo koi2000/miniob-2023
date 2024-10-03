@@ -12,10 +12,11 @@ See the Mulan PSL v2 for more details. */
 // Created by wangyunlai.wyl on 2024/02/05.
 //
 
+#include <sstream>
+#include <ranges>
+
 #include "common/log/log.h"
 #include "common/lang/defer.h"
-#include "common/lang/algorithm.h"
-#include "common/lang/sstream.h"
 #include "storage/index/bplus_tree_log.h"
 #include "storage/index/bplus_tree.h"
 #include "storage/clog/log_handler.h"
@@ -24,6 +25,7 @@ See the Mulan PSL v2 for more details. */
 #include "common/lang/serializer.h"
 #include "storage/clog/vacuous_log_handler.h"
 
+using namespace std;
 using namespace common;
 using namespace bplus_tree;
 
@@ -31,7 +33,9 @@ using namespace bplus_tree;
 // class BplusTreeLogger
 BplusTreeLogger::BplusTreeLogger(LogHandler &log_handler, int32_t buffer_pool_id)
     : log_handler_(log_handler), buffer_pool_id_(buffer_pool_id)
-{}
+{
+    int j = 0;
+}
 
 BplusTreeLogger::~BplusTreeLogger() { commit(); }
 

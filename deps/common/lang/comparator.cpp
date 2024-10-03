@@ -46,6 +46,20 @@ int compare_float(void *arg1, void *arg2)
   return 0;
 }
 
+int compare_double(void *arg1, void *arg2)
+{
+  double v1  = *(double *)arg1;
+  double v2  = *(double *)arg2;
+  double cmp = v1 - v2;
+  if (cmp > EPSILON) {
+    return 1;
+  }
+  if (cmp < -EPSILON) {
+    return -1;
+  }
+  return 0;
+}
+
 int compare_string(void *arg1, int arg1_max_length, void *arg2, int arg2_max_length)
 {
   const char *s1     = (const char *)arg1;
@@ -65,5 +79,27 @@ int compare_string(void *arg1, int arg1_max_length, void *arg2, int arg2_max_len
   }
   return 0;
 }
+
+// int compare_string_str(std::string arg1, std::string arg2)
+// {
+//   const char *s1              = (const char *)arg1.c_str();
+//   const char *s2              = (const char *)arg2.c_str();
+//   int         arg1_max_length = arg1.size();
+//   int         arg2_max_length = arg2.size();
+//   int         maxlen          = min(arg1_max_length, arg2_max_length);
+//   int         result          = strncmp(s1, s2, maxlen);
+//   if (0 != result) {
+//     return result < 0 ? -1 : 1;
+//   }
+
+//   if (arg1_max_length > maxlen) {
+//     return 1;
+//   }
+
+//   if (arg2_max_length > maxlen) {
+//     return -1;
+//   }
+//   return 0;
+// }
 
 }  // namespace common

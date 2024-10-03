@@ -14,13 +14,24 @@ See the Mulan PSL v2 for more details. */
  * @brief 属性的类型
  * @details AttrType 枚举列出了属性的各种数据类型。
  */
-enum class AttrType
+
+static constexpr int MAX_TEXT_LENGTH = 65535;
+
+static int ATTR_TYPE_LENGTH[] = {-1, 4, 4, 4, 8, 4, 8, MAX_TEXT_LENGTH, 4, -1};
+
+enum AttrType
 {
   UNDEFINED,
-  CHARS,     ///< 字符串类型
-  INTS,      ///< 整数类型(4字节)
-  FLOATS,    ///< 浮点数类型(4字节)
+  CHARS,   ///< 字符串类型
+  INTS,    ///< 整数类型(4字节)
+  FLOATS,  ///< 浮点数类型(4字节)
+  DOUBLES,
+  DATES,     ///< 日期类型
+  LONGS,     ///< Int64
+  TEXTS,     ///< text类型，最大65535字节
+  NULLS,     ///< null类型
   BOOLEANS,  ///< boolean类型，当前不是由parser解析出来的，是程序内部使用的
+  
   MAXTYPE,   ///< 请在 UNDEFINED 与 MAXTYPE 之间增加新类型
 };
 

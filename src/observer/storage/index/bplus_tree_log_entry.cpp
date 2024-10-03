@@ -15,6 +15,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/index/bplus_tree_log_entry.h"
 #include "common/lang/serializer.h"
 
+using namespace std;
 using namespace common;
 
 namespace bplus_tree {

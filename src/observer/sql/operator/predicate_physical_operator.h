@@ -16,6 +16,7 @@ See the Mulan PSL v2 for more details. */
 
 #include "sql/expr/expression.h"
 #include "sql/operator/physical_operator.h"
+#include <memory>
 
 class FilterStmt;
 
@@ -37,8 +38,6 @@ public:
   RC close() override;
 
   Tuple *current_tuple() override;
-
-  RC tuple_schema(TupleSchema &schema) const override;
 
 private:
   std::unique_ptr<Expression> expression_;

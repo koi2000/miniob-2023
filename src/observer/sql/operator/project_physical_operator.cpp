@@ -17,13 +17,6 @@ See the Mulan PSL v2 for more details. */
 #include "storage/record/record.h"
 #include "storage/table/table.h"
 
-using namespace std;
-
-ProjectPhysicalOperator::ProjectPhysicalOperator(vector<unique_ptr<Expression>> &&expressions)
-  : expressions_(std::move(expressions)), tuple_(expressions_)
-{
-}
-
 RC ProjectPhysicalOperator::open(Trx *trx)
 {
   if (children_.empty()) {
@@ -61,10 +54,7 @@ Tuple *ProjectPhysicalOperator::current_tuple()
   return &tuple_;
 }
 
-RC ProjectPhysicalOperator::tuple_schema(TupleSchema &schema) const
+void ProjectPhysicalOperator::add_projection(std::unique_ptr<Expression> &&project)
 {
-  for (const unique_ptr<Expression> &expression : expressions_) {
-    schema.append_cell(expression->name());
-  }
-  return RC::SUCCESS;
+  tuple_.add_expr(std::move(project));
 }

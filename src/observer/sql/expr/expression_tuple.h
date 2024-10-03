@@ -21,11 +21,11 @@ See the Mulan PSL v2 for more details. */
 #include "common/rc.h"
 
 template <typename ExprPointerType>
-class ExpressionTuple : public Tuple
+class ExpressionsTuple : public Tuple
 {
 public:
-  ExpressionTuple(const std::vector<ExprPointerType> &expressions) : expressions_(expressions) {}
-  virtual ~ExpressionTuple() = default;
+  ExpressionsTuple(const std::vector<ExprPointerType> &expressions) : expressions_(expressions) {}
+  virtual ~ExpressionsTuple() = default;
 
   void set_tuple(const Tuple *tuple) { child_tuple_ = tuple; }
 

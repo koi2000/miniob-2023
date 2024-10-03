@@ -14,14 +14,14 @@ See the Mulan PSL v2 for more details. */
 
 #pragma once
 
+#include <limits>
+#include <sstream>
 #include <stddef.h>
+#include <vector>
 
 #include "common/log/log.h"
 #include "common/rc.h"
 #include "common/types.h"
-#include "common/lang/vector.h"
-#include "common/lang/sstream.h"
-#include "common/lang/limits.h"
 #include "storage/field/field_meta.h"
 #include "storage/index/index_meta.h"
 
@@ -39,9 +39,9 @@ struct RID
   RID() = default;
   RID(const PageNum _page_num, const SlotNum _slot_num) : page_num(_page_num), slot_num(_slot_num) {}
 
-  const string to_string() const
+  const std::string to_string() const
   {
-    stringstream ss;
+    std::stringstream ss;
     ss << "PageNum:" << page_num << ", SlotNum:" << slot_num;
     return ss.str();
   }
@@ -77,7 +77,7 @@ struct RID
    */
   static RID *max()
   {
-    static RID rid{numeric_limits<PageNum>::max(), numeric_limits<SlotNum>::max()};
+    static RID rid{std::numeric_limits<PageNum>::max(), std::numeric_limits<SlotNum>::max()};
     return &rid;
   }
 };
@@ -122,6 +122,31 @@ public:
       memcpy(tmp, other.data_, other.len_);
       data_ = tmp;
     }
+  }
+
+  // Record(Record &&other)
+  // {
+  //   rid_   = other.rid_;
+  //   data_  = other.data_;
+  //   len_   = other.len_;
+  //   owner_ = other.owner_;
+
+  //   if (other.owner_) {
+  //     other.owner_ = false;
+  //     other.data_ = nullptr;
+  //   }
+  // }
+
+  void deep_copy(const Record &other)
+  {
+    rid_   = other.rid_;
+    len_   = other.len_;
+    owner_ = true;
+
+    char *tmp = (char *)malloc(other.len_);
+    ASSERT(nullptr != tmp, "failed to allocate memory. size=%d", other.len_);
+    memcpy(tmp, other.data_, other.len_);
+    data_ = tmp;
   }
 
   Record &operator=(const Record &other)

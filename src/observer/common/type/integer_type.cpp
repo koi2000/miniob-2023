@@ -19,7 +19,7 @@ int IntegerType::compare(const Value &left, const Value &right) const
   ASSERT(left.attr_type() == AttrType::INTS, "left type is not integer");
   ASSERT(right.attr_type() == AttrType::INTS || right.attr_type() == AttrType::FLOATS, "right type is not numeric");
   if (right.attr_type() == AttrType::INTS) {
-    return common::compare_int((void *)&left.value_.int_value_, (void *)&right.value_.int_value_);
+    return common::compare_int((void *)&left.num_value_.int_value_, (void *)&right.num_value_.int_value_);
   } else if (right.attr_type() == AttrType::FLOATS) {
     float left_val  = left.get_float();
     float right_val = right.get_float();
@@ -71,7 +71,7 @@ RC IntegerType::set_value_from_str(Value &val, const string &data) const
 RC IntegerType::to_string(const Value &val, string &result) const
 {
   stringstream ss;
-  ss << val.value_.int_value_;
+  ss << val.num_value_.int_value_;
   result = ss.str();
   return RC::SUCCESS;
 }

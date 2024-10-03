@@ -24,12 +24,16 @@ See the Mulan PSL v2 for more details. */
 #include "common/os/path.h"
 #include "common/global_context.h"
 #include "storage/common/meta_util.h"
+#include "storage/field/field.h"
+#include "storage/table/base_table.h"
 #include "storage/table/table.h"
 #include "storage/table/table_meta.h"
+#include "storage/table/view.h"
 #include "storage/trx/trx.h"
 #include "storage/clog/disk_log_handler.h"
 #include "storage/clog/integrated_log_replayer.h"
 
+using namespace std;
 using namespace common;
 
 Db::~Db()
@@ -136,7 +140,8 @@ RC Db::init(const char *name, const char *dbpath, const char *trx_kit_name, cons
   return rc;
 }
 
-RC Db::create_table(const char *table_name, span<const AttrInfoSqlNode> attributes, const StorageFormat storage_format)
+RC Db::create_table(const char *table_name, span<const AttrInfoSqlNode> attributes,
+    const StorageFormat storage_format = StorageFormat::ROW_FORMAT)
 {
   RC rc = RC::SUCCESS;
   // check table_name
@@ -146,9 +151,9 @@ RC Db::create_table(const char *table_name, span<const AttrInfoSqlNode> attribut
   }
 
   // 文件路径可以移到Table模块
-  string  table_file_path = table_meta_file(path_.c_str(), table_name);
-  Table  *table           = new Table();
-  int32_t table_id        = next_table_id_++;
+  std::string table_file_path = table_meta_file(path_.c_str(), table_name);
+  Table      *table           = new Table();
+  int32_t     table_id        = next_table_id_++;
   rc = table->create(this, table_id, table_file_path.c_str(), table_name, path_.c_str(), attributes, storage_format);
   if (rc != RC::SUCCESS) {
     LOG_ERROR("Failed to create table %s.", table_name);
@@ -156,14 +161,57 @@ RC Db::create_table(const char *table_name, span<const AttrInfoSqlNode> attribut
     return rc;
   }
 
-  opened_tables_[table_name] = table;
+  opened_tables_[table_name] = static_cast<BaseTable *>(table);
   LOG_INFO("Create table success. table name=%s, table_id:%d", table_name, table_id);
   return RC::SUCCESS;
 }
 
+RC Db::create_view(const char *view_name, bool allow_write, const std::vector<AttrInfoSqlNode> attr_infos,
+    const std::vector<Field> &map_fields, SelectSqlNode *select_sql)
+{
+  RC rc = RC::SUCCESS;
+  // check table_name
+  if (opened_tables_.count(view_name) != 0) {
+    LOG_WARN("%s has been opened before.", view_name);
+    return RC::SCHEMA_TABLE_EXIST;
+  }
+
+  View       *view           = new View();
+  int32_t     table_id       = next_table_id_++;
+  std::string view_file_path = view_meta_file(path_.c_str(), view_name);
+  rc                         = view->create(this,
+      table_id,
+      allow_write,
+      view_file_path.c_str(),
+      view_name,
+      path_.c_str(),
+      attr_infos,
+      map_fields,
+      select_sql);
+  if (rc != RC::SUCCESS) {
+    LOG_ERROR("Failed to create table %s.", view_name);
+    delete view;
+    return rc;
+  }
+  view->set_db(this);
+
+  opened_tables_[view_name] = static_cast<BaseTable *>(view);
+  LOG_INFO("Create table success. table name=%s, table_id:%d", view_name, table_id);
+  return rc;
+}
+
 Table *Db::find_table(const char *table_name) const
 {
-  unordered_map<string, Table *>::const_iterator iter = opened_tables_.find(table_name);
+  unordered_map<string, BaseTable *>::const_iterator iter = opened_tables_.find(table_name);
+  if (iter != opened_tables_.end()) {
+    return static_cast<Table *>(iter->second);
+  }
+  return nullptr;
+}
+
+BaseTable *Db::find_base_table(const char *table_name) const
+{
+  std::unordered_map<std::string, BaseTable *>::const_iterator iter = opened_tables_.find(table_name);
   if (iter != opened_tables_.end()) {
     return iter->second;
   }
@@ -173,8 +221,8 @@ Table *Db::find_table(const char *table_name) const
 Table *Db::find_table(int32_t table_id) const
 {
   for (auto pair : opened_tables_) {
-    if (pair.second->table_id() == table_id) {
-      return pair.second;
+    if (pair.second->table_id() == table_id && pair.second->is_table()) {
+      return static_cast<Table *>(pair.second);
     }
   }
   return nullptr;
@@ -233,7 +281,10 @@ RC Db::sync()
   RC rc = RC::SUCCESS;
   // 调用所有表的sync函数刷新数据到磁盘
   for (const auto &table_pair : opened_tables_) {
-    Table *table = table_pair.second;
+    if (table_pair.second->is_view()) {
+      continue;
+    }
+    Table *table = static_cast<Table *>(table_pair.second);
     rc           = table->sync();
     if (rc != RC::SUCCESS) {
       LOG_ERROR("Failed to flush table. table=%s.%s, rc=%d:%s", name_.c_str(), table->name(), rc, strrc(rc));
@@ -300,6 +351,66 @@ RC Db::recover()
   return rc;
 }
 
+RC Db::drop_table(const char *table_name)
+{
+  RC     rc    = RC::SUCCESS;
+  Table *table = nullptr;
+  auto   it    = opened_tables_.find(table_name);
+  if (it == opened_tables_.end()) {
+    LOG_WARN("table : %s not exist", table_name);
+    rc = RC::SCHEMA_TABLE_NOT_EXIST;
+  } else if (it->second->is_table() && (table = static_cast<Table *>(it->second)) == nullptr) {
+    LOG_WARN("table : %s not exist", table_name);
+    rc = RC::SCHEMA_TABLE_NOT_EXIST;
+  } else if ((rc = table->drop(path_.c_str())) != RC::SUCCESS) {
+    LOG_WARN("table drop file,errno: %s", strrc(rc));
+  } else {
+    opened_tables_.erase(it);
+    delete table;
+  }
+  return rc;
+}
+
+// RC Db::init_dblwr_buffer()
+// {
+//   filesystem::path db_meta_file_path = db_meta_file(path_.c_str(), name_.c_str());
+//   if (!filesystem::exists(db_meta_file_path)) {
+//     check_point_lsn_ = 0;
+//     LOG_INFO("Db meta file not exist. db=%s, file=%s", name_.c_str(), db_meta_file_path.c_str());
+//     return RC::SUCCESS;
+//   }
+
+//   RC  rc = RC::SUCCESS;
+//   int fd = open(db_meta_file_path.c_str(), O_RDONLY);
+//   if (fd < 0) {
+//     LOG_ERROR("Failed to open db meta file. db=%s, file=%s, errno=%s",
+//               name_.c_str(), db_meta_file_path.c_str(), strerror(errno));
+//     return RC::IOERR_READ;
+//   }
+
+//   char buffer[1024];
+//   int  n = read(fd, buffer, sizeof(buffer));
+//   if (n < 0) {
+//     LOG_ERROR("Failed to read db meta file. db=%s, file=%s, errno=%s",
+//               name_.c_str(), db_meta_file_path.c_str(), strerror(errno));
+//     rc = RC::IOERR_READ;
+//   } else {
+//     if (n >= static_cast<int>(sizeof(buffer))) {
+//       LOG_WARN("Db meta file is too large. db=%s, file=%s, buffer size=%ld",
+//                name_.c_str(), db_meta_file_path.c_str(), sizeof(buffer));
+//       return RC::IOERR_TOO_LONG;
+//     }
+
+//     buffer[n]        = '\0';
+//     check_point_lsn_ = atoll(buffer);  // 当前元数据就这一个数字
+//     LOG_INFO("Successfully read db meta file. db=%s, file=%s, check_point_lsn=%ld",
+//              name_.c_str(), db_meta_file_path.c_str(), check_point_lsn_);
+//   }
+//   close(fd);
+
+//   return rc;
+// }
+
 RC Db::init_meta()
 {
   filesystem::path db_meta_file_path = db_meta_file(path_.c_str(), name_.c_str());
@@ -358,7 +469,7 @@ RC Db::flush_meta()
     return RC::IOERR_WRITE;
   }
 
-  string buffer = std::to_string(check_point_lsn_);
+  string buffer = to_string(check_point_lsn_);
   int    n      = write(fd, buffer.c_str(), buffer.size());
   if (n < 0) {
     LOG_ERROR("Failed to write db meta file. db=%s, file=%s, errno=%s", 

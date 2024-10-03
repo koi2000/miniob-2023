@@ -46,21 +46,25 @@ public:
 public:
   int32_t             table_id() const { return table_id_; }
   const char         *name() const;
+  const FieldMeta    *null_field() const;
   const FieldMeta    *trx_field() const;
   const FieldMeta    *field(int index) const;
   const FieldMeta    *field(const char *name) const;
   const FieldMeta    *find_field_by_offset(int offset) const;
+  const int           find_field_idx_by_name(const char *field_name) const;
   auto                field_metas() const -> const std::vector<FieldMeta>                *{ return &fields_; }
   auto                trx_fields() const -> std::span<const FieldMeta>;
   const StorageFormat storage_format() const { return storage_format_; }
 
   int field_num() const;  // sys field included
+  int trx_field_num() const;
   int sys_field_num() const;
 
   const IndexMeta *index(const char *name) const;
   const IndexMeta *find_index_by_field(const char *field) const;
   const IndexMeta *index(int i) const;
   int              index_num() const;
+  bool             is_field_in_index(std::vector<std::string> &field_names) const;
 
   int record_size() const;
 

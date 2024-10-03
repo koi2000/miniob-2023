@@ -33,14 +33,18 @@ See the Mulan PSL v2 for more details. */
 enum class LogicalOperatorType
 {
   CALC,
-  TABLE_GET,   ///< 从表中获取数据
+  CREATE_TABLE,
+  TABLE_GET,  ///< 从表中获取数据
+  VIEW_GET,
   PREDICATE,   ///< 过滤，就是谓词
   PROJECTION,  ///< 投影，就是select
   JOIN,        ///< 连接
   INSERT,      ///< 插入
   DELETE,      ///< 删除，删除可能会有子查询
   EXPLAIN,     ///< 查看执行计划
-  GROUP_BY,    ///< 分组
+  UPDATE,
+  GROUPBY,
+  ORDERBY,
 };
 
 /**
@@ -55,10 +59,9 @@ public:
 
   virtual LogicalOperatorType type() const = 0;
 
-  void        add_child(std::unique_ptr<LogicalOperator> oper);
-  auto        children() -> std::vector<std::unique_ptr<LogicalOperator>>        &{ return children_; }
-  auto        expressions() -> std::vector<std::unique_ptr<Expression>>        &{ return expressions_; }
-  static bool can_generate_vectorized_operator(const LogicalOperatorType &type);
+  void                                           add_child(std::unique_ptr<LogicalOperator> oper);
+  std::vector<std::unique_ptr<LogicalOperator>> &children() { return children_; }
+  std::vector<std::unique_ptr<Expression>>      &expressions() { return expressions_; }
 
 protected:
   std::vector<std::unique_ptr<LogicalOperator>> children_;  ///< 子算子

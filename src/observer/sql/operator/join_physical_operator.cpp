@@ -102,8 +102,7 @@ RC NestedLoopJoinPhysicalOperator::right_next()
   RC rc = RC::SUCCESS;
   if (round_done_) {
     if (!right_closed_) {
-      rc = right_->close();
-
+      rc            = right_->close();
       right_closed_ = true;
       if (rc != RC::SUCCESS) {
         return rc;

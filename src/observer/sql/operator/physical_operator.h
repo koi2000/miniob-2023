@@ -37,19 +37,24 @@ class Trx;
  */
 enum class PhysicalOperatorType
 {
+  CREATE_TABLE,
   TABLE_SCAN,
-  TABLE_SCAN_VEC,
   INDEX_SCAN,
+  VIEW_SCAN,
   NESTED_LOOP_JOIN,
   EXPLAIN,
   PREDICATE,
-  PREDICATE_VEC,
   PROJECT,
-  PROJECT_VEC,
+  DUAL_TABLE_SCAN,
   CALC,
   STRING_LIST,
   DELETE,
   INSERT,
+  UPDATE,
+  GROUPBY,
+  ORDERBY,
+
+  PROJECT_VEC,
   SCALAR_GROUP_BY,
   HASH_GROUP_BY,
   GROUP_BY_VEC,
@@ -66,7 +71,7 @@ class PhysicalOperator
 public:
   PhysicalOperator() = default;
 
-  virtual ~PhysicalOperator() = default;
+  virtual ~PhysicalOperator();
 
   /**
    * 这两个函数是为了打印时使用的，比如在explain中
@@ -77,11 +82,11 @@ public:
   virtual PhysicalOperatorType type() const = 0;
 
   virtual RC open(Trx *trx) = 0;
-  virtual RC next() { return RC::UNIMPLEMENTED; }
+  virtual RC next()         = 0;
   virtual RC next(Chunk &chunk) { return RC::UNIMPLEMENTED; }
   virtual RC close() = 0;
 
-  virtual Tuple *current_tuple() { return nullptr; }
+  virtual Tuple *current_tuple() = 0;
 
   virtual RC tuple_schema(TupleSchema &schema) const { return RC::UNIMPLEMENTED; }
 
@@ -89,6 +94,15 @@ public:
 
   std::vector<std::unique_ptr<PhysicalOperator>> &children() { return children_; }
 
+  void set_parent_tuple(const Tuple *tuple)
+  {
+    parent_tuple_ = tuple;
+    for (auto &child : children_) {
+      child->set_parent_tuple(tuple);
+    }
+  }
+
 protected:
   std::vector<std::unique_ptr<PhysicalOperator>> children_;
+  const Tuple                                   *parent_tuple_ = nullptr;
 };
