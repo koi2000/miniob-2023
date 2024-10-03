@@ -73,6 +73,7 @@ RC TableMeta::init(int32_t table_id, const char *name, const std::vector<FieldMe
   field_offset += null_len;
 
   if (trx_fields != nullptr) {
+    trx_fields_ = *trx_fields;
     // trx_fields
     for (size_t i = 0; i < trx_fields->size(); i++) {
       const FieldMeta &field_meta = (*trx_fields)[i];
@@ -120,7 +121,7 @@ const FieldMeta *TableMeta::trx_field() const { return &fields_[1]; }
 
 span<const FieldMeta> TableMeta::trx_fields() const
 {
-  return span<const FieldMeta>(fields_.data(), sys_field_num());
+  return span<const FieldMeta>(trx_fields_.data(), sys_field_num());
 }
 
 const FieldMeta *TableMeta::field(int index) const { return &fields_[index]; }
